@@ -1,0 +1,26 @@
+{
+  "name": "tracer",
+  "version": "0.0.1",
+  "description": "graphical experiments",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "prestart": "npm run build",
+    "start": "electron ."
+  },
+  "repository": "https://github.com/rubenvh/tracer",
+  "keywords": [
+    "typescript",
+    "electron",
+    "debug",
+    "template"
+  ],
+  "author": "Ruben Van Havermaet",
+  "license": "MIT",
+  "dependencies": {
+    "electron": "^10.1.5"
+  },
+  "devDependencies": {
+    "typescript": "^4.0.5"
+  }
+}
