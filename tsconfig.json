@@ -6,7 +6,8 @@
         "sourceMap": true,
         "outDir": "dist",
         "types": [
-            "node"
+            "node",
+            "jest"
         ],        
     },
     "exclude": [
