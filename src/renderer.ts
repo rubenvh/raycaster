@@ -4,16 +4,37 @@
 
 import { Vertex } from "./vertex";
 import { Camera } from "./camera";
+import { Segment } from "./segment";
 
-let canvas = document.getElementById('myCanvas') as HTMLCanvasElement;;
-let context = canvas.getContext('2d');
+const ui = {
+    redrawButton: document.getElementById('redraw'),
+    canvas: document.getElementById('view_2d') as HTMLCanvasElement
+};
 
-let sut = new Camera(new Vertex(0,0), new Vertex(1, 0));
+let camera = new Camera(new Vertex(50,50), new Vertex(150, 200));
+let context = ui.canvas.getContext('2d');
 
-context.beginPath();
-context.rect(188, 50, 200, 100);
-context.fillStyle = 'yellow';
-context.fill();
-context.lineWidth = 7;
-context.strokeStyle = 'black';
-context.stroke();
+ui.redrawButton.addEventListener('click', () => {
+    console.log('redrawing');
+    context.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
+    drawCamera(context, camera);    
+});
+
+const drawCamera = (context: CanvasRenderingContext2D, cam: Camera) => {
+        
+    drawSegment(context, camera.screen);
+    camera.makeRays(15).forEach(s => {        
+        drawSegment(context, s, 'grey');
+    });
+};
+
+const drawSegment = (context: CanvasRenderingContext2D, segment: Segment, color: string = 'white') => {
+    context.beginPath();
+    context.lineTo(segment.start.x, segment.start.y);
+    context.lineTo(segment.end.x, segment.end.y);
+    context.lineWidth = 1;
+    context.strokeStyle = color;    
+    context.stroke();
+    context.closePath();
+};
+
