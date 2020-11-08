@@ -1,17 +1,46 @@
-import { Vertex, Camera } from "./vertex";
+import { Vertex } from "./vertex";
+import math = require("mathjs");
 
-
-test('dimensional vertices have correct dimension', () => {
-  expect(new Vertex(1).dim()).toBe(1);
-  expect(new Vertex(1, 1).dim()).toBe(2);
-  expect(new Vertex(1, 1, 1).dim()).toBe(3);
-});
-
-describe('camera tests', () => {
-  test('camera init', () => {
-    let sut = new Camera(new Vertex(3,2), new Vertex(6, 3));
-
-    
-    console.dir(sut.screen);
+describe('vertex tests', () => {
+  describe('dimension tests', () => {
+    it('one dimensional vertices', () => expect(new Vertex(1).dim()).toBe(1));
+    it('two dimensional vertices', () => expect(new Vertex(1, 1).dim()).toBe(2));
+    it('three dimensional vertices', () => expect(new Vertex(1, 1, 1).dim()).toBe(3));
   });
+
+  describe('component getter tests', () => {
+    it('x component', () => expect(new Vertex(1, 2).x).toBe(1));
+    it('y component', () => expect(new Vertex(1, 2).y).toBe(2));
+  });
+
+  describe('substract tests', () => {
+    const test = (x: number[], y: number[], e: number[]) => expect(new Vertex(...x).subtract(new Vertex(...y)).coordinates).toEqual(e);
+    it('1 - 0 = 1', () => test([1,1], [0,0], [1,1]));
+    it('0 - 1 = -1', () => test([0,0], [1,1], [-1,-1]));
+    it('1 - 1 = 0', () => test([1,1], [1,1], [0,0]));
+  });
+  describe('add tests', () => {
+    const test = (x: number[], y: number[], e: number[]) => expect(new Vertex(...x).add(new Vertex(...y)).coordinates).toEqual(e);
+    it('1 + 0 = 1', () => test([1,1], [0,0], [1,1]));
+    it('0 + 1 = 1', () => test([0,0], [1,1], [1,1]));
+    it('0 + 0 = 0', () => test([0,0], [0,0], [0,0]));
+  });
+  describe('scale tests', () => {
+    const test = (x: number[], factor: number, e: number[]) => expect(new Vertex(...x).scale(factor).coordinates).toEqual(e);
+    it('[1,1] * 0 = 0', () => test([1,1], 0, [0,0]));    
+    it('[1,1] * 1/100 = .01', () => test([1,1], 1/100, [0.01,0.01]));    
+  });
+  describe('rotation tests', () => {
+    const test = (components: number[], angle: number, e: number[]) => {
+      const actual = new Vertex(...components).rotate(angle);
+      actual.coordinates.map((_, i) => expect(_).toBeCloseTo(e[i]));
+    };
+    it('[1,0] by 0 = [1,0]', () => test([1,0], 0, [1,0]));
+    it('[1,0] by pi/2 = [0,1]', () => test([1,0], math.pi/2, [0,1]));
+    it('[1,0] by pi = [-1,0]', () => test([1,0], math.pi, [-1,0]));
+    it('[1,0] by 3/2*pi = [0,-1]', () => test([1,0], 3/2*math.pi, [0,-1]));
+    it('[1,0] by 2*pi = [1,0]', () => test([1,0], 2*math.pi, [1,0]));
+    it('[1,0] by pi/4 = [cos(pi/4),sin(pi/4)]', () => test([1,0], math.pi/4, [math.cos(math.pi/4), math.sin(math.pi/4)]));
+    it('[0,2] by pi/2 = [-2,0]', () => test([0,2], math.pi/2, [-2,0]));
+  });  
 });

@@ -2,7 +2,8 @@
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
 
-import { Camera, Vertex } from "./vertex";
+import { Vertex } from "./vertex";
+import { Camera } from "./camera";
 
 let canvas = document.getElementById('myCanvas') as HTMLCanvasElement;;
 let context = canvas.getContext('2d');
