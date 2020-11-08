@@ -23,5 +23,3 @@ export const createRotation = (angle: number) => [
     [math.cos(angle), -1 * math.sin(angle)],
     [math.sin(angle), math.cos(angle)]
 ];
-
-
