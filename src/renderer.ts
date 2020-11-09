@@ -5,25 +5,29 @@
 import { Vertex } from "./vertex";
 import { Camera } from "./camera";
 import { Segment } from "./segment";
+import { KeyBoardListener } from "./keyboard-listener";
+import { ActionHandler, ActiveActions } from "./actionHandler";
+import { World } from "./world";
 
-const ui = {
-    redrawButton: document.getElementById('redraw'),
+
+const ui = {    
+    rotateButton: document.getElementById('rotate'),
     canvas: document.getElementById('view_2d') as HTMLCanvasElement
 };
 
-let camera = new Camera(new Vertex(50,50), new Vertex(150, 200));
+let world: World = {camera: new Camera(new Vertex(50,50), new Vertex(150, 200))};
 let context = ui.canvas.getContext('2d');
+let activeActions = {} as ActiveActions;
+let actionHandler = new ActionHandler(activeActions, world);
+new KeyBoardListener(activeActions).start();
 
-ui.redrawButton.addEventListener('click', () => {
-    console.log('redrawing');
+const redraw = () => {
     context.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
-    drawCamera(context, camera);    
-});
-
+    drawCamera(context, world.camera);  
+}
 const drawCamera = (context: CanvasRenderingContext2D, cam: Camera) => {
-        
-    drawSegment(context, camera.screen);
-    camera.makeRays(15).forEach(s => {        
+    drawSegment(context, cam.screen);
+    cam.makeRays(15).forEach(s => {        
         drawSegment(context, s, 'grey');
     });
 };
@@ -38,3 +42,18 @@ const drawSegment = (context: CanvasRenderingContext2D, segment: Segment, color:
     context.closePath();
 };
 
+function update(x: number) {
+    actionHandler.handle();
+}
+
+function loop(timestamp) {
+    var progress = timestamp - lastRender
+  
+    update(progress)
+    redraw();
+  
+    lastRender = timestamp
+    window.requestAnimationFrame(loop)
+  }
+var lastRender = 0
+window.requestAnimationFrame(loop)

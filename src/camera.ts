@@ -16,12 +16,20 @@ export class Camera {
         ));
     };
     move = (ratio: number) => this.change(() => {
-        let d = this.direction.subtract(this.location);
-        this.location = this.location.add(d.scale(ratio));
+        let delta = this.direction.subtract(this.location).scale(ratio);
+        this.location = this.location.add(delta);
+        this.direction = this.direction.add(delta);
     });
     rotate = (angle: number) => this.change(() => {
         let d = this.direction.subtract(this.location);
         this.direction = this.location.add(d.rotate(angle));
+    });
+    strafe = (ratio: number) => this.change(() => {
+        let d = this.direction.subtract(this.location);
+        let sign = ratio > 0 ? 1 : -1;
+        let n = d.rotate(sign * math.pi/2).scale(math.abs(ratio));
+        this.location = this.location.add(n);
+        this.direction = this.direction.add(n);
     });
 
     private change = (changer: () => void = null) => {
