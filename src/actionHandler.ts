@@ -13,8 +13,8 @@ export class ActionHandler {
         if (this.actions.turnright) this.world.camera.rotate(0.1);
         if (this.actions.left) this.world.camera.strafe(-0.1);
         if (this.actions.right) this.world.camera.strafe(0.1);
-        if (this.actions.up) this.world.camera.move(1/20);
-        if (this.actions.down) this.world.camera.move(-1/20);
+        if (this.actions.up) this.world.camera.move(1/15);
+        if (this.actions.down) this.world.camera.move(-1/15);
 
         if (this.actions.camera_angle_up)   this.world.camera.adaptAngle( 1);
         if (this.actions.camera_angle_down) this.world.camera.adaptAngle(-1);
