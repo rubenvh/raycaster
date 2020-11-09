@@ -9,7 +9,13 @@ export class KeyBoardListener {
         65: 'left',
         68: 'right',
         83: 'down',
-        87: 'up',        
+        87: 'up',  
+        107: 'camera_angle_up',
+        109: 'camera_angle_down'
+    };
+    private ctrlKeyMap: KeyMap = {        
+        107: 'camera_depth_up',
+        109: 'camera_depth_down'
     };
 
     constructor(private state: ActiveActions){}
@@ -19,13 +25,15 @@ export class KeyBoardListener {
         window.addEventListener("keyup", this.keyup, false);
     };
 
-    private keydown = (event) => {                
-        var key = this.keyMap[event.keyCode];        
+    private keydown = (event: KeyboardEvent) => {  
+        var keyMap = event.ctrlKey ? this.ctrlKeyMap : this.keyMap;            
+        var key = keyMap[event.keyCode];        
         this.state[key] = true;
     };
 
-    private keyup = (event) => {
-        var key = this.keyMap[event.keyCode];
+    private keyup = (event: KeyboardEvent) => {
+        var keyMap = event.ctrlKey ? this.ctrlKeyMap : this.keyMap;     
+        var key = keyMap[event.keyCode];
         this.state[key] = false;
     };
 }
