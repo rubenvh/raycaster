@@ -3,13 +3,15 @@ import { Segment } from "./segment";
 export class Camera {
     private _screen: Segment;
     constructor(private location: Vertex, private target: Vertex, private angle: number = math.pi / 4) {
-        this.setConfig({angle});
-        this.change();
+        this.adaptAngle(0);
     }
     
     get screen() { return this._screen; }
     get config() { return ({angle: this.angle}); }
-    adaptAngle = (direction: 1|-1) => this.setConfig({angle: this.angle+direction*0.05});
+    adaptAngle = (direction: 0|1|-1) => this.change(() => {
+        const newAngle = this.angle+direction*0.05;
+        this.angle = newAngle <= math.pi/8 ? math.pi/8 : (newAngle >= (3/8)*math.pi ? (3/8)*math.pi : newAngle);
+    });
     adaptDepth = (direction: 1|-1) => this.change(() => {
         let delta = this.target.subtract(this.location).scale(direction*0.01);        
         this.target = this.target.add(delta);
@@ -44,12 +46,6 @@ export class Camera {
         }
         this._screen = this.makeScreen();
     };
-
-    private setConfig = (config: {angle:number}) => {        
-        this.angle = config.angle <= math.pi/8 ? math.pi/8 : (config.angle >= (3/8)*math.pi ? (3/8)*math.pi : config.angle);
-        this.change();
-    };
-    
 
     private makeScreen = (): Segment => {
         let d = this.target.subtract(this.location);

@@ -15,7 +15,7 @@ const ui = {
     canvas: document.getElementById('view_2d') as HTMLCanvasElement
 };
 
-let world: World = {camera: new Camera(new Vertex(50,50), new Vertex(150, 200))};
+let world: World = {camera: new Camera(new Vertex(50,50), new Vertex(70, 70))};
 let context = ui.canvas.getContext('2d');
 let activeActions = {} as ActiveActions;
 let actionHandler = new ActionHandler(activeActions, world);
