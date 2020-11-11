@@ -1,29 +1,27 @@
-import { create, all } from 'mathjs'
-
-const config = { }
-export const math = create(all, config)
+import { LineSegment } from './lineSegment';
+import { Vector } from "./vector";
+import { Guid } from "guid-typescript";
 export class Vertex {
-    coordinates: number[];
-    constructor(...coordinates: number[]) {
-        this.coordinates = coordinates;
+    id: Guid;
+    edges: Edge[] = [];
+
+    constructor(public location: Vector) {
+        this.id = Guid.create();
     }
     
-    get x() { return this.coordinates[0]};
-    get y() { return this.coordinates[1]};
-
-    dim = () => this.coordinates.length;    
-    norm = () => math.sqrt(this.dot(this));
-    dot = (other: Vertex) => this.coordinates
-        .map((_, i) => _ * other.coordinates[i])        
-        .reduce((acc, n) => acc + n, 0);
-    scale = (factor: number) => new Vertex(...this.coordinates.map(_ => factor * _));
-    subtract = (other: Vertex) => new Vertex(...this.coordinates.map((_, i) => _ - other.coordinates[i]));  
-    add = (other: Vertex) => new Vertex(...this.coordinates.map((_, i) => _ + other.coordinates[i]));
-    rotate = (angle: number) => 
-        new Vertex(...math.multiply(createRotation(angle), this.coordinates) as any as number[]);
+    joinTo = (vertex: Vertex): Edge => {
+        let edge = new Edge(this, vertex);
+        this.edges.push(edge);
+        vertex.edges.push(edge);
+        return edge;
+    }    
 }
 
-export const createRotation = (angle: number) => [
-    [math.cos(angle), -1 * math.sin(angle)],
-    [math.sin(angle), math.cos(angle)]
-];
+export class Edge {
+    id: Guid;
+    segment: LineSegment;
+    constructor(public start: Vertex, public end: Vertex) {
+        this.id = Guid.create();
+        this.segment = new LineSegment(start.location, end.location);
+    }
+}

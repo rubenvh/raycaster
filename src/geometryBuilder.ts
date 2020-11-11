@@ -1,5 +1,5 @@
 import { Geometry } from "./geometry";
-import { Vertex } from "./vertex";
+import { Vector } from "./vector";
 
 export class GeometryBuilder {
     private elemLeft: number;
@@ -16,7 +16,7 @@ export class GeometryBuilder {
             const x = event.pageX - this.elemLeft,
                   y = event.pageY - this.elemTop;
         
-            console.log(new Vertex(x, y));
+            console.log(new Vector(x, y));
             // Collision detection between clicked offset and element.
             //geometry.detectVertex(new Vertex(x, y));
             // geometry.forEach(function(element) {
