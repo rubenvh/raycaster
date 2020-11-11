@@ -9,7 +9,7 @@ import { LineSegment } from "./lineSegment";
 import { KeyBoardListener } from "./keyboard-listener";
 import { ActionHandler, ActiveActions } from "./actionHandler";
 import { World } from "./world";
-import { Geometry } from "./geometry";
+import { Geometry, initGeometry } from "./geometry";
 import { Vertex } from './vertex';
 import math = require('mathjs');
 
@@ -21,7 +21,7 @@ const ui = {
 
 let world: World = {
     camera: new Camera(new Vector(50,50), new Vector(70, 70)),
-    geometry: new Geometry([
+    geometry: initGeometry([
         [...Array.from(Array(23).keys()).map(x => new Vector(20,20+20*x)),
          ...Array.from(Array(31).keys()).map(x => new Vector(20+20*x,460)),
          ...Array.from(Array(23).keys()).map(x => new Vector(620,460-20*x)),
@@ -48,8 +48,10 @@ const drawCamera = (context: CanvasRenderingContext2D, cam: Camera) => {
     });
 };
 const drawGeometry = (context: CanvasRenderingContext2D, geometry: Geometry) => {
-    geometry.vertices.forEach(e => drawVertex(context, e));
-    geometry.edges.forEach(e => drawSegment(context, e.segment, 'rgb(255,255,255)'));
+    geometry.polygons.forEach(p => {
+        p.vertices.forEach(e => drawVertex(context, e));
+        p.edges.forEach(e => drawSegment(context, e.segment, 'rgb(255,255,255)'));    
+    });    
 };
 
 const drawSegment = (context: CanvasRenderingContext2D, segment: LineSegment, color: string = 'white') => {
@@ -63,7 +65,7 @@ const drawSegment = (context: CanvasRenderingContext2D, segment: LineSegment, co
 };
 const drawVertex = (context: CanvasRenderingContext2D, vertex: Vertex) => {
     context.beginPath();    
-    context.arc(vertex.location.x, vertex.location.y, 2, 0, 2*math.pi, false);
+    context.arc(vertex.vector.x, vertex.vector.y, 2, 0, 2*math.pi, false);
     context.fillStyle = 'rgb(150,150,0)';
     context.fill();
 }
