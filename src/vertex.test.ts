@@ -13,6 +13,22 @@ describe('vertex tests', () => {
     it('y component', () => expect(new Vertex(1, 2).y).toBe(2));
   });
 
+  describe('norm tests', () => {
+    it('||(0,1)|| = 1', () => expect(new Vertex(0,1).norm()).toBe(1));
+    it('||(1,0)|| = 1', () => expect(new Vertex(1,0).norm()).toBe(1));
+    it('||(0,-2)|| = 2', () => expect(new Vertex(0,-2).norm()).toBe(2));
+    it('||(-2,0)|| = 2', () => expect(new Vertex(-2,0).norm()).toBe(2));
+    it('||(3,4)|| = 5', () => expect(new Vertex(3,4).norm()).toBe(5));
+  });
+
+  describe('dot product tests', () => {
+    const test = (x: number[], y: number[], e: number) => expect(new Vertex(...x).dot(new Vertex(...y))).toEqual(e);    
+    it('(0,0).(1,1) = 0', () => test([0,0], [1,1], 0));
+    it('(0,1).(1,0) = 0', () => test([0,1], [1,0], 0));
+    it('(1,1).(1,1) = 2', () => test([1,1], [1,1], 2));
+    it('(1,2).(3,4) = 11', () => test([1,2],[3,4], 11));
+  });
+
   describe('substract tests', () => {
     const test = (x: number[], y: number[], e: number[]) => expect(new Vertex(...x).subtract(new Vertex(...y)).coordinates).toEqual(e);
     it('1 - 0 = 1', () => test([1,1], [0,0], [1,1]));

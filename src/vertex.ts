@@ -12,6 +12,10 @@ export class Vertex {
     get y() { return this.coordinates[1]};
 
     dim = () => this.coordinates.length;    
+    norm = () => math.sqrt(this.dot(this));
+    dot = (other: Vertex) => this.coordinates
+        .map((_, i) => _ * other.coordinates[i])        
+        .reduce((acc, n) => acc + n, 0);
     scale = (factor: number) => new Vertex(...this.coordinates.map(_ => factor * _));
     subtract = (other: Vertex) => new Vertex(...this.coordinates.map((_, i) => _ - other.coordinates[i]));  
     add = (other: Vertex) => new Vertex(...this.coordinates.map((_, i) => _ + other.coordinates[i]));
