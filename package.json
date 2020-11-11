@@ -1,7 +1,7 @@
 {
-  "name": "tracer",
+  "name": "raycaster",
   "version": "0.0.1",
-  "description": "graphical experiments",
+  "description": "electron raycaster experiments",
   "main": "dist/main.js",
   "scripts": {
     "build": "tsc",
@@ -9,7 +9,7 @@
     "start": "electron .",
     "test": "jest"
   },
-  "repository": "https://github.com/rubenvh/tracer",
+  "repository": "https://github.com/rubenvh/raycaster",
   "keywords": [
     "typescript",
     "electron",
