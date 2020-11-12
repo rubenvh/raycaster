@@ -1,4 +1,4 @@
-import { GeometryBuilder } from './geometryBuilder';
+
 // This file is required by the index.html file and will
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
@@ -9,9 +9,10 @@ import { LineSegment } from "./lineSegment";
 import { KeyBoardListener } from "./keyboard-listener";
 import { ActionHandler, ActiveActions } from "./actionHandler";
 import { World } from "./world";
-import { Geometry, initGeometry } from "./geometry";
+import { Geometry, createGeometry } from "./geometry";
 import { Vertex } from './vertex';
 import math = require('mathjs');
+import { GeometrySelector } from "./geometrySelector";
 
 
 const ui = {    
@@ -21,19 +22,20 @@ const ui = {
 
 let world: World = {
     camera: new Camera(new Vector(50,50), new Vector(70, 70)),
-    geometry: initGeometry([
+    geometry: createGeometry([
         [...Array.from(Array(23).keys()).map(x => new Vector(20,20+20*x)),
          ...Array.from(Array(31).keys()).map(x => new Vector(20+20*x,460)),
          ...Array.from(Array(23).keys()).map(x => new Vector(620,460-20*x)),
          ...Array.from(Array(29).keys()).map(x => new Vector(600-20*x,20))
         ]
     ]),
+    selection: []
 };
 let context = ui.canvas.getContext('2d');
 let activeActions = {} as ActiveActions;
 let actionHandler = new ActionHandler(activeActions, world);
 new KeyBoardListener(activeActions).start();
-new GeometryBuilder(ui.canvas, world.geometry).start();
+new GeometrySelector(ui.canvas, world.geometry, world.selection).start();
 
 const redraw = () => {
     context.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
@@ -64,12 +66,13 @@ const drawSegment = (context: CanvasRenderingContext2D, segment: LineSegment, co
     context.stroke();
 };
 const drawVertex = (context: CanvasRenderingContext2D, vertex: Vertex) => {
-    context.beginPath();    
+    context.beginPath();
     context.arc(vertex.vector.x, vertex.vector.y, 2, 0, 2*math.pi, false);
-    context.fillStyle = 'rgb(150,150,0)';
+    context.fillStyle = world.selection.includes(vertex)? 'rgb(250,100,0)' : 'rgb(100,100,0)';
     context.fill();
 }
 const drawGrid = () => {    
+    // TODO: this is slowing down (already) the rendering => investigate solution
     context.beginPath();
     context.lineWidth = 1;
     context.setLineDash([4, 2]);

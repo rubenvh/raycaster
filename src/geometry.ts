@@ -1,33 +1,45 @@
 
-import { Edge, Vertex, Polygon, IGeometry } from './vertex';
+import { Polygon, IGeometry, Vertex } from './vertex';
 import { Vector } from './vector';
 export class Geometry implements IGeometry{
     polygons: Polygon[];
    
-    constructor() {}
+    constructor(geometry: IGeometry) {
+        this.polygons = geometry.polygons.map(_=>new Polygon(_));
+    }
+
+    createPolygon = (vectors: Vector[]): Polygon => {        
+        const p = Polygon.createPolygon(vectors);
+        this.polygons.push(p);        
+        return p;
+    }
+
+    detectVertexAt = (vector: Vector): {polygon: Polygon, vertex: Vertex} => {
+                
+        const distanceComparer = (x: {distance:number}, y: {distance:number}) => y.distance - x.distance;
+
+        return this.polygons.map(p => {
+            let vertex = p.vertices
+                .map(v => ({ vertex: v, distance: v.distanceTo(vector)}))
+                .filter(_ => _.distance <= 10)
+                .sort(distanceComparer)[0];
+
+            return {polygon: p, ...vertex};
+        })
+        .filter(_ => _.vertex)
+        .sort(distanceComparer)[0];
+    }
 }
 
-export const initGeometry = (polygonCollection: Vector[][]): Geometry => {
-    const result = new Geometry();
+export const createGeometry = (polygonCollection: Vector[][]): Geometry => {
+    const result = new Geometry({polygons: []});
 
-    result.polygons = polygonCollection.map(vectors => {
-        const vertices = vectors.map(_ => new Vertex({location: _.coordinates}));  
-        const startingVertex = vertices[0];
-        const edges: Edge[] = [];
-        const lastVertex = vertices.slice(1).reduce((acc, v) => {                
-                let edge = acc.joinTo(v);               
-                edges.push(edge);
-                return v;
-        }, startingVertex);
-        edges.push(lastVertex.joinTo(startingVertex));
-        return new Polygon({edges})
-    })
+    polygonCollection.forEach(vectors => {
+        result.createPolygon(vectors);    
+    });
+
     return result;
 }
-
-// export const loadGeometry = (geometry: IGeometry): Geometry => {
-//     return new Geometry(geometry);
-// }
 
 // export const saveGeometry = (geometry: Geometry): IGeometry => {
 //     return geometry;
