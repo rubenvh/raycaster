@@ -3,7 +3,7 @@
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
 
-import { Vector } from "./vector";
+import { OldVector } from "./vector";
 import { Camera } from "./camera";
 import { LineSegment } from "./lineSegment";
 import { KeyBoardListener } from "./keyboard-listener";
@@ -21,12 +21,12 @@ const ui = {
 };
 
 let world: World = {
-    camera: new Camera(new Vector(50,50), new Vector(70, 70)),
+    camera: new Camera(new OldVector(50,50), new OldVector(70, 70)),
     geometry: createGeometry([
-        [...Array.from(Array(23).keys()).map(x => new Vector(20,20+20*x)),
-         ...Array.from(Array(31).keys()).map(x => new Vector(20+20*x,460)),
-         ...Array.from(Array(23).keys()).map(x => new Vector(620,460-20*x)),
-         ...Array.from(Array(29).keys()).map(x => new Vector(600-20*x,20))
+        [...Array.from(Array(23).keys()).map(x => new OldVector(20,20+20*x)),
+         ...Array.from(Array(31).keys()).map(x => new OldVector(20+20*x,460)),
+         ...Array.from(Array(23).keys()).map(x => new OldVector(620,460-20*x)),
+         ...Array.from(Array(29).keys()).map(x => new OldVector(600-20*x,20))
         ]
     ]),
     selection: []

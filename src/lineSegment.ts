@@ -1,7 +1,7 @@
-import { Vector } from './vector';
+import { OldVector } from './vector';
 export class LineSegment {
-    points: [Vector, Vector];
-    constructor(p1: Vector, p2: Vector) {
+    points: [OldVector, OldVector];
+    constructor(p1: OldVector, p2: OldVector) {
         this.points = [p1, p2];
     }
     get start() { return this.points[0]; }

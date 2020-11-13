@@ -1,16 +1,16 @@
 import { LineSegment } from './lineSegment';
-import { Vector } from "./vector";
+import { OldVector } from "./vector";
 import { Guid } from "guid-typescript";
 export class Vertex implements IVertex {
     id: Guid;
     edges: Edge[] = [];
-    vector: Vector;
+    vector: OldVector;
     location: number[];
     
     constructor(vertex: IVertex) {
         this.id = vertex.id || Guid.create();
         this.location = vertex.location;
-        this.vector = new Vector(...this.location);        
+        this.vector = new OldVector(...this.location);        
     }
 
     joinedWith = (edge: Edge): void => {
@@ -25,19 +25,19 @@ export class Vertex implements IVertex {
         return edge;
     };
 
-    distanceTo = (vertex: Vertex|Vector|number[]): number => {
-        let target: Vector;
+    distanceTo = (vertex: Vertex|OldVector|number[]): number => {
+        let target: OldVector;
         if (vertex instanceof Vertex) {
             target = vertex.vector;
-        } else if (vertex instanceof Vector) {
+        } else if (vertex instanceof OldVector) {
             target = vertex;
         } else {
-            target = new Vector(...vertex);
+            target = new OldVector(...vertex);
         }
         return this.vector.distanceTo(target);
     }
     
-    isSame = (vertex: Vertex|Vector|number[]): boolean => {                
+    isSame = (vertex: Vertex|OldVector|number[]): boolean => {                
         let d = this.distanceTo(vertex);
         return d <= 0.005; // TODO: magic constant
     }
@@ -98,7 +98,7 @@ export class Polygon implements IPolygon {
         this.vertices = this.edges.map(item => item.start);        
     }
 
-    static createPolygon = (vectors: Vector[]): Polygon => {
+    static createPolygon = (vectors: OldVector[]): Polygon => {
         
         // transform all vectors into vertices
         const vertices = vectors.map(_ => new Vertex({location: _.coordinates}));

@@ -1,0 +1,7 @@
+- can debug unit tests from visual studio code
+- can debug electron application from visual studio code
+- add linter
+- select with right click
+- ability to move selection (drag & drop)
+- ability to store geometry in localStorage
+- ability to load geometry from localStorage

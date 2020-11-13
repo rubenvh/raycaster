@@ -1,8 +1,8 @@
-import { Vector, math } from './vector';
+import { OldVector, math } from './vector';
 import { LineSegment } from "./lineSegment";
 export class Camera {
     private _screen: LineSegment;
-    constructor(private location: Vector, private target: Vector, private angle: number = math.pi / 4) {
+    constructor(private location: OldVector, private target: OldVector, private angle: number = math.pi / 4) {
         this.adaptAngle(0);
     }
     

@@ -1,9 +1,9 @@
 import { IGeometry } from './vertex';
 import { createGeometry, Geometry } from './geometry';
-import { Vector } from './vector';
+import { OldVector } from './vector';
 describe('geometry tests', () => {
     describe('creating geometry from vectors', () => {
-        const invokeSut = (vectors: number[][][]) => createGeometry(vectors.map(x => x.map(_ => new Vector(..._))));
+        const invokeSut = (vectors: number[][][]) => createGeometry(vectors.map(x => x.map(_ => new OldVector(..._))));
 
         describe('creating a single polygon', () => {
             it('then results in single polygon', () => {

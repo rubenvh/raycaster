@@ -1,6 +1,6 @@
 import { SelectableElement } from './world';
 import { Geometry } from "./geometry";
-import { Vector } from "./vector";
+import { OldVector } from "./vector";
 
 export class GeometrySelector {
     private elemLeft: number;
@@ -15,7 +15,7 @@ export class GeometrySelector {
             const x = event.pageX - this.elemLeft,
                   y = event.pageY - this.elemTop;
         
-            const vertex = this.geometry.detectVertexAt(new Vector(x, y));            
+            const vertex = this.geometry.detectVertexAt(new OldVector(x, y));            
             if (!event.ctrlKey) this.selection.length = 0;
             this.selection.push(vertex.vertex);        
         }, false);
