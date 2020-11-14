@@ -52,7 +52,7 @@ const drawCamera = (context: CanvasRenderingContext2D, cam: Camera) => {
 const drawGeometry = (context: CanvasRenderingContext2D, geometry: Geometry) => {
     geometry.polygons.forEach(p => {
         p.vertices.forEach(e => drawVertex(context, e));
-        p.edges.forEach(e => drawSegment(context, e.segment, 'rgb(255,255,255)'));    
+        p.edges.forEach(e => drawSegment(context, new LineSegment(e.start.vector, e.end.vector), 'rgb(255,255,255)'));    
     });    
 };
 
