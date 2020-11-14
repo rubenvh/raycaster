@@ -3,7 +3,7 @@
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
 
-import { OldVector } from "./vector";
+import { getX, getY } from "./vector";
 import { Camera } from "./camera";
 import { LineSegment } from "./lineSegment";
 import { KeyBoardListener } from "./keyboard-listener";
@@ -21,12 +21,12 @@ const ui = {
 };
 
 let world: World = {
-    camera: new Camera(new OldVector(50,50), new OldVector(70, 70)),
+    camera: new Camera([50,50], [70, 70]),
     geometry: createGeometry([
-        [...Array.from(Array(23).keys()).map(x => new OldVector(20,20+20*x)),
-         ...Array.from(Array(31).keys()).map(x => new OldVector(20+20*x,460)),
-         ...Array.from(Array(23).keys()).map(x => new OldVector(620,460-20*x)),
-         ...Array.from(Array(29).keys()).map(x => new OldVector(600-20*x,20))
+        [...Array.from(Array(23).keys()).map(x => [20,20+20*x]),
+         ...Array.from(Array(31).keys()).map(x => [20+20*x,460]),
+         ...Array.from(Array(23).keys()).map(x => [620,460-20*x]),
+         ...Array.from(Array(29).keys()).map(x => [600-20*x,20])
         ]
     ]),
     selection: []
@@ -58,8 +58,8 @@ const drawGeometry = (context: CanvasRenderingContext2D, geometry: Geometry) => 
 
 const drawSegment = (context: CanvasRenderingContext2D, segment: LineSegment, color: string = 'white') => {
     context.beginPath();
-    context.moveTo(segment.start.x, segment.start.y);
-    context.lineTo(segment.end.x, segment.end.y);
+    context.moveTo(getX(segment.start), getY(segment.start));
+    context.lineTo(getX(segment.end), getY(segment.end));
     context.lineWidth = 1;
     context.setLineDash([]);
     context.strokeStyle = color;
@@ -67,7 +67,7 @@ const drawSegment = (context: CanvasRenderingContext2D, segment: LineSegment, co
 };
 const drawVertex = (context: CanvasRenderingContext2D, vertex: Vertex) => {
     context.beginPath();
-    context.arc(vertex.vector.x, vertex.vector.y, 2, 0, 2*math.pi, false);
+    context.arc(getX(vertex.vector), getY(vertex.vector), 2, 0, 2*math.pi, false);
     context.fillStyle = world.selection.includes(vertex)? 'rgb(250,100,0)' : 'rgb(100,100,0)';
     context.fill();
 }

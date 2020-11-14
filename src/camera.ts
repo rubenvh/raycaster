@@ -1,8 +1,8 @@
-import { OldVector, math } from './vector';
+import { Vector, math, subtract, scale, add, rotate } from './vector';
 import { LineSegment } from "./lineSegment";
 export class Camera {
     private _screen: LineSegment;
-    constructor(private location: OldVector, private target: OldVector, private angle: number = math.pi / 4) {
+    constructor(private location: Vector, private target: Vector, private angle: number = math.pi / 4) {
         this.adaptAngle(0);
     }
     
@@ -13,24 +13,24 @@ export class Camera {
         this.angle = newAngle <= math.pi/8 ? math.pi/8 : (newAngle >= (3/8)*math.pi ? (3/8)*math.pi : newAngle);
     });
     adaptDepth = (direction: 1|-1) => this.change(() => {
-        let delta = this.target.subtract(this.location).scale(direction*0.01);        
-        this.target = this.target.add(delta);
+        let delta = scale(direction*0.01, subtract(this.target, this.location));        
+        this.target = add(this.target, delta);
     });    
     move = (ratio: number) => this.change(() => {
-        let delta = this.target.subtract(this.location).scale(ratio);
-        this.location = this.location.add(delta);
-        this.target = this.target.add(delta);
+        let delta = scale(ratio, subtract(this.target, this.location));
+        this.location = add(this.location, delta);
+        this.target = add(this.target, delta);
     });
     rotate = (angle: number) => this.change(() => {
-        let d = this.target.subtract(this.location);
-        this.target = this.location.add(d.rotate(angle));
+        let d = subtract(this.target, this.location);
+        this.target = add(this.location, rotate(angle, d));
     });
     strafe = (ratio: number) => this.change(() => {
-        let d = this.target.subtract(this.location);
+        let d = subtract(this.target, this.location);
         let sign = ratio > 0 ? 1 : -1;
-        let n = d.rotate(sign * math.pi/2).scale(math.abs(ratio));
-        this.location = this.location.add(n);
-        this.target = this.target.add(n);
+        let n = scale(math.abs(ratio), rotate(sign * math.pi/2, d));
+        this.location = add(this.location, n);
+        this.target = add(this.target, n);
     });
 
     private change = (changer: () => void = null) => {
@@ -39,17 +39,16 @@ export class Camera {
     };
 
     private makeScreen = (): LineSegment => {
-        let d = this.target.subtract(this.location);
+        let d = subtract(this.target, this.location);
         return new LineSegment(
-            this.location.add(d.rotate(this.angle)),
-            this.location.add(d.rotate(-1 * this.angle)));
+            add(this.location, rotate(this.angle, d)),
+            add(this.location, rotate(-1 * this.angle, d)));
     };
 
     makeRays = (resolution: number) => { 
-        const base = this.screen.end.subtract(this.screen.start);
+        const base = subtract(this.screen.end, this.screen.start);
         return Array.from(Array(resolution+1).keys())
             .map(i => i/resolution)
-            .map(factor => new LineSegment(this.location, this._screen.start.add(base.scale(factor))
-        ));
+            .map(factor => new LineSegment(this.location, add(this._screen.start, scale(factor, base))));
     };
 }

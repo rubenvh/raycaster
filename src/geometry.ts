@@ -1,6 +1,7 @@
 
+import { Vector } from './vector';
 import { Polygon, IGeometry, Vertex } from './vertex';
-import { OldVector } from './vector';
+
 export class Geometry implements IGeometry{
     polygons: Polygon[];
    
@@ -8,13 +9,13 @@ export class Geometry implements IGeometry{
         this.polygons = geometry.polygons.map(_=>new Polygon(_));
     }
 
-    createPolygon = (vectors: OldVector[]): Polygon => {        
+    createPolygon = (vectors: Vector[]): Polygon => {        
         const p = Polygon.createPolygon(vectors);
         this.polygons.push(p);        
         return p;
     }
 
-    detectVertexAt = (vector: OldVector): {polygon: Polygon, vertex: Vertex} => {
+    detectVertexAt = (vector: Vector): {polygon: Polygon, vertex: Vertex} => {
                 
         const distanceComparer = (x: {distance:number}, y: {distance:number}) => y.distance - x.distance;
 
@@ -31,7 +32,7 @@ export class Geometry implements IGeometry{
     }
 }
 
-export const createGeometry = (polygonCollection: OldVector[][]): Geometry => {
+export const createGeometry = (polygonCollection: Vector[][]): Geometry => {
     const result = new Geometry({polygons: []});
 
     polygonCollection.forEach(vectors => {
