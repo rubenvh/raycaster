@@ -1,8 +1,8 @@
 import { Geometry } from './geometry';
 import { Camera } from "./camera";
-import { Vertex, Edge, Polygon } from './vertex';
+import { Edge, IVertex, Polygon } from './vertex';
 
-export type SelectableElement = Vertex | Edge | Polygon;
+export type SelectableElement = IVertex | Edge | Polygon;
 export type World = {
     camera: Camera,    
     geometry: Geometry,

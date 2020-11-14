@@ -10,9 +10,9 @@ import { KeyBoardListener } from "./keyboard-listener";
 import { ActionHandler, ActiveActions } from "./actionHandler";
 import { World } from "./world";
 import { Geometry, createGeometry } from "./geometry";
-import { Vertex } from './vertex';
 import math = require('mathjs');
 import { GeometrySelector } from "./geometrySelector";
+import { IVertex } from "./vertex";
 
 
 const ui = {    
@@ -65,7 +65,7 @@ const drawSegment = (context: CanvasRenderingContext2D, segment: LineSegment, co
     context.strokeStyle = color;
     context.stroke();
 };
-const drawVertex = (context: CanvasRenderingContext2D, vertex: Vertex) => {
+const drawVertex = (context: CanvasRenderingContext2D, vertex: IVertex) => {
     context.beginPath();
     context.arc(getX(vertex.vector), getY(vertex.vector), 2, 0, 2*math.pi, false);
     context.fillStyle = world.selection.includes(vertex)? 'rgb(250,100,0)' : 'rgb(100,100,0)';

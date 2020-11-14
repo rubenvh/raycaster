@@ -1,6 +1,6 @@
 
 import { Vector } from './vector';
-import { Polygon, IGeometry, Vertex } from './vertex';
+import { Polygon, IGeometry, IVertex, distance } from './vertex';
 
 export class Geometry implements IGeometry{
     polygons: Polygon[];
@@ -15,13 +15,13 @@ export class Geometry implements IGeometry{
         return p;
     }
 
-    detectVertexAt = (vector: Vector): {polygon: Polygon, vertex: Vertex} => {
+    detectVertexAt = (vector: Vector): {polygon: Polygon, vertex: IVertex} => {
                 
         const distanceComparer = (x: {distance:number}, y: {distance:number}) => y.distance - x.distance;
 
         return this.polygons.map(p => {
             let vertex = p.vertices
-                .map(v => ({ vertex: v, distance: v.distanceTo(vector)}))
+                .map(v => ({ vertex: v, distance: distance(v, vector)}))
                 .filter(_ => _.distance <= 10)
                 .sort(distanceComparer)[0];
 
