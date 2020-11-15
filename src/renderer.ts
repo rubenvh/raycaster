@@ -3,8 +3,7 @@
 // All of the Node.js APIs are available in this process.
 
 import { getX, getY } from "./vector";
-import { Camera } from "./camera";
-import { LineSegment } from "./lineSegment";
+import { ILineSegment } from "./lineSegment";
 import { KeyBoardListener } from "./keyboard-listener";
 import { ActionHandler, ActiveActions } from "./actionHandler";
 import { World } from "./world";
@@ -12,6 +11,7 @@ import { createGeometry } from "./geometry";
 import math = require('mathjs');
 import { GeometrySelector } from "./geometrySelector";
 import { IGeometry, IVertex } from "./vertex";
+import { ICamera, makeCamera, makeRays } from "./camera";
 
 
 const ui = {    
@@ -24,7 +24,7 @@ const ui = {
 };
 
 let world: World = {
-    camera: new Camera([50,50], [70, 70]),
+    camera: makeCamera({location: [50,50], target: [70,70]}),
     geometry: createGeometry([
         [...Array.from(Array(23).keys()).map(x => [20,20+20*x]),
          ...Array.from(Array(31).keys()).map(x => [20+20*x,460]),
@@ -46,23 +46,23 @@ const redraw = () => {
     drawCamera(context, world.camera);  
     drawGeometry(context, world.geometry);
 }
-const drawCamera = (context: CanvasRenderingContext2D, cam: Camera) => {
+const drawCamera = (context: CanvasRenderingContext2D, cam: ICamera) => {
     drawSegment(context, cam.screen, 'rgb(255,255,255)');
-    cam.makeRays(15).forEach(s => {        
+    makeRays(15, cam).forEach(s => {        
         drawSegment(context, s, 'grey');
     });
 };
 const drawGeometry = (context: CanvasRenderingContext2D, geometry: IGeometry) => {
     geometry.polygons.forEach(p => {
         p.vertices.forEach(e => drawVertex(context, e));
-        p.edges.forEach(e => drawSegment(context, new LineSegment(e.start.vector, e.end.vector), 'rgb(255,255,255)'));    
+        p.edges.forEach(e => drawSegment(context, [e.start.vector, e.end.vector], 'rgb(255,255,255)'));    
     });    
 };
 
-const drawSegment = (context: CanvasRenderingContext2D, segment: LineSegment, color: string = 'white') => {
+const drawSegment = (context: CanvasRenderingContext2D, segment: ILineSegment, color: string = 'white') => {
     context.beginPath();
-    context.moveTo(getX(segment.start), getY(segment.start));
-    context.lineTo(getX(segment.end), getY(segment.end));
+    context.moveTo(getX(segment[0]), getY(segment[0]));
+    context.lineTo(getX(segment[1]), getY(segment[1]));
     context.lineWidth = 1;
     context.setLineDash([]);
     context.strokeStyle = color;
@@ -70,7 +70,7 @@ const drawSegment = (context: CanvasRenderingContext2D, segment: LineSegment, co
 };
 const drawVertex = (context: CanvasRenderingContext2D, vertex: IVertex) => {
     context.beginPath();
-    context.arc(getX(vertex.vector), getY(vertex.vector), 2, 0, 2*math.pi, false);
+    context.arc(getX(vertex.vector), getY(vertex.vector), 2, 0, 2*Math.PI, false);
     context.fillStyle = world.selection.includes(vertex)? 'rgb(250,100,0)' : 'rgb(100,100,0)';
     context.fill();
 }

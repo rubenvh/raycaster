@@ -1,5 +1,5 @@
 import { detectVertexAt } from './geometry';
-import { SelectableElement, World } from './world';
+import { World } from './world';
 
 export class GeometrySelector {
     private elemLeft: number;

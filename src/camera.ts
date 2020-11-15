@@ -1,54 +1,59 @@
-import { Vector, math, subtract, scale, add, rotate } from './vector';
-import { LineSegment } from "./lineSegment";
-export class Camera {
-    private _screen: LineSegment;
-    constructor(private location: Vector, private target: Vector, private angle: number = math.pi / 4) {
-        this.adaptAngle(0);
-    }
-    
-    get screen() { return this._screen; }
-    get config() { return ({angle: this.angle}); }
-    adaptAngle = (direction: 0|1|-1) => this.change(() => {
-        const newAngle = this.angle+direction*0.05;
-        this.angle = newAngle <= math.pi/8 ? math.pi/8 : (newAngle >= (3/8)*math.pi ? (3/8)*math.pi : newAngle);
+import * as vector from './vector';
+import { ILineSegment } from "./lineSegment";
+
+export type ICameraData = { location: vector.Vector, target: vector.Vector, angle?: number};
+export type ICamera = ICameraData & { screen: ILineSegment};
+
+const makeScreen = (data: ICameraData): ILineSegment => {
+    let angle = data.angle || Math.PI/4;
+    let d = vector.subtract(data.target, data.location);
+    return [
+        vector.add(data.location, vector.rotate(angle, d)),
+        vector.add(data.location, vector.rotate(-1 * angle, d))
+    ];
+};
+export const makeCamera = (data: ICameraData): ICamera => ({...data,
+    angle: data.angle || Math.PI/4,
+    screen: makeScreen(data)});
+export const adaptAngle = (direction: 0|1|-1, camera: ICamera): ICamera => {
+    let newAngle = camera.angle + direction*0.05; // TODO: magic constant
+    return makeCamera(({...camera,
+        angle: newAngle <= Math.PI/8 ? Math.PI/8 : (newAngle >= (3/8)* Math.PI ? (3/8)*Math.PI : newAngle)
+    }));
+};
+export const adaptDepth = (direction: 1|-1, camera: ICamera): ICamera => {
+    let delta = vector.scale(direction*0.01, vector.subtract(camera.target, camera.location));        
+    return makeCamera(({...camera, 
+        target: vector.add(camera.target, delta)}));
+};    
+
+export const move = (ratio: number, camera: ICamera) => {
+    let delta = vector.scale(ratio, vector.subtract(camera.target, camera.location));
+    return makeCamera({...camera, 
+        location: vector.add(camera.location, delta),
+        target: vector.add(camera.target, delta)
     });
-    adaptDepth = (direction: 1|-1) => this.change(() => {
-        let delta = scale(direction*0.01, subtract(this.target, this.location));        
-        this.target = add(this.target, delta);
+};
+export const rotate = (angle: number, camera: ICamera) => {
+    let d = vector.subtract(camera.target, camera.location);
+    return makeCamera({...camera,
+        target: vector.add(camera.location, vector.rotate(angle, d))
     });    
-    move = (ratio: number) => this.change(() => {
-        let delta = scale(ratio, subtract(this.target, this.location));
-        this.location = add(this.location, delta);
-        this.target = add(this.target, delta);
+};
+export const strafe = (ratio: number, camera: ICamera) => {    
+    let d = vector.subtract(camera.target, camera.location);
+    let sign = ratio > 0 ? 1 : -1;
+    let n = vector.scale(Math.abs(ratio), vector.rotate(sign * Math.PI/2, d));
+    return makeCamera({...camera,
+        location: vector.add(camera.location, n),
+        target: vector.add(camera.target, n)
     });
-    rotate = (angle: number) => this.change(() => {
-        let d = subtract(this.target, this.location);
-        this.target = add(this.location, rotate(angle, d));
-    });
-    strafe = (ratio: number) => this.change(() => {
-        let d = subtract(this.target, this.location);
-        let sign = ratio > 0 ? 1 : -1;
-        let n = scale(math.abs(ratio), rotate(sign * math.pi/2, d));
-        this.location = add(this.location, n);
-        this.target = add(this.target, n);
-    });
+    
+};
 
-    private change = (changer: () => void = null) => {
-        if (changer) { changer(); }
-        this._screen = this.makeScreen();
-    };
-
-    private makeScreen = (): LineSegment => {
-        let d = subtract(this.target, this.location);
-        return new LineSegment(
-            add(this.location, rotate(this.angle, d)),
-            add(this.location, rotate(-1 * this.angle, d)));
-    };
-
-    makeRays = (resolution: number) => { 
-        const base = subtract(this.screen.end, this.screen.start);
-        return Array.from(Array(resolution+1).keys())
-            .map(i => i/resolution)
-            .map(factor => new LineSegment(this.location, add(this._screen.start, scale(factor, base))));
-    };
-}
+export const makeRays = (resolution: number, camera: ICamera): ILineSegment[] => { 
+    const base = vector.subtract(camera.screen[1], camera.screen[0]);
+    return Array.from(Array(resolution+1).keys())
+        .map(i => i/resolution)
+        .map(factor => ([camera.location, vector.add(camera.screen[0], vector.scale(factor, base))]));
+};
