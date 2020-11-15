@@ -1,21 +1,21 @@
 
 import { Vector } from './vector';
-import { Polygon, IGeometry, IVertex, distance } from './vertex';
+import { IGeometry, IVertex, distance, IPolygon, loadPolygon, createPolygon, IStoredGeometry } from './vertex';
 
 export class Geometry implements IGeometry{
-    polygons: Polygon[];
+    polygons: IPolygon[];
    
-    constructor(geometry: IGeometry) {
-        this.polygons = geometry.polygons.map(_=>new Polygon(_));
+    constructor(geometry: IStoredGeometry) {
+        this.polygons = geometry.polygons.map(_=>loadPolygon(_));
     }
 
-    createPolygon = (vectors: Vector[]): Polygon => {        
-        const p = Polygon.createPolygon(vectors);
+    createPolygon = (vectors: Vector[]): IPolygon => {        
+        const p = createPolygon(vectors);
         this.polygons.push(p);        
         return p;
     }
 
-    detectVertexAt = (vector: Vector): {polygon: Polygon, vertex: IVertex} => {
+    detectVertexAt = (vector: Vector): {polygon: IPolygon, vertex: IVertex} => {
                 
         const distanceComparer = (x: {distance:number}, y: {distance:number}) => y.distance - x.distance;
 

@@ -1,6 +1,5 @@
 import { SelectableElement } from './world';
 import { Geometry } from "./geometry";
-import { Vector } from "./vector";
 
 export class GeometrySelector {
     private elemLeft: number;

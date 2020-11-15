@@ -1,4 +1,3 @@
-import { LineSegment } from './lineSegment';
 import { Guid } from "guid-typescript";
 
 import * as vector from './vector';
@@ -6,35 +5,26 @@ import * as vector from './vector';
 export type IEntity = {id?: Guid};
 export type IVertex = IEntity & { vector: vector.Vector };
 export type IEdge = IEntity & { start: IVertex, end: IVertex};
-export type IPolygon = IEntity & { edges: IEdge[]};
+export type IStoredPolygon = IEntity & { edges: IEdge[]};
+export type IPolygon = IStoredPolygon & { vertices: IVertex[]};
+export type IStoredGeometry = IEntity & { polygons: IStoredPolygon[]};
 export type IGeometry = { polygons: IPolygon[]};
 
+const makeVertex = (v: vector.Vector): IVertex => ({vector: v});
+const isVertex = (v: IVertex|vector.Vector): v is IVertex => (v as IVertex).vector !== undefined;    
 const giveIdentity = <T extends IEntity>(e : T): T => e.id ? e : ({...e, id: Guid.create()});
-const getVector = (vertexOrVector: IVertex|vector.Vector): vector.Vector => {    
-    // TODO: type guard vector.isVector(vertexOrVector)
-    if (Array.isArray(vertexOrVector)) {
-        return vertexOrVector;
-    } else {
-        return vertexOrVector.vector;
-    }
-}
-export const distance = (vertex: IVertex, v: IVertex|vector.Vector): number => {    
-    return vector.distance(vertex.vector, getVector(v));
-};
+const getVector = (vertexOrVector: IVertex|vector.Vector): vector.Vector => isVertex(vertexOrVector) ? vertexOrVector.vector : vertexOrVector;
+export const distance = (vertex: IVertex, v: IVertex|vector.Vector): number => vector.distance(vertex.vector, getVector(v));
 const areEqual = (u: IVertex, v: IVertex) => u && v && u.vector.length === v.vector.length && u.vector.every((x, i) => x === v.vector[i]);
 const areClose = (vertex: IVertex, v: IVertex|vector.Vector): boolean => {                
     let d = distance(vertex, v);
     return d <= 0.005; // TODO: magic constant
 }
 
-export class Polygon implements IPolygon {
-    id: Guid;
-    edges: IEdge[] = [];
-    vertices: IVertex[] = [];
-
-    constructor(polygon: IPolygon) {
-        this.id = polygon.id || Guid.create();
-        this.edges = polygon.edges.reduce((acc, e) => {
+export const loadPolygon = (polygon: IStoredPolygon): IPolygon => {
+    const result = {
+        ...polygon,
+        edges: polygon.edges.reduce((acc, e) => {
             if (acc.first && areClose(e.end, acc.first.start)) {
                 e.end = acc.first.start;
             }
@@ -51,27 +41,29 @@ export class Polygon implements IPolygon {
                 previous: edge, 
                 edges: [...acc.edges, edge]
             });
-        }, {edges:[]} as {first?: IEdge, previous?: IEdge, edges: IEdge[] }).edges;
-        this.vertices = this.edges.map(item => item.start);        
-    }
+        }, {edges:[]} as {first?: IEdge, previous?: IEdge, edges: IEdge[] }).edges,
+        vertices: []};   
 
-    static createPolygon = (vectors: vector.Vector[]): Polygon => {
-        
-        // transform all vectors into vertices
-        const vertices = vectors.map(_ => giveIdentity<IVertex>({vector: _}));
-        const startingVertex = vertices[0];
-        
-        // we are closing the polygon at the end, so remove the last vertex if it's close to the starting vertex
-        if (areClose(startingVertex, vertices[vertices.length-1])) vertices.pop();       
-        
-        // put start at the end and reduce over the vertices to create a collection of edges
-        const result = vertices.slice(1).concat([startingVertex])
-            .reduce((acc, v) => ({ 
-                                    edges: [...acc.edges, ({start: acc.previous, end: v})],
-                                    previous: v,
-                                }), 
-                {previous: startingVertex, edges: [] as IEdge[]});
-        
-        return new Polygon({edges: result.edges});
-    }
+    return giveIdentity({...result, vertices: result.edges.map(_=>_.start)});
 }
+
+export const createPolygon = (vectors: vector.Vector[]): IPolygon => {
+        
+    // transform all vectors into vertices
+    const vertices = vectors.map(makeVertex).map(giveIdentity);
+    const startingVertex = vertices[0];
+    
+    // we are closing the polygon at the end, so remove the last vertex if it's close to the starting vertex
+    if (areClose(startingVertex, vertices[vertices.length-1])) vertices.pop();       
+    
+    // put start at the end and reduce over the vertices to create a collection of edges
+    const edges = vertices.slice(1).concat([startingVertex])
+        .reduce((acc, v) => ({ 
+                                edges: [...acc.edges, ({start: acc.previous, end: v})],
+                                previous: v,
+                            }), 
+            {previous: startingVertex, edges: [] as IEdge[]})
+        .edges;
+    
+    return loadPolygon({edges});
+};
