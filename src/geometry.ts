@@ -1,26 +1,17 @@
-
-import { Polygon, IGeometry, Vertex } from './vertex';
 import { Vector } from './vector';
-export class Geometry implements IGeometry{
-    polygons: Polygon[];
-   
-    constructor(geometry: IGeometry) {
-        this.polygons = geometry.polygons.map(_=>new Polygon(_));
-    }
+import { IGeometry, IVertex, distance, IPolygon, loadPolygon, createPolygon, IStoredGeometry } from './vertex';
 
-    createPolygon = (vectors: Vector[]): Polygon => {        
-        const p = Polygon.createPolygon(vectors);
-        this.polygons.push(p);        
-        return p;
-    }
+export type Collision = {polygon: IPolygon, vertex: IVertex};
 
-    detectVertexAt = (vector: Vector): {polygon: Polygon, vertex: Vertex} => {
-                
-        const distanceComparer = (x: {distance:number}, y: {distance:number}) => y.distance - x.distance;
+export const loadGeometry = (geometry : IStoredGeometry): IGeometry => ({polygons: geometry.polygons.map(loadPolygon)});
+export const createGeometry = (polygonCollection: Vector[][]): IGeometry => ({polygons: polygonCollection.map(createPolygon)});
+export const addPolygon = (p: IPolygon, geometry: IGeometry): IGeometry => ({polygons: [...geometry.polygons, p]});
+export const detectVertexAt = (vector: Vector, geometry: IGeometry): Collision => {
+    const distanceComparer = (x: {distance:number}, y: {distance:number}) => y.distance - x.distance;
 
-        return this.polygons.map(p => {
+        return geometry.polygons.map(p => {
             let vertex = p.vertices
-                .map(v => ({ vertex: v, distance: v.distanceTo(vector)}))
+                .map(v => ({ vertex: v, distance: distance(v, vector)}))
                 .filter(_ => _.distance <= 10)
                 .sort(distanceComparer)[0];
 
@@ -28,18 +19,9 @@ export class Geometry implements IGeometry{
         })
         .filter(_ => _.vertex)
         .sort(distanceComparer)[0];
-    }
-}
+} 
 
-export const createGeometry = (polygonCollection: Vector[][]): Geometry => {
-    const result = new Geometry({polygons: []});
 
-    polygonCollection.forEach(vectors => {
-        result.createPolygon(vectors);    
-    });
-
-    return result;
-}
 
 // export const saveGeometry = (geometry: Geometry): IGeometry => {
 //     return geometry;

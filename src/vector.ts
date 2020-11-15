@@ -2,37 +2,30 @@ import { create, all } from 'mathjs'
 
 const config = { }
 export const math = create(all, config)
-export class Vector {
-    coordinates: number[];
-    constructor(...coordinates: number[]) {
-        this.coordinates = coordinates;
-    }
-    
-    get x() { return this.coordinates[0]};
-    get y() { return this.coordinates[1]};
 
-    dim = () => this.coordinates.length;    
-    norm = () => math.sqrt(this.dot(this));
-    dot = (v: Vector) => this
-        .zip(v, (xu, xv) => xu * xv)
-        .reduce((acc, n) => acc + n, 0);
-    scale = (k: number) => new Vector(...this.coordinates.map(x => k * x));
-    subtract = (v: Vector) => new Vector(...this.zip(v, (xu, xv) => xu - xv));
-    add = (v: Vector) => new Vector(...this.zip(v, (xu, xv) => xu + xv));
-    rotate = (angle: number) => 
-        new Vector(...math.multiply(createRotation(angle), this.coordinates) as any as number[]);
-    
-    isOrthogonalTo = (v: Vector) => this.dot(v) === 0;
-    distanceTo = (v: Vector) => this.subtract(v).norm();
-    angleWith = (v: Vector) => math.acos(this.dot(v) / (this.norm() * v.norm()));
-    proj = (v: Vector) => v.scale(this.dot(v) / v.dot(v));
+export type Vector = number[];
 
-    private zip = (other: Vector, acc: (x: number, y: number)=>number): number[] => {
-        return this.coordinates.map((_, i) => acc(_, other.coordinates[i]));
-    }
-}
+const getX = (u: Vector): number => u[0];
+const getY = (u: Vector): number => u[1];
+const dim = (u: Vector): number => u.length;
+const zip = (acc: (coordinates: number[]) => number, us: Vector[]): number[] => us[0].map((_, i, u) => acc(us.map(u => u[i])));;
 
-export const createRotation = (angle: number) => [
-    [math.cos(angle), -1 * math.sin(angle)],
-    [math.sin(angle), math.cos(angle)]
+const dot = (u: Vector, v: Vector): number => 
+    zip(cs => cs.reduce((acc, c) => acc * c, 1), [u, v])
+    .reduce((acc, n) => acc + n, 0);    
+const norm = (u: Vector): number => Math.sqrt(dot(u, u));
+const scale = (k: number, u: Vector): Vector => u.map(x => k * x);
+const subtract = (u: Vector, v: Vector): Vector => zip((cs) => cs.slice(1).reduce((acc, c) => acc - c, cs[0]), [u, v]);
+const add = (u: Vector, v: Vector): Vector => zip((cs) => cs.reduce((acc, c) => acc + c, 0), [u, v]);
+const areOrthogonal = (u: Vector, v: Vector): boolean => dot(u, v) === 0;
+const distance = (u: Vector, v: Vector): number => norm(subtract(u, v));
+const angleBetween = (u: Vector, v: Vector): number => Math.acos(dot(u, v) / (norm(u) * norm(v)));
+const proj = (u: Vector, v: Vector): Vector => scale(dot(u, v) / dot(v, v), v);
+const rotate = (angle: number, u: Vector): Vector => [...math.multiply(createRotation(angle), u) as any as number[]]
+
+export {getX, getY, dot, dim, norm, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate};
+
+const createRotation = (angle: number) => [
+    [Math.cos(angle), -1 * Math.sin(angle)],
+    [Math.sin(angle), Math.cos(angle)]
 ];
