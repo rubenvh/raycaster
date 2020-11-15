@@ -1,5 +1,5 @@
-import { IGeometry, IStoredGeometry } from './vertex';
-import { createGeometry, Geometry } from './geometry';
+import { IStoredGeometry } from './vertex';
+import { createGeometry, loadGeometry } from './geometry';
 import { Vector } from './vector';
 describe('geometry tests', () => {
     describe('creating geometry from vectors', () => {
@@ -30,7 +30,7 @@ describe('geometry tests', () => {
         });
     });
     describe('loading geometry from objects', () => {
-        const invokeSut = (geometryData: IStoredGeometry) => new Geometry(geometryData);
+        const invokeSut = (geometryData: IStoredGeometry) => loadGeometry(geometryData);
 
         describe('creating a single polygon', () => {
             it('then results in single polygon', () => {

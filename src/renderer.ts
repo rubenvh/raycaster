@@ -1,4 +1,3 @@
-
 // This file is required by the index.html file and will
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
@@ -9,15 +8,19 @@ import { LineSegment } from "./lineSegment";
 import { KeyBoardListener } from "./keyboard-listener";
 import { ActionHandler, ActiveActions } from "./actionHandler";
 import { World } from "./world";
-import { Geometry, createGeometry } from "./geometry";
+import { createGeometry } from "./geometry";
 import math = require('mathjs');
 import { GeometrySelector } from "./geometrySelector";
-import { IVertex } from "./vertex";
+import { IGeometry, IVertex } from "./vertex";
 
 
 const ui = {    
     rotateButton: document.getElementById('rotate'),
-    canvas: document.getElementById('view_2d') as HTMLCanvasElement
+    view_2d: {
+        background: document.getElementById('view_2d_background') as HTMLCanvasElement,
+        canvas: document.getElementById('view_2d') as HTMLCanvasElement
+    }
+    
 };
 
 let world: World = {
@@ -31,15 +34,15 @@ let world: World = {
     ]),
     selection: []
 };
-let context = ui.canvas.getContext('2d');
+let backgroundContext = ui.view_2d.background.getContext('2d');
+let context = ui.view_2d.canvas.getContext('2d');
 let activeActions = {} as ActiveActions;
 let actionHandler = new ActionHandler(activeActions, world);
 new KeyBoardListener(activeActions).start();
-new GeometrySelector(ui.canvas, world.geometry, world.selection).start();
+new GeometrySelector(ui.view_2d.canvas, world).start();
 
 const redraw = () => {
-    context.clearRect(0, 0, ui.canvas.width, ui.canvas.height);
-    drawGrid();
+    context.clearRect(0, 0, ui.view_2d.canvas.width, ui.view_2d.canvas.height);    
     drawCamera(context, world.camera);  
     drawGeometry(context, world.geometry);
 }
@@ -49,7 +52,7 @@ const drawCamera = (context: CanvasRenderingContext2D, cam: Camera) => {
         drawSegment(context, s, 'grey');
     });
 };
-const drawGeometry = (context: CanvasRenderingContext2D, geometry: Geometry) => {
+const drawGeometry = (context: CanvasRenderingContext2D, geometry: IGeometry) => {
     geometry.polygons.forEach(p => {
         p.vertices.forEach(e => drawVertex(context, e));
         p.edges.forEach(e => drawSegment(context, new LineSegment(e.start.vector, e.end.vector), 'rgb(255,255,255)'));    
@@ -71,21 +74,20 @@ const drawVertex = (context: CanvasRenderingContext2D, vertex: IVertex) => {
     context.fillStyle = world.selection.includes(vertex)? 'rgb(250,100,0)' : 'rgb(100,100,0)';
     context.fill();
 }
-const drawGrid = () => {    
-    // TODO: this is slowing down (already) the rendering => investigate solution
-    context.beginPath();
-    context.lineWidth = 1;
-    context.setLineDash([4, 2]);
-    context.strokeStyle = 'rgb(0,0,0)';
-    for (let x = 0; x <= context.canvas.width; x += 20) {
-        context.moveTo(x, 0);
-        context.lineTo(x, context.canvas.height);
-        for (let y = 0; y <= context.canvas.height; y += 20) {
-            context.moveTo(0, y);
-            context.lineTo(context.canvas.width, y);
+const drawGrid = () => {        
+    backgroundContext.beginPath();
+    backgroundContext.lineWidth = 1;
+    backgroundContext.setLineDash([4, 2]);
+    backgroundContext.strokeStyle = 'rgb(0,0,0)';
+    for (let x = 0; x <= backgroundContext.canvas.width; x += 20) {
+        backgroundContext.moveTo(x, 0);
+        backgroundContext.lineTo(x, backgroundContext.canvas.height);
+        for (let y = 0; y <= backgroundContext.canvas.height; y += 20) {
+            backgroundContext.moveTo(0, y);
+            backgroundContext.lineTo(backgroundContext.canvas.width, y);
         }
     }
-    context.stroke();
+    backgroundContext.stroke();
 
 };
 
@@ -104,3 +106,4 @@ function loop(timestamp) {
   }
 var lastRender = 0
 window.requestAnimationFrame(loop)
+drawGrid();

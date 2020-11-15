@@ -1,25 +1,15 @@
-
 import { Vector } from './vector';
 import { IGeometry, IVertex, distance, IPolygon, loadPolygon, createPolygon, IStoredGeometry } from './vertex';
 
-export class Geometry implements IGeometry{
-    polygons: IPolygon[];
-   
-    constructor(geometry: IStoredGeometry) {
-        this.polygons = geometry.polygons.map(_=>loadPolygon(_));
-    }
+export type Collision = {polygon: IPolygon, vertex: IVertex};
 
-    createPolygon = (vectors: Vector[]): IPolygon => {        
-        const p = createPolygon(vectors);
-        this.polygons.push(p);        
-        return p;
-    }
+export const loadGeometry = (geometry : IStoredGeometry): IGeometry => ({polygons: geometry.polygons.map(loadPolygon)});
+export const createGeometry = (polygonCollection: Vector[][]): IGeometry => ({polygons: polygonCollection.map(createPolygon)});
+export const addPolygon = (p: IPolygon, geometry: IGeometry): IGeometry => ({polygons: [...geometry.polygons, p]});
+export const detectVertexAt = (vector: Vector, geometry: IGeometry): Collision => {
+    const distanceComparer = (x: {distance:number}, y: {distance:number}) => y.distance - x.distance;
 
-    detectVertexAt = (vector: Vector): {polygon: IPolygon, vertex: IVertex} => {
-                
-        const distanceComparer = (x: {distance:number}, y: {distance:number}) => y.distance - x.distance;
-
-        return this.polygons.map(p => {
+        return geometry.polygons.map(p => {
             let vertex = p.vertices
                 .map(v => ({ vertex: v, distance: distance(v, vector)}))
                 .filter(_ => _.distance <= 10)
@@ -29,18 +19,9 @@ export class Geometry implements IGeometry{
         })
         .filter(_ => _.vertex)
         .sort(distanceComparer)[0];
-    }
-}
+} 
 
-export const createGeometry = (polygonCollection: Vector[][]): Geometry => {
-    const result = new Geometry({polygons: []});
 
-    polygonCollection.forEach(vectors => {
-        result.createPolygon(vectors);    
-    });
-
-    return result;
-}
 
 // export const saveGeometry = (geometry: Geometry): IGeometry => {
 //     return geometry;

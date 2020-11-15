@@ -5,8 +5,13 @@
     <title>Raycaster map editor</title>
     <link rel="stylesheet" href="css/main.css" type="text/css">
   </head>
-  <body>    
-    <canvas id="view_2d" width="640" height="480"></canvas>
+  <body> 
+    <div style="position: relative;">
+      <canvas id="view_2d" width="640" height="480" 
+        style="position: absolute; left: 0; top: 0; z-index: 1;"></canvas>
+      <canvas id="view_2d_background" width="640" height="480" 
+        style="position: absolute; left: 0; top: 0; z-index: 0;"></canvas>
+     </div>    
   </body>
   <script>
     require('../dist/renderer.js')

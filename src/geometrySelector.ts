@@ -1,10 +1,10 @@
-import { SelectableElement } from './world';
-import { Geometry } from "./geometry";
+import { detectVertexAt } from './geometry';
+import { SelectableElement, World } from './world';
 
 export class GeometrySelector {
     private elemLeft: number;
     private elemTop: number;
-    constructor(private canvas: HTMLCanvasElement, private geometry: Geometry, private selection: SelectableElement[]) {
+    constructor(private canvas: HTMLCanvasElement, private world: World,) {
         this.elemLeft = canvas.offsetLeft + canvas.clientLeft;
         this.elemTop = canvas.offsetTop + canvas.clientTop;      
     }
@@ -14,10 +14,10 @@ export class GeometrySelector {
             const x = event.pageX - this.elemLeft,
                   y = event.pageY - this.elemTop;
         
-            // TODO: makeVector
-            const vertex = this.geometry.detectVertexAt([x, y]);            
-            if (!event.ctrlKey) this.selection.length = 0;
-            this.selection.push(vertex.vertex);        
+            // TODO: makeVector                    
+            const vertex = detectVertexAt([x, y], this.world.geometry);            
+            if (!event.ctrlKey) this.world.selection.length = 0;
+            this.world.selection.push(vertex.vertex);        
         }, false);
     };
 }

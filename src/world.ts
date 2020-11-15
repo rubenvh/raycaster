@@ -1,10 +1,9 @@
-import { Geometry } from './geometry';
 import { Camera } from "./camera";
-import { IEdge, IVertex, IPolygon } from './vertex';
+import { IEdge, IVertex, IPolygon, IGeometry } from './vertex';
 
 export type SelectableElement = IVertex | IEdge | IPolygon;
 export type World = {
     camera: Camera,    
-    geometry: Geometry,
+    geometry: IGeometry,
     selection: SelectableElement[],
 }
