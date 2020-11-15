@@ -1,3 +1,4 @@
+import { Renderer3d } from './renderer3d';
 // This file is required by the index.html file and will
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
@@ -8,19 +9,19 @@ import { KeyBoardListener } from "./keyboard-listener";
 import { ActionHandler, ActiveActions } from "./actionHandler";
 import { World } from "./world";
 import { createGeometry } from "./geometry";
-import math = require('mathjs');
 import { GeometrySelector } from "./geometrySelector";
 import { IGeometry, IVertex } from "./vertex";
 import { ICamera, makeCamera, makeRays } from "./camera";
 
-
 const ui = {    
     rotateButton: document.getElementById('rotate'),
     view_2d: {
-        background: document.getElementById('view_2d_background') as HTMLCanvasElement,
+        background: document.createElement('canvas') as HTMLCanvasElement,
         canvas: document.getElementById('view_2d') as HTMLCanvasElement
-    }
-    
+    },
+    view_3d: {
+        canvas: document.getElementById('view_3d') as HTMLCanvasElement,
+    }    
 };
 
 let world: World = {
@@ -34,17 +35,41 @@ let world: World = {
     ]),
     selection: []
 };
+
+const initGrid = () => {
+    ui.view_2d.background.width = ui.view_2d.canvas.width;
+    ui.view_2d.background.height = ui.view_2d.canvas.height;
+    backgroundContext.beginPath();
+    backgroundContext.lineWidth = 1;
+    backgroundContext.setLineDash([4, 2]);
+    backgroundContext.strokeStyle = 'rgb(0,0,0)';
+    for (let x = 0; x <= backgroundContext.canvas.width; x += 20) {
+        backgroundContext.moveTo(x, 0);
+        backgroundContext.lineTo(x, backgroundContext.canvas.height);
+        for (let y = 0; y <= backgroundContext.canvas.height; y += 20) {
+            backgroundContext.moveTo(0, y);
+            backgroundContext.lineTo(backgroundContext.canvas.width, y);
+        }
+    }
+    backgroundContext.stroke();
+};
+
 let backgroundContext = ui.view_2d.background.getContext('2d');
 let context = ui.view_2d.canvas.getContext('2d');
 let activeActions = {} as ActiveActions;
 let actionHandler = new ActionHandler(activeActions, world);
 new KeyBoardListener(activeActions).start();
 new GeometrySelector(ui.view_2d.canvas, world).start();
+let renderer3d = new Renderer3d(world, ui.view_3d.canvas);
+initGrid();
 
 const redraw = () => {
-    context.clearRect(0, 0, ui.view_2d.canvas.width, ui.view_2d.canvas.height);    
-    drawCamera(context, world.camera);  
+    context.clearRect(0, 0, ui.view_2d.canvas.width, ui.view_2d.canvas.height);        
+    drawGrid();
+    drawCamera(context, world.camera);      
     drawGeometry(context, world.geometry);
+
+    renderer3d.render();
 }
 const drawCamera = (context: CanvasRenderingContext2D, cam: ICamera) => {
     drawSegment(context, cam.screen, 'rgb(255,255,255)');
@@ -75,20 +100,7 @@ const drawVertex = (context: CanvasRenderingContext2D, vertex: IVertex) => {
     context.fill();
 }
 const drawGrid = () => {        
-    backgroundContext.beginPath();
-    backgroundContext.lineWidth = 1;
-    backgroundContext.setLineDash([4, 2]);
-    backgroundContext.strokeStyle = 'rgb(0,0,0)';
-    for (let x = 0; x <= backgroundContext.canvas.width; x += 20) {
-        backgroundContext.moveTo(x, 0);
-        backgroundContext.lineTo(x, backgroundContext.canvas.height);
-        for (let y = 0; y <= backgroundContext.canvas.height; y += 20) {
-            backgroundContext.moveTo(0, y);
-            backgroundContext.lineTo(backgroundContext.canvas.width, y);
-        }
-    }
-    backgroundContext.stroke();
-
+    context.drawImage(ui.view_2d.background, 0, 0);
 };
 
 function update(x: number) {

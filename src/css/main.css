@@ -1,4 +1,26 @@
 body {
     background-color: #2d2d2d;
-    color: #eee;
+    color: #eee;    
+}
+
+/* canvas {
+    background-color: #444444;
+} */
+
+div.views {
+    width: 1284px;    
+    height: 482px;
+    overflow: hidden; /* add this to contain floated children */
+}
+div.dim2 {
+    width: 640px;
+    height: 480px;
+    float:left; /* add this */
+    border: 1px solid black;
+}
+div.dim3 {
+    border: 1px solid black;
+    width: 640px;
+    height: 480px;
+    float: right; /* add this */
 }
