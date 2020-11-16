@@ -22,8 +22,9 @@ const distance = (u: Vector, v: Vector): number => norm(subtract(u, v));
 const angleBetween = (u: Vector, v: Vector): number => Math.acos(dot(u, v) / (norm(u) * norm(v)));
 const proj = (u: Vector, v: Vector): Vector => scale(dot(u, v) / dot(v, v), v);
 const rotate = (angle: number, u: Vector): Vector => [...math.multiply(createRotation(angle), u) as any as number[]]
+const perpDot = (u: Vector, v: Vector) : number => u[0] * v[1] - u[1] * v[0];
 
-export {getX, getY, dot, dim, norm, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate};
+export {getX, getY, dot, dim, norm, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, perpDot};
 
 const createRotation = (angle: number) => [
     [Math.cos(angle), -1 * Math.sin(angle)],

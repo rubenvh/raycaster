@@ -8,9 +8,9 @@ body {
 } */
 
 div.views {
-    width: 1284px;    
+    width: 1290px;    
     height: 482px;
-    overflow: hidden; /* add this to contain floated children */
+    /*overflow: hidden; /* add this to contain floated children */
 }
 div.dim2 {
     width: 640px;

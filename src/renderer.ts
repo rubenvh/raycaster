@@ -27,11 +27,8 @@ const ui = {
 let world: World = {
     camera: makeCamera({location: [50,50], target: [70,70]}),
     geometry: createGeometry([
-        [...Array.from(Array(23).keys()).map(x => [20,20+20*x]),
-         ...Array.from(Array(31).keys()).map(x => [20+20*x,460]),
-         ...Array.from(Array(23).keys()).map(x => [620,460-20*x]),
-         ...Array.from(Array(29).keys()).map(x => [600-20*x,20])
-        ]
+        [[20,20],[20,460],[620,460],[620,20]],    
+        [[200,200],[200,280],[440,280],[440,200]]
     ]),
     selection: []
 };
@@ -60,7 +57,7 @@ let activeActions = {} as ActiveActions;
 let actionHandler = new ActionHandler(activeActions, world);
 new KeyBoardListener(activeActions).start();
 new GeometrySelector(ui.view_2d.canvas, world).start();
-let renderer3d = new Renderer3d(world, ui.view_3d.canvas);
+let renderer3d = new Renderer3d(world, ui.view_3d.canvas, context);
 initGrid();
 
 const redraw = () => {

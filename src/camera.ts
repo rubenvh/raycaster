@@ -1,5 +1,5 @@
 import * as vector from './vector';
-import { ILineSegment } from "./lineSegment";
+import { ILine, ILineSegment } from "./lineSegment";
 
 export type ICameraData = { location: vector.Vector, target: vector.Vector, angle?: number};
 export type ICamera = ICameraData & { screen: ILineSegment};
@@ -47,11 +47,21 @@ export const strafe = (ratio: number, camera: ICamera) => {
     return makeCamera({...camera,
         location: vector.add(camera.location, n),
         target: vector.add(camera.target, n)
-    });
-    
+    });    
 };
 
-export const makeRays = (resolution: number, camera: ICamera): ILineSegment[] => { 
+export const distanceTo = (v: vector.Vector, camera : ICamera): number => {    
+    const a = camera.screen[0];
+    const c = camera.screen[1];
+    const b = v;
+    const cn = [c[0] - a[0], c[1] - a[1]];
+    const bn = [b[0] - a[0], b[1] - a[1]];
+    const angle = Math.atan2(bn[1], bn[0]) - Math.atan2(cn[1], cn[0]);
+    const abLength = Math.sqrt(bn[0]*bn[0] + bn[1]*bn[1]);
+    return Math.sin(angle)*abLength;
+}
+
+export const makeRays = (resolution: number, camera: ICamera): ILine[] => { 
     const base = vector.subtract(camera.screen[1], camera.screen[0]);
     return Array.from(Array(resolution+1).keys())
         .map(i => i/resolution)
