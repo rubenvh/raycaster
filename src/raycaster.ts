@@ -1,21 +1,21 @@
-import { detectCollisions } from './geometry';
+import { detectCollisions, RayHit } from './geometry';
 import { IGeometry } from './vertex';
-import { ICamera, makeRays, distanceTo } from './camera';
+import { ICamera, makeRays } from './camera';
 import * as vector from './vector';
 
-export type CastedRay = {distance: number, intersection: vector.Vector}
+export type CastedRay = {distance: number, hit: RayHit};
 export const getCastedRays = (resolution: number, camera: ICamera, geometry: IGeometry): CastedRay[] => {
 
     const rays = makeRays(resolution, camera);
-    const calculateDistance = (v: vector.Vector) =>
+    const calculateDistance = (hit: RayHit) =>
     {   
-        return distanceTo(v, camera);        
+        return vector.distance(hit.intersection, hit.ray.line[1]) * Math.cos(hit.ray.angle);
     };
     return rays
         .map(_ => detectCollisions(_, geometry)
-            .map(c => ({ 
-                distance: calculateDistance(c.intersection), 
-                intersection: c.intersection}))
+            .map(c => ({                 
+                distance: calculateDistance(c), 
+                hit: c}))
             .sort((a,b)=> a.distance - b.distance)
-            [0]);        
+            [0] || ({distance: Number.POSITIVE_INFINITY, hit: {ray: _, edge: null, intersection: null, polygon: null}}));
 }

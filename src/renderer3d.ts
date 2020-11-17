@@ -1,5 +1,6 @@
-import { ILineSegment } from './lineSegment';
+import { ILineSegment, slope } from './lineSegment';
 import * as raycaster from './raycaster';
+import { CastedRay } from './raycaster';
 import { getX, getY, Vector } from './vector';
 import { World } from './world';
 export class Renderer3d {
@@ -8,9 +9,20 @@ export class Renderer3d {
         this.context = canvas.getContext('2d');        
     }
     private resolution = 320; 
-    private horizonDistance = 500;
-    private mapColumn = (i: number) => this.canvas.width - i / this.resolution * this.canvas.width;
-
+    private horizonDistance = 500;    
+    private sigmoid = (t) => 1/(1+Math.pow(Math.E, -t));
+    
+    private stuff : any = {};
+    private mapToColumn = (c: raycaster.CastedRay, column: number) => {
+        return this.canvas.width - column / this.resolution * this.canvas.width;
+        // const x = c.hit.ray.angle / (this.world.camera.angle*2);
+        // const result = this.sigmoid(x) * this.canvas.width;
+        // if (!this.stuff[column]) {
+        //     this.stuff[column] = {angle: c.hit.ray.angle, x, column, result};
+        //     console.log(this.stuff[column]);
+        // }
+        // return result;
+    }
     public render = () => {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);    
         let castedRays = raycaster.getCastedRays(this.resolution, this.world.camera, this.world.geometry);
@@ -19,18 +31,28 @@ export class Renderer3d {
             //this.context2D.fillText(castedRays[0].distance.toString(), castedRays[0].intersection[0], castedRays[0].intersection[1])
         
             castedRays.forEach((c, column) => {                
-                // TODO: determine height of wall based on casted ray results (distance to camera screen)
-                let height = this.convertDistanceToWallHeight((c && c.distance) || this.horizonDistance);
+                let height = this.convertDistanceToWallHeight(c && c.distance || this.horizonDistance);
                 let startRow = (this.canvas.height - height)/2;
                 let endRow = (this.canvas.height + height)/2;           
-
-                // TODO: draw rectangel column to mapped column (= 2 pixels wide)
-                this.drawRect(this.context, [[this.mapColumn(column), startRow], [this.mapColumn(column+1), endRow]]);
-                if (c) this.drawVector(this.context2D, c.intersection, 'purple');        
                 
+                let color = 100;
+                if (c?.hit?.edge) {
+                    let m = Math.abs(slope([c.hit.edge.start.vector, c.hit.edge.end.vector]));
+                    color = isFinite(m) && m < 1 ? 255 : 100;
+                }                
+
+                this.drawRect(this.context, [[this.mapToColumn(c, column), startRow], [this.mapToColumn(c, column+1), endRow]], `rgb(0,0,${color})`);
+                if (c?.hit) {
+                    if (c.hit.intersection) {
+                        this.drawVector(this.context2D, c.hit.intersection, 'rgb(0,255,0)');
+                        if (column % 20 === 0) this.drawSegment(this.context2D, [c.hit.intersection, this.world.camera.location], 'green');
+                    }
+                    else {
+                        this.drawSegment(this.context2D, c.hit.ray.line, 'red');
+                    }
+                };
             });
         }
-
     };
 
     private convertDistanceToWallHeight = (d: number) => {        
@@ -52,5 +74,15 @@ export class Renderer3d {
         context.beginPath();                
         context.fillStyle = color;
         context.fillRect(x1, y1, x2-x1, y2-y1);
+    };
+
+    private drawSegment = (context: CanvasRenderingContext2D, segment: ILineSegment, color: string = 'white') => {
+        context.beginPath();
+        context.moveTo(getX(segment[0]), getY(segment[0]));
+        context.lineTo(getX(segment[1]), getY(segment[1]));
+        context.lineWidth = 1;
+        context.setLineDash([]);
+        context.strokeStyle = color;
+        context.stroke();
     };
 }

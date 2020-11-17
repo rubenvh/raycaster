@@ -1,4 +1,5 @@
 
+import { IRay } from './camera';
 import { ILine, intersectLineWithSegment } from './lineSegment';
 import { Vector } from './vector';
 import { IGeometry, IVertex, distance, IPolygon, loadPolygon, createPolygon, IStoredGeometry, IEdge } from './vertex';
@@ -6,7 +7,7 @@ import { IGeometry, IVertex, distance, IPolygon, loadPolygon, createPolygon, ISt
 export type Collision = {polygon: IPolygon, distance: number};
 export type VertexCollision = Collision & { vertex: IVertex };
 export type EdgeCollision = Collision & {edge: IEdge };
-export type Intersection = {polygon: IPolygon, edge: IEdge, intersection: Vector};
+export type RayHit = {polygon: IPolygon, edge: IEdge, intersection: Vector, ray: IRay};
 
 export const loadGeometry = (geometry : IStoredGeometry): IGeometry => ({polygons: geometry.polygons.map(loadPolygon)});
 export const createGeometry = (polygonCollection: Vector[][]): IGeometry => ({polygons: polygonCollection.map(createPolygon)});
@@ -26,10 +27,10 @@ export const detectVertexAt = (vector: Vector, geometry: IGeometry): VertexColli
         .sort(distanceComparer)[0];
 } 
 
-export const detectCollisions = (ray: ILine, geometry: IGeometry): Intersection[] => {
+export const detectCollisions = (ray: IRay, geometry: IGeometry): RayHit[] => {
     return geometry.polygons
         .map(p => [...p.edges
-            .map(e => ({edge: e, intersection: intersectLineWithSegment(ray, [e.start.vector, e.end.vector])}))
+            .map(e => ({ray, edge: e, intersection: intersectLineWithSegment(ray.line, [e.start.vector, e.end.vector])}))
             .filter(_ => !!_.intersection)
             .map(_ => ({..._, polygon: p}))])
         .reduce((acc, i) => [...acc, ...i], []);

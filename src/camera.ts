@@ -1,9 +1,9 @@
 import * as vector from './vector';
-import { ILine, ILineSegment } from "./lineSegment";
+import { ILine, ILineSegment, lineAngle } from "./lineSegment";
 
 export type ICameraData = { location: vector.Vector, target: vector.Vector, angle?: number};
 export type ICamera = ICameraData & { screen: ILineSegment};
-
+export type IRay = {line: ILine, angle: number}
 const makeScreen = (data: ICameraData): ILineSegment => {
     let angle = data.angle || Math.PI/4;
     let d = vector.subtract(data.target, data.location);
@@ -61,9 +61,13 @@ export const distanceTo = (v: vector.Vector, camera : ICamera): number => {
     return Math.sin(angle)*abLength;
 }
 
-export const makeRays = (resolution: number, camera: ICamera): ILine[] => { 
+export const makeRays = (resolution: number, camera: ICamera): IRay[] => { 
     const base = vector.subtract(camera.screen[1], camera.screen[0]);
     return Array.from(Array(resolution+1).keys())
         .map(i => i/resolution)
-        .map(factor => ([camera.location, vector.add(camera.screen[0], vector.scale(factor, base))]));
+        .map(factor => ({
+            line: [camera.location, vector.add(camera.screen[0], vector.scale(factor, base))] as ILine,
+            }))
+        .map(r => ({...r, 
+            angle: lineAngle([camera.location, camera.target], r.line)}));
 };

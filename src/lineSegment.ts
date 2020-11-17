@@ -1,18 +1,32 @@
-import { perpDot, subtract, Vector } from './vector';
+import { angleBetween, perpDot, subtract, Vector } from './vector';
 
 export type ILine = [Vector, Vector]; // or other representations
 export type ILineSegment = [Vector, Vector];
 
-const slope = (s: ILineSegment): number => {
+export const slope = (s: ILineSegment): number => {
   const [x1, x2] = [s[0][0], s[1][0]];
   const [y1, y2] = [s[0][1], s[1][1]];
   return (y2-y1)/(x2-x1);
 };
+
+export const lineAngle = (a: ILineSegment, b: ILineSegment): number => {
+  return angleBetween(
+    subtract(a[1], a[0]),
+    subtract(b[1], b[0]));
+}
 const isOn = (v: Vector, s: ILineSegment): boolean => {
+  const e = 10;//Number.EPSILON;
+  const [x1, x2, x] = [s[0][0], s[1][0], v[0]];
+  const [y1, y2, y] = [s[0][1], s[1][1], v[1]];
+  if (Math.abs(x2 - x1) < e) { 
+    return Math.abs(x1 - x) < e 
+    &&  (Math.min(y1, y2) <= y && y <= Math.max(y1, y2));
+  }
+
   const m = slope(s);
-  const colinear = (v[1]-s[0][1]) - (m * (v[0]-s[0][0])) < 0.001;
-  const between = (Math.min(s[0][0], s[1][0]) <= v[0] && v[0] <= Math.max(s[0][0], s[1][0])) 
-              && (Math.min(s[0][1], s[1][1]) <= v[1] && v[1] <= Math.max(s[0][1], s[1][1]))
+  const colinear = Math.abs((y-y1) - (m * (x-x1))) < e;
+  const between = (Math.min(x1, x2) <= x && x <= Math.max(x1, x2))
+              && (Math.min(y1, y2) <= y && y <= Math.max(y1, y2))
 
   return colinear && between;
 }
@@ -74,6 +88,6 @@ export const intersectLineWithSegment = (a: ILine, b: ILineSegment): Vector => {
   // Return a object with the x and y coordinates of the intersection
 	let x = x1 + ua * (x2 - x1)
   let y = y1 + ua * (y2 - y1)
-  return [x, y];
-    //return isOn([x,y], b) ? [x,y] : null;
+  //return [x, y];
+  return isOn([x,y], b) ? [x,y] : null;
 }

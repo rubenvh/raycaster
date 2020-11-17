@@ -28,7 +28,7 @@ let world: World = {
     camera: makeCamera({location: [50,50], target: [70,70]}),
     geometry: createGeometry([
         [[20,20],[20,460],[620,460],[620,20]],    
-        [[200,200],[200,280],[440,280],[440,200]]
+        [[180,180],[180,300],[460,300],[460,180]]
     ]),
     selection: []
 };
@@ -70,8 +70,8 @@ const redraw = () => {
 }
 const drawCamera = (context: CanvasRenderingContext2D, cam: ICamera) => {
     drawSegment(context, cam.screen, 'rgb(255,255,255)');
-    makeRays(15, cam).forEach(s => {        
-        drawSegment(context, s, 'grey');
+    makeRays(3, cam).forEach(r => {        
+        drawSegment(context, r.line, 'grey');
     });
 };
 const drawGeometry = (context: CanvasRenderingContext2D, geometry: IGeometry) => {
