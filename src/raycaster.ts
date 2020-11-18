@@ -9,7 +9,7 @@ export const getCastedRays = (resolution: number, camera: ICamera, geometry: IGe
     const rays = makeRays(resolution, camera);
     const calculateDistance = (hit: RayHit) =>
     {   
-        return vector.distance(hit.intersection, hit.ray.line[1]) * Math.cos(hit.ray.angle);
+        return vector.distance(hit.intersection, camera.location) * Math.cos(hit.ray.angle);
     };
     return rays
         .map(_ => detectCollisions(_, geometry)

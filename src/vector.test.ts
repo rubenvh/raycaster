@@ -1,4 +1,4 @@
-import { add, angleBetween, areOrthogonal, dim, distance, dot, getX, getY, norm, proj, rotate, scale, subtract, Vector } from "./vector";
+import { add, angleBetween, areOrthogonal, dim, distance, dot, getX, getY, norm, perpendicular, proj, rotate, scale, subtract, Vector } from "./vector";
 import math = require("mathjs");
 
 describe('vector tests', () => {
@@ -74,17 +74,28 @@ describe('vector tests', () => {
     it('d([0,3],[4,0])', () => test([0,3], [4,0], 5));
   });
   describe('angle calculation', () => {
-    const test = (u: Vector, v: Vector, e: number) => expect(angleBetween(u, v)).toBeCloseTo(e);
-    it('angle([0,1],[1, 0]) = pi/2', () => test([0,1], [1, 0], math.pi/2));
-    it('angle([0,1],[0, 2]) = 0',    () => test([0,1], [0, 2], 0));
-    it('angle([0,1],[0,-1]) = pi',   () => test([0,1], [0,-1], math.pi));
-    it('angle([1,1],[0, 1]) = pi/4', () => test([1,1], [0, 1], math.pi/4));
-    it('angle([1,0],[0,-1]) = pi/2', () => test([1,0], [0,-1], math.pi/2));
+    const test = (u: Vector, v: Vector, e: number) => expect(angleBetween(u, v)).toBeCloseTo(e);    
+    it('angle([0, 1],[1, 0]) = -pi/2', () => test([0,1], [1, 0], -math.pi/2));
+    it('angle([1, 0],[0, 1]) = pi/2',  () => test([1, 0],[0, 1], math.pi/2));
+    it('angle([0, 1],[0, 2]) = 0',    () => test([0,1], [0, 2], 0));    
+    it('angle([1, 0],[-1,0]) = pi',   () => test([1,0], [-1,0], math.pi));
+    it('angle([1, 1],[0, 1]) = pi/4', () => test([1,1], [0, 1], math.pi/4));
+    it('angle([1, 0],[0,-1]) = -pi/2', () => test([1,0], [0,-1], -math.pi/2));
+    it('angle([5.45,1.12],[-3.86, 4.32]) = 120.17`', () => test([5.45,1.12],[-3.86, 4.32], 120.17*Math.PI/180));
   });
   describe('projection tests', () => {
     const test = (u: Vector, v: Vector, e: Vector) => expect(proj(u, v)).toEqual(e);
     it('proj([1,0],[0,1])     = [0,0]',       () => test([1,0],[0,1], [0,0]));
     it('proj([1,-2,3],[2,4,5])= [2/5,4/5,1]', () => test([1,-2,3],[2,4,5], [2/5,4/5,1]));
+  });
+  describe('perpendicular calculation', () => {
+    const test = (u: Vector, e: Vector) => {
+      const n = perpendicular(u);
+      expect(n).toEqual(e);    
+      expect(dot(n, u)).toEqual(0);
+    }
+    it('perpendicular: [0,1] ==> [-1,0]', () => test([0, 1], [-1, 0]));
+    it('perpendicular: [2,2] ==> [-2,2]', () => test([2, 2], [-2, 2]));
   });
 
 });

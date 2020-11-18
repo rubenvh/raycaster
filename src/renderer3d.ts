@@ -1,47 +1,43 @@
 import { ILineSegment, slope } from './lineSegment';
 import * as raycaster from './raycaster';
-import { CastedRay } from './raycaster';
 import { getX, getY, Vector } from './vector';
 import { World } from './world';
 export class Renderer3d {
     private context: CanvasRenderingContext2D;
     constructor(private world: World, private canvas: HTMLCanvasElement, private context2D: CanvasRenderingContext2D) {
-        this.context = canvas.getContext('2d');        
+        this.context = canvas.getContext('2d');
     }
-    private resolution = 320; 
-    private horizonDistance = 500;    
-    private sigmoid = (t) => 1/(1+Math.pow(Math.E, -t));
+    private resolution = 320;
+    private horizonDistance = 250;
     
-    private stuff : any = {};
-    private mapToColumn = (c: raycaster.CastedRay, column: number) => {
+    private mapToColumn = (column: number) => {
         return this.canvas.width - column / this.resolution * this.canvas.width;
-        // const x = c.hit.ray.angle / (this.world.camera.angle*2);
-        // const result = this.sigmoid(x) * this.canvas.width;
-        // if (!this.stuff[column]) {
-        //     this.stuff[column] = {angle: c.hit.ray.angle, x, column, result};
-        //     console.log(this.stuff[column]);
-        // }
-        // return result;
     }
+
+    displayRays = true;
     public render = () => {
-        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);    
+        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
         let castedRays = raycaster.getCastedRays(this.resolution, this.world.camera, this.world.geometry);
-               
+
         if (castedRays) {
             //this.context2D.fillText(castedRays[0].distance.toString(), castedRays[0].intersection[0], castedRays[0].intersection[1])
-        
-            castedRays.forEach((c, column) => {                
+            if (this.displayRays) {
+                console.log(castedRays); this.displayRays = false;
+                console.log(castedRays.map((_, i) => [this.mapToColumn(i), this.mapToColumn(i+1)]));
+            }
+
+            castedRays.forEach((c, column, a) => {
                 let height = this.convertDistanceToWallHeight(c && c.distance || this.horizonDistance);
                 let startRow = (this.canvas.height - height)/2;
-                let endRow = (this.canvas.height + height)/2;           
-                
+                let endRow = (this.canvas.height + height)/2;
+
                 let color = 100;
                 if (c?.hit?.edge) {
                     let m = Math.abs(slope([c.hit.edge.start.vector, c.hit.edge.end.vector]));
                     color = isFinite(m) && m < 1 ? 255 : 100;
-                }                
+                }
 
-                this.drawRect(this.context, [[this.mapToColumn(c, column), startRow], [this.mapToColumn(c, column+1), endRow]], `rgb(0,0,${color})`);
+                this.drawRect(this.context, [[this.mapToColumn(column), startRow], [this.mapToColumn(column+1), endRow]], `rgb(0,0,${color})`);
                 if (c?.hit) {
                     if (c.hit.intersection) {
                         this.drawVector(this.context2D, c.hit.intersection, 'rgb(0,255,0)');
@@ -55,9 +51,8 @@ export class Renderer3d {
         }
     };
 
-    private convertDistanceToWallHeight = (d: number) => {        
-        return d >= this.horizonDistance ? 1            
-            : Math.max(1, (this.canvas.height - (this.canvas.height/this.horizonDistance)*d));
+    private convertDistanceToWallHeight = (d: number) => {
+        return (60/d) * this.canvas.height;
     }
 
     private drawVector = (context: CanvasRenderingContext2D, vector: Vector, color: string = 'red') => {
@@ -71,7 +66,7 @@ export class Renderer3d {
               y1 = getY(segment[0]),
               x2 = getX(segment[1]),
               y2 = getY(segment[1]);
-        context.beginPath();                
+        context.beginPath();
         context.fillStyle = color;
         context.fillRect(x1, y1, x2-x1, y2-y1);
     };

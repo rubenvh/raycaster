@@ -10,12 +10,12 @@ export class ActionHandler {
     constructor(private actions: ActiveActions, private world: World) {}
 
     handle() {
-        if (this.actions.turnleft) this.world.camera = rotate(-0.1, this.world.camera);
-        if (this.actions.turnright) this.world.camera = rotate(0.1, this.world.camera);
-        if (this.actions.left) this.world.camera = strafe(-0.1, this.world.camera);
-        if (this.actions.right) this.world.camera = strafe(0.1, this.world.camera);
-        if (this.actions.up) this.world.camera  = move(0.1, this.world.camera);
-        if (this.actions.down) this.world.camera = move(-0.1, this.world.camera);
+        if (this.actions.turnleft) this.world.camera = rotate(-0.05, this.world.camera);
+        if (this.actions.turnright) this.world.camera = rotate(0.05, this.world.camera);
+        if (this.actions.left) this.world.camera = strafe(-0.05, this.world.camera);
+        if (this.actions.right) this.world.camera = strafe(0.05, this.world.camera);
+        if (this.actions.up) this.world.camera  = move(0.05, this.world.camera);
+        if (this.actions.down) this.world.camera = move(-0.05, this.world.camera);
 
         if (this.actions.camera_angle_up)   this.world.camera = adaptAngle( 1, this.world.camera);
         if (this.actions.camera_angle_down) this.world.camera = adaptAngle(-1, this.world.camera);

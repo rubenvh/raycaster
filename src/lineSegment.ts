@@ -1,7 +1,12 @@
-import { angleBetween, perpDot, subtract, Vector } from './vector';
+
+import { IRay } from './camera';
+import { add, angleBetween, cross, dot, getX, getY, norm, normalize, perpendicular, scale, subtract, Vector } from './vector';
 
 export type ILine = [Vector, Vector]; // or other representations
 export type ILineSegment = [Vector, Vector];
+
+const start = (a: ILineSegment): Vector => a[0];
+const end = (a: ILineSegment): Vector => a[1];
 
 export const slope = (s: ILineSegment): number => {
   const [x1, x2] = [s[0][0], s[1][0]];
@@ -13,22 +18,6 @@ export const lineAngle = (a: ILineSegment, b: ILineSegment): number => {
   return angleBetween(
     subtract(a[1], a[0]),
     subtract(b[1], b[0]));
-}
-const isOn = (v: Vector, s: ILineSegment): boolean => {
-  const e = 10;//Number.EPSILON;
-  const [x1, x2, x] = [s[0][0], s[1][0], v[0]];
-  const [y1, y2, y] = [s[0][1], s[1][1], v[1]];
-  if (Math.abs(x2 - x1) < e) { 
-    return Math.abs(x1 - x) < e 
-    &&  (Math.min(y1, y2) <= y && y <= Math.max(y1, y2));
-  }
-
-  const m = slope(s);
-  const colinear = Math.abs((y-y1) - (m * (x-x1))) < e;
-  const between = (Math.min(x1, x2) <= x && x <= Math.max(x1, x2))
-              && (Math.min(y1, y2) <= y && y <= Math.max(y1, y2))
-
-  return colinear && between;
 }
 const intersectSegments = (a: ILineSegment, b: ILineSegment): Vector => {
     const p0_x = a[0][0];
@@ -55,39 +44,29 @@ const intersectSegments = (a: ILineSegment, b: ILineSegment): Vector => {
     return null;    
 };
 
-export const intersectLineWithSegment = (a: ILine, b: ILineSegment): Vector => {
-    const x1 = a[0][0];
-    const y1 = a[0][1];
-    const x2 = a[1][0];
-    const y2 = a[1][1];
-    const x3 = b[0][0];
-    const y3 = b[0][1];
-    const x4 = b[1][0];
-    const y4 = b[1][1];
+export const lineIntersect = (a: ILine, b: ILine): Vector => {
+  let A1 = a[1][1]-a[0][1], //p1y - p0y,
+      B1 = a[0][0]-a[1][0], //p0x - p1x,
+      C1 = A1 * a[0][0] + B1 * a[0][1], //p0x + B1 * p0y,
+      A2 = b[1][1]-b[0][1], //p3y - p2y,
+      B2 = b[0][0]-b[1][0], //p2x - p3x, 
+      C2 = A2 * b[0][0] + B2 * b[0][1], //A2 * p2x + B2 * p2y,
+      denominator = A1 * B2 - A2 * B1;
 
-    // Check if none of the lines are of length 0
-	if ((x1 === x2 && y1 === y2) || (x3 === x4 && y3 === y4)) {
-		return null;
-	}
+    return [(B2 * C1 - B1 * C2) / denominator, (A1 * C2 - A2 * C1) / denominator];
+};
 
-	const denominator = ((y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1))
-
-  // Lines are parallel
-	if (denominator === 0) {
-		return null;
-	}
-
-	let ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator
-	let ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator
-
-  // is the intersection along the segments
-	if (ua < 0 || ub < 0) {
-	 	return null;
-	}
-
-  // Return a object with the x and y coordinates of the intersection
-	let x = x1 + ua * (x2 - x1)
-  let y = y1 + ua * (y2 - y1)
-  //return [x, y];
-  return isOn([x,y], b) ? [x,y] : null;
+export const intersectRay = (ray: IRay, s: ILineSegment): Vector => {
+  let a = s[0];
+  let b = s[1];
+  let o = ray.line[0];  
+  let v1 = subtract(o, a);
+  let v2 = subtract(b, a);
+  let rd = normalize(subtract(ray.line[1], o));     
+  let v3 = [-rd[1], rd[0]];
+  let t1 = cross(v2, v1)/dot(v2, v3);
+  let t2 = dot(v1, v3)/dot(v2, v3);
+  
+  if (t1 >=  0 && t2 >= 0 && t2 <= 1) return add(o, scale(t1, rd));
+  return null;
 }

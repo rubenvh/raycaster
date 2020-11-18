@@ -18,7 +18,7 @@ export const makeCamera = (data: ICameraData): ICamera => ({...data,
 export const adaptAngle = (direction: 0|1|-1, camera: ICamera): ICamera => {
     let newAngle = camera.angle + direction*0.05; // TODO: magic constant
     return makeCamera(({...camera,
-        angle: newAngle <= Math.PI/8 ? Math.PI/8 : (newAngle >= (3/8)* Math.PI ? (3/8)*Math.PI : newAngle)
+        angle: newAngle <= Math.PI/16 ? Math.PI/16 : (newAngle >= (3/8)* Math.PI ? (3/8)*Math.PI : newAngle)
     }));
 };
 export const adaptDepth = (direction: 1|-1, camera: ICamera): ICamera => {
@@ -50,15 +50,28 @@ export const strafe = (ratio: number, camera: ICamera) => {
     });    
 };
 
-export const distanceTo = (v: vector.Vector, camera : ICamera): number => {    
-    const a = camera.screen[0];
-    const c = camera.screen[1];
-    const b = v;
-    const cn = [c[0] - a[0], c[1] - a[1]];
-    const bn = [b[0] - a[0], b[1] - a[1]];
-    const angle = Math.atan2(bn[1], bn[0]) - Math.atan2(cn[1], cn[0]);
-    const abLength = Math.sqrt(bn[0]*bn[0] + bn[1]*bn[1]);
-    return Math.sin(angle)*abLength;
+export const distanceTo = (v: vector.Vector, camera : ICamera): number => {  
+    
+    let d = vector.subtract(camera.screen[1], camera.screen[0]);
+    let length = vector.norm(d);
+    if (length < Number.EPSILON) {
+        return vector.norm(vector.subtract(v, camera.screen[0]));
+    }
+
+    let norm = vector.perpendicular(vector.scale(1/length, d));
+
+    let distance = vector.dot(vector.subtract(v, camera.screen[0]), norm);
+    return Math.abs(distance);
+
+    // // euclidean distance => fisheye
+    // const a = camera.screen[0];
+    // const c = camera.screen[1];
+    // const b = v;
+    // const cn = [c[0] - a[0], c[1] - a[1]];
+    // const bn = [b[0] - a[0], b[1] - a[1]];
+    // const angle = Math.atan2(bn[1], bn[0]) - Math.atan2(cn[1], cn[0]);
+    // const abLength = Math.sqrt(bn[0]*bn[0] + bn[1]*bn[1]);
+    // return Math.sin(angle)*abLength;
 }
 
 export const makeRays = (resolution: number, camera: ICamera): IRay[] => { 

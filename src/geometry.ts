@@ -1,6 +1,6 @@
 
 import { IRay } from './camera';
-import { ILine, intersectLineWithSegment } from './lineSegment';
+import { intersectRay } from './lineSegment';
 import { Vector } from './vector';
 import { IGeometry, IVertex, distance, IPolygon, loadPolygon, createPolygon, IStoredGeometry, IEdge } from './vertex';
 
@@ -30,7 +30,9 @@ export const detectVertexAt = (vector: Vector, geometry: IGeometry): VertexColli
 export const detectCollisions = (ray: IRay, geometry: IGeometry): RayHit[] => {
     return geometry.polygons
         .map(p => [...p.edges
-            .map(e => ({ray, edge: e, intersection: intersectLineWithSegment(ray.line, [e.start.vector, e.end.vector])}))
+            .map(e => ({ray, edge: e, 
+                intersection: intersectRay(ray, [e.start.vector, e.end.vector]),                
+            }))
             .filter(_ => !!_.intersection)
             .map(_ => ({..._, polygon: p}))])
         .reduce((acc, i) => [...acc, ...i], []);
