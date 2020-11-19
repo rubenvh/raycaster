@@ -50,30 +50,6 @@ export const strafe = (ratio: number, camera: ICamera) => {
     });    
 };
 
-export const distanceTo = (v: vector.Vector, camera : ICamera): number => {  
-    
-    let d = vector.subtract(camera.screen[1], camera.screen[0]);
-    let length = vector.norm(d);
-    if (length < Number.EPSILON) {
-        return vector.norm(vector.subtract(v, camera.screen[0]));
-    }
-
-    let norm = vector.perpendicular(vector.scale(1/length, d));
-
-    let distance = vector.dot(vector.subtract(v, camera.screen[0]), norm);
-    return Math.abs(distance);
-
-    // // euclidean distance => fisheye
-    // const a = camera.screen[0];
-    // const c = camera.screen[1];
-    // const b = v;
-    // const cn = [c[0] - a[0], c[1] - a[1]];
-    // const bn = [b[0] - a[0], b[1] - a[1]];
-    // const angle = Math.atan2(bn[1], bn[0]) - Math.atan2(cn[1], cn[0]);
-    // const abLength = Math.sqrt(bn[0]*bn[0] + bn[1]*bn[1]);
-    // return Math.sin(angle)*abLength;
-}
-
 export const makeRays = (resolution: number, camera: ICamera): IRay[] => { 
     const base = vector.subtract(camera.screen[1], camera.screen[0]);
     return Array.from(Array(resolution+1).keys())

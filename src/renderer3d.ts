@@ -1,3 +1,4 @@
+import { RayHit } from './geometry';
 import { ILineSegment, slope } from './lineSegment';
 import * as raycaster from './raycaster';
 import { getX, getY, Vector } from './vector';
@@ -20,39 +21,41 @@ export class Renderer3d {
         let castedRays = raycaster.getCastedRays(this.resolution, this.world.camera, this.world.geometry);
 
         if (castedRays) {
-            //this.context2D.fillText(castedRays[0].distance.toString(), castedRays[0].intersection[0], castedRays[0].intersection[1])
-            if (this.displayRays) {
-                console.log(castedRays); this.displayRays = false;
-                console.log(castedRays.map((_, i) => [this.mapToColumn(i), this.mapToColumn(i+1)]));
-            }
-
-            castedRays.forEach((c, column, a) => {
-                let height = this.convertDistanceToWallHeight(c && c.distance || this.horizonDistance);
-                let startRow = (this.canvas.height - height)/2;
-                let endRow = (this.canvas.height + height)/2;
-
-                let color = 100;
-                if (c?.hit?.edge) {
-                    let m = Math.abs(slope([c.hit.edge.start.vector, c.hit.edge.end.vector]));
-                    color = isFinite(m) && m < 1 ? 255 : 100;
-                }
-
-                this.drawRect(this.context, [[this.mapToColumn(column), startRow], [this.mapToColumn(column+1), endRow]], `rgb(0,0,${color})`);
-                if (c?.hit) {
-                    if (c.hit.intersection) {
-                        this.drawVector(this.context2D, c.hit.intersection, 'rgb(0,255,0)');
-                        if (column % 20 === 0) this.drawSegment(this.context2D, [c.hit.intersection, this.world.camera.location], 'green');
-                    }
-                    else {
-                        this.drawSegment(this.context2D, c.hit.ray.line, 'red');
-                    }
-                };
+            castedRays.forEach((c, column) => {                
+                c.hits.forEach(hit => {
+                    let height = this.convertDistanceToWallHeight(hit.distance || this.horizonDistance);
+                    let startRow = (this.canvas.height - height)/2;
+                    let endRow = (this.canvas.height + height)/2;
+                    let color = this.determineLight(hit);
+    
+                    // draw wall
+                    this.drawRect(this.context, [[this.mapToColumn(column), startRow], [this.mapToColumn(column+1), endRow]], `rgb(0,0,${color})`);
+                    
+                    // TODO: store casted rays in store so we can update the 2d view there
+                    if (hit?.intersection) {
+                        this.drawVector(this.context2D, hit.intersection, 'rgb(0,255,0)');
+                        if (column % 20 === 0) this.drawSegment(this.context2D, [hit.intersection, hit.ray.line[0]], 'green');                    
+                    };
+                });
+                
             });
         }
     };
 
+    private determineLight = (hit: RayHit) => {
+        let color = 50;
+        if (hit?.edge) {
+            let m = Math.abs(slope([hit.edge.start.vector, hit.edge.end.vector]));
+            if (!isFinite(m)) return color;
+            
+            color += (255 - color) * 1-Math.exp(-m);
+            // color = isFinite(m) && m < 1 ? 255 : 100;
+        }
+        return color;
+    }
+
     private convertDistanceToWallHeight = (d: number) => {
-        return (60/d) * this.canvas.height;
+        return (10/d) * this.canvas.height;
     }
 
     private drawVector = (context: CanvasRenderingContext2D, vector: Vector, color: string = 'red') => {
