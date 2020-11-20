@@ -9,15 +9,24 @@ const getX = (u: Vector): number => u[0];
 const getY = (u: Vector): number => u[1];
 const dim = (u: Vector): number => u.length;
 const zip = (acc: (coordinates: number[]) => number, us: Vector[]): number[] => us[0].map((_, i, u) => acc(us.map(u => u[i])));;
-
-const dot = (u: Vector, v: Vector): number => 
-    zip(cs => cs.reduce((acc, c) => acc * c, 1), [u, v])
-    .reduce((acc, n) => acc + n, 0);    
+const are2D = (u: Vector, v: Vector): boolean => is2D(u) && dim(u) === dim(v); 
+const is2D = (u: Vector): boolean => 2 === dim(u);
+const dot = (u: Vector, v: Vector): number => { 
+    return are2D(u, v) 
+    ? u[0]*v[0] + u[1]*v[1]
+    : zip(cs => cs.reduce((acc, c) => acc * c, 1), [u, v])
+        .reduce((acc, n) => acc + n, 0);
+}    
 const norm = (u: Vector): number => Math.sqrt(dot(u, u));
 const normalize = (u: Vector): Vector => scale(1/norm(u), u);
-const scale = (k: number, u: Vector): Vector => u.map(x => k * x);
-const subtract = (u: Vector, v: Vector): Vector => zip((cs) => cs.slice(1).reduce((acc, c) => acc - c, cs[0]), [u, v]);
-const add = (u: Vector, v: Vector): Vector => zip((cs) => cs.reduce((acc, c) => acc + c, 0), [u, v]);
+const scale = (k: number, u: Vector): Vector => is2D(u) ? [k*u[0], k*u[1]]: u.map(x => k * x);
+const subtract = (u: Vector, v: Vector): Vector => are2D(u, v) 
+    ? [u[0]-v[0], u[1]-v[1]]
+    : zip((cs) => cs.slice(1).reduce((acc, c) => acc - c, cs[0]), [u, v]);
+
+const add = (u: Vector, v: Vector): Vector => are2D(u, v) 
+    ? [u[0]+v[0], u[1]+v[1]]
+    : zip((cs) => cs.reduce((acc, c) => acc + c, 0), [u, v]);
 const areOrthogonal = (u: Vector, v: Vector): boolean => dot(u, v) === 0;
 const distance = (u: Vector, v: Vector): number => norm(subtract(u, v));
 const angleBetween = (u: Vector, v: Vector): number => Math.atan2(cross(u, v), dot(u, v)); //Math.acos(dot(u, v) / (norm(u) * norm(v)));

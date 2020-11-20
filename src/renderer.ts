@@ -27,9 +27,9 @@ const ui = {
 let world: World = {
     camera: makeCamera({location: [50,50], target: [70,70]}),
     geometry: createGeometry([
-        // [[20,20],[20,460],[620,460],[620,20]],    
-        // [[100,180],[180,300],[460,300],[460,180]]
-        [[20,20],[60,20],[60,80],[100,80],[100,60],[120,60],[120,80],[140,80],[140,60],[160,60],[160,80],[180,80],[180,40],[160,40],[160,0],[260,0],[260,40],[200,40],[200,140],[240,140],[240,380],[120,380],[120,140],[180,140],[180,100],[20,100]]
+        //[[20,20],[20,460],[620,460],[620,20]],    
+        // [[100,180],[180,300],[460,300],[460,180]],
+         [[20,20],[60,20],[60,80],[100,80],[100,60],[120,60],[120,80],[140,80],[140,60],[160,60],[160,80],[180,80],[180,40],[160,40],[160,0],[260,0],[260,40],[200,40],[200,140],[240,140],[240,380],[120,380],[120,140],[180,140],[180,100],[20,100]]
     ]),
     selection: []
 };
@@ -66,6 +66,8 @@ const redraw = () => {
     drawGrid();
     drawCamera(context, world.camera);      
     drawGeometry(context, world.geometry);
+    context.fillStyle = "rgb(255,255,255)";
+    context.fillText('fps = ' + fps, ui.view_2d.canvas.height - 20, 10);    
 
     renderer3d.render();
 }
@@ -100,20 +102,28 @@ const drawVertex = (context: CanvasRenderingContext2D, vertex: IVertex) => {
 const drawGrid = () => {        
     context.drawImage(ui.view_2d.background, 0, 0);
 };
+drawGrid();
 
 function update(x: number) {
     actionHandler.handle();
 }
 
-function loop(timestamp) {
-    var progress = timestamp - lastRender
+const times: number[] = [];
+let fps: number;
+function loop() {
+    const now = performance.now();
+    while (times.length > 0 && times[0] <= now - 1000) {
+      times.shift();
+    }
+    times.push(now);
+    fps = times.length;
   
-    update(progress)
-    redraw();
+     update(now);
+     redraw();
   
-    lastRender = timestamp
-    window.requestAnimationFrame(loop)
-  }
-var lastRender = 0
+     window.requestAnimationFrame(loop)    
+}
+
 window.requestAnimationFrame(loop)
-drawGrid();
+
+

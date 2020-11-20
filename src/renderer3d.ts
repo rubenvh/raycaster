@@ -49,7 +49,7 @@ export class Renderer3d {
             if (!isFinite(m)) return color;
             
             color += (255 - color) * 1-Math.exp(-m);
-            // color = isFinite(m) && m < 1 ? 255 : 100;
+            //color = isFinite(m) && m < 1 ? 255 : 100;
         }
         return color;
     }
