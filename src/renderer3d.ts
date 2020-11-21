@@ -1,3 +1,4 @@
+import { atan } from 'mathjs';
 import { RayHit } from './geometry';
 import { ILineSegment, slope } from './lineSegment';
 import * as raycaster from './raycaster';
@@ -26,7 +27,7 @@ export class Renderer3d {
                     let height = this.convertDistanceToWallHeight(hit.distance || this.horizonDistance);
                     let startRow = (this.canvas.height - height)/2;
                     let endRow = (this.canvas.height + height)/2;
-                    let color = this.determineLight(hit);
+                    let color = determineLight(hit);
     
                     // draw wall
                     this.drawRect(this.context, [[this.mapToColumn(column), startRow], [this.mapToColumn(column+1), endRow]], `rgb(0,0,${color})`);
@@ -41,18 +42,6 @@ export class Renderer3d {
             });
         }
     };
-
-    private determineLight = (hit: RayHit) => {
-        let color = 50;
-        if (hit?.edge) {
-            let m = Math.abs(slope([hit.edge.start.vector, hit.edge.end.vector]));
-            if (!isFinite(m)) return color;
-            
-            color += (255 - color) * 1-Math.exp(-m);
-            //color = isFinite(m) && m < 1 ? 255 : 100;
-        }
-        return color;
-    }
 
     private convertDistanceToWallHeight = (d: number) => {
         return (10/d) * this.canvas.height;
@@ -83,4 +72,15 @@ export class Renderer3d {
         context.strokeStyle = color;
         context.stroke();
     };
+}
+
+export const determineLight = (hit: RayHit) => {
+    let color = 100;
+    if (hit?.edge) {
+        let m = Math.abs(slope([hit.edge.start.vector, hit.edge.end.vector]));            
+        if (!isFinite(m)) return 255;
+        
+        color += (m / (1 + m)) * (255-color);
+    }
+    return color;
 }
