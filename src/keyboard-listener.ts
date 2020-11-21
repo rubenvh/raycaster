@@ -13,9 +13,10 @@ export class KeyBoardListener {
         107: 'camera_angle_up',
         109: 'camera_angle_down'
     };
-    private ctrlKeyMap: KeyMap = {        
-        107: 'camera_depth_up',
-        109: 'camera_depth_down'
+    private ctrlKeyMap: KeyMap = {   
+        83: 'save_world',           // CTRL S
+        107: 'camera_depth_up',     // CTRL +
+        109: 'camera_depth_down',   // CTRL -
     };
 
     constructor(private state: ActiveActions){}

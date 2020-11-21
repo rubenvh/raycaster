@@ -1,7 +1,10 @@
-- can debug unit tests from visual studio code
-- can debug electron application from visual studio code
+- select nearest vertex/edge
+- refactor 2d view into separate class
+- refactor drawing primitives into separate file
+- when moving camera: send ray for fwd/back + sidestep movements => when distance of collision is smaller than some threshold => movement blocked
 - add linter
 - select with right click
-- ability to move selection (drag & drop)
-- ability to store geometry in localStorage
-- ability to load geometry from localStorage
+- ability to move selection (drag & drop) + snap to 20x20 grid
+- display selected item's JSON + ability to change
+- load textures in a virtual canvas
+- draw texture on wall column (copying from virtual canvas)

@@ -17,30 +17,32 @@ export class Renderer3d {
     }
 
     displayRays = true;
-    public render = () => {
+    public render = () => {        
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        let castedRays = raycaster.getCastedRays(this.resolution, this.world.camera, this.world.geometry);
-
-        if (castedRays) {
-            castedRays.forEach((c, column) => {                
-                c.hits.forEach(hit => {
+        // draw floor + sky
+        this.drawRect(this.context, [[0, 0], [this.canvas.width, this.canvas.height/2]], 'rgb(200,200,200)');
+        this.drawRect(this.context, [[0, this.canvas.height/2], [this.canvas.width, this.canvas.height]], 'rgb(50,80,80)');
+        
+        raycaster
+            .getCastedRays(this.resolution, this.world.camera, this.world.geometry)
+            .forEach((c, column) => {
+                for (let index = c.hits.length; index > 0; index--) {
+                    const hit = c.hits[index-1];
                     let height = this.convertDistanceToWallHeight(hit.distance || this.horizonDistance);
                     let startRow = (this.canvas.height - height)/2;
                     let endRow = (this.canvas.height + height)/2;
-                    let color = determineLight(hit);
+                    let color = determineColor(hit);
     
                     // draw wall
-                    this.drawRect(this.context, [[this.mapToColumn(column), startRow], [this.mapToColumn(column+1), endRow]], `rgb(0,0,${color})`);
+                    this.drawRect(this.context, [[this.mapToColumn(column), startRow], [this.mapToColumn(column+1), endRow]], color);
                     
                     // TODO: store casted rays in store so we can update the 2d view there
                     if (hit?.intersection) {
                         this.drawVector(this.context2D, hit.intersection, 'rgb(0,255,0)');
                         if (column % 20 === 0) this.drawSegment(this.context2D, [hit.intersection, hit.ray.line[0]], 'green');                    
                     };
-                });
-                
-            });
-        }
+                }                
+            });                  
     };
 
     private convertDistanceToWallHeight = (d: number) => {
@@ -74,6 +76,14 @@ export class Renderer3d {
     };
 }
 
+const determineColor = (hit: RayHit) => {
+    const luminosity = determineLight(hit);
+    if (hit?.edge?.material?.color) {
+        const color = hit.edge.material.color.map((c, i) => i === 3 ? c : c/255 * luminosity);
+        return `rgba(${color.join()})`;
+    }
+    return `rgb(0,0,${luminosity})`;
+};
 export const determineLight = (hit: RayHit) => {
     let color = 100;
     if (hit?.edge) {
