@@ -1,6 +1,6 @@
-- select nearest vertex/edge
 - refactor 2d view into separate class
 - refactor drawing primitives into separate file
+- simplify camera calculations by introducing pos, dir and plane vectors
 - when moving camera: send ray for fwd/back + sidestep movements => when distance of collision is smaller than some threshold => movement blocked
 - add linter
 - select with right click
@@ -8,3 +8,4 @@
 - display selected item's JSON + ability to change
 - load textures in a virtual canvas
 - draw texture on wall column (copying from virtual canvas)
+- atmospheric lightning (tunnel effect = reduce luminosity of walls further away, mist = dampen color of walls further away)
