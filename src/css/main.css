@@ -8,8 +8,8 @@ body {
 } */
 
 div.views {
-    width: 1290px;    
-    height: 482px;
+    width: 1930px;    
+    height: 962px;
     /*overflow: hidden; /* add this to contain floated children */
 }
 div.dim2 {
@@ -20,7 +20,7 @@ div.dim2 {
 }
 div.dim3 {
     border: 1px solid black;
-    width: 640px;
-    height: 480px;
+    width: 1280px;
+    height: 960px;
     float: right; /* add this */
 }

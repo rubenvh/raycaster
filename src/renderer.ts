@@ -1,22 +1,19 @@
 import { Renderer3d } from './renderer3d';
+import { Renderer2d } from "./renderer2d";
 // This file is required by the index.html file and will
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
 
-import { getX, getY } from "./vector";
-import { ILineSegment } from "./lineSegment";
 import { KeyBoardListener } from "./keyboard-listener";
 import { ActionHandler, ActiveActions } from "./actionHandler";
 import { World } from "./world";
 import { createGeometry } from "./geometry";
 import { GeometrySelector } from "./geometrySelector";
-import { IEdge, IGeometry, IVertex } from "./vertex";
-import { ICamera, makeCamera, makeRays } from "./camera";
+import { makeCamera } from "./camera";
 
 const ui = {    
     rotateButton: document.getElementById('rotate'),
     view_2d: {
-        background: document.createElement('canvas') as HTMLCanvasElement,
         canvas: document.getElementById('view_2d') as HTMLCanvasElement
     },
     view_3d: {
@@ -34,83 +31,12 @@ let world: World = storedWorld ? JSON.parse(storedWorld) :
     selection: []
 };
 
-const initGrid = () => {
-    ui.view_2d.background.width = ui.view_2d.canvas.width;
-    ui.view_2d.background.height = ui.view_2d.canvas.height;
-    backgroundContext.beginPath();
-    backgroundContext.lineWidth = 1;
-    backgroundContext.setLineDash([4, 2]);
-    backgroundContext.strokeStyle = 'rgb(0,0,0)';
-    for (let x = 0; x <= backgroundContext.canvas.width; x += 20) {
-        backgroundContext.moveTo(x, 0);
-        backgroundContext.lineTo(x, backgroundContext.canvas.height);
-        for (let y = 0; y <= backgroundContext.canvas.height; y += 20) {
-            backgroundContext.moveTo(0, y);
-            backgroundContext.lineTo(backgroundContext.canvas.width, y);
-        }
-    }
-    backgroundContext.stroke();
-};
-
-let backgroundContext = ui.view_2d.background.getContext('2d');
-let context = ui.view_2d.canvas.getContext('2d');
 let activeActions = {} as ActiveActions;
 let actionHandler = new ActionHandler(activeActions, world);
 new KeyBoardListener(activeActions).start();
 new GeometrySelector(ui.view_2d.canvas, world).start();
-let renderer3d = new Renderer3d(world, ui.view_3d.canvas, context);
-initGrid();
-
-const redraw = () => {
-    context.clearRect(0, 0, ui.view_2d.canvas.width, ui.view_2d.canvas.height);        
-    drawGrid();
-    drawCamera(context, world.camera);      
-    drawGeometry(context, world.geometry);
-    context.fillStyle = "rgb(255,255,255)";
-    context.fillText('fps = ' + fps, ui.view_2d.canvas.height - 20, 10);    
-
-    renderer3d.render();
-}
-const drawCamera = (context: CanvasRenderingContext2D, cam: ICamera) => {
-    drawSegment(context, cam.screen, 'rgb(255,255,255)');
-    makeRays(3, cam).forEach(r => {        
-        drawSegment(context, r.line, 'grey');
-    });
-};
-const drawGeometry = (context: CanvasRenderingContext2D, geometry: IGeometry) => {
-    geometry.polygons.forEach(p => {
-        p.vertices.forEach(e => drawVertex(context, e));
-        p.edges.forEach(e => drawEdge(context, e));
-    });    
-};
-
-const drawEdge = (context: CanvasRenderingContext2D, edge: IEdge) => {
-    const color = world.selection.includes(edge)? 'rgb(250,100,0)' : 'rgb(255,255,255)';
-    drawSegment(context, [edge.start.vector, edge.end.vector], color);
-}
-const drawSegment = (context: CanvasRenderingContext2D, segment: ILineSegment, color: string = 'white') => {
-    context.beginPath();
-    context.moveTo(getX(segment[0]), getY(segment[0]));
-    context.lineTo(getX(segment[1]), getY(segment[1]));
-    context.lineWidth = 1;
-    context.setLineDash([]);
-    context.strokeStyle = color;    
-    context.stroke();
-};
-const drawVertex = (context: CanvasRenderingContext2D, vertex: IVertex) => {
-    context.beginPath();
-    context.arc(getX(vertex.vector), getY(vertex.vector), 2, 0, 2*Math.PI, false);
-    context.fillStyle = world.selection.includes(vertex)? 'rgb(250,100,0)' : 'rgb(100,100,0)';
-    context.fill();
-}
-const drawGrid = () => {        
-    context.drawImage(ui.view_2d.background, 0, 0);
-};
-drawGrid();
-
-function update(x: number) {
-    actionHandler.handle();
-}
+let renderer3d = new Renderer3d(world, ui.view_3d.canvas);
+let renderer2d = new Renderer2d(world, ui.view_2d.canvas);
 
 const times: number[] = [];
 let fps: number;
@@ -122,12 +48,21 @@ function loop() {
     times.push(now);
     fps = times.length;
   
-     update(now);
+     update();
      redraw();
   
      window.requestAnimationFrame(loop)    
 }
-
 window.requestAnimationFrame(loop)
+
+function redraw() {  
+    renderer2d.render(fps);
+    renderer3d.render();
+}
+
+function update() {
+    actionHandler.handle();
+}
+
 
 

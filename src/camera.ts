@@ -4,6 +4,7 @@ import { ILine, ILineSegment, lineAngle } from "./lineSegment";
 export type ICameraData = { location: vector.Vector, target: vector.Vector, angle?: number};
 export type ICamera = ICameraData & { screen: ILineSegment};
 export type IRay = {line: ILine, angle: number}
+
 const makeScreen = (data: ICameraData): ILineSegment => {
     let angle = data.angle || Math.PI/4;
     let d = vector.subtract(data.target, data.location);
