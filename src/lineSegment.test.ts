@@ -1,4 +1,4 @@
-import { intersectRay, ILineSegment } from './lineSegment';
+import { intersectRay, ILineSegment, distanceTo } from './lineSegment';
 import { IRay } from "./camera";
 import { Vector } from './vector';
 
@@ -32,5 +32,21 @@ describe('line segment tests', () => {
             // it('test5', () => test([[-3,3],[1,4]], null));
         });      
         
+    });
+
+    describe('distance point <> segment tests', () => {  
+        const test = (p: Vector, s: ILineSegment)=> distanceTo(p, s);        
+        
+        it('test1', () => expect(test([0,0], [[0,0],[1,0]])).toBe(0));
+        it('test2', () => expect(test([0.5,0], [[0,0],[1,0]])).toBe(0));
+        it('test3', () => expect(test([0,1], [[0,0],[1,0]])).toBe(1));
+        it('test4', () => expect(test([0.5,1], [[0,0],[1,0]])).toBe(1));
+        it('test5', () => expect(test([1,1], [[0,0],[1,0]])).toBe(1));        
+        it('test6', () => expect(test([-1,0], [[0,0],[1,0]])).toBe(1));
+
+        it('test7', () => expect(test([0,0], [[0,0],[1,1]])).toBe(0));
+        it('test8', () => expect(test([1/2,1/2], [[0,0],[1,1]])).toBe(0));
+        it('test9', () => expect(test([1,1], [[0,0],[1,1]])).toBe(0));        
+        it('test0', () => expect(test([-1,-1], [[0,0],[1,1]])).toBe(Math.sqrt(2)));        
     });
 });

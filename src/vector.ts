@@ -17,7 +17,8 @@ const dot = (u: Vector, v: Vector): number => {
     : zip(cs => cs.reduce((acc, c) => acc * c, 1), [u, v])
         .reduce((acc, n) => acc + n, 0);
 }    
-const norm = (u: Vector): number => Math.sqrt(dot(u, u));
+const norm = (u: Vector): number => Math.sqrt(normSqr(u));
+const normSqr = (u: Vector): number => dot(u, u);
 const normalize = (u: Vector): Vector => scale(1/norm(u), u);
 const scale = (k: number, u: Vector): Vector => is2D(u) ? [k*u[0], k*u[1]]: u.map(x => k * x);
 const subtract = (u: Vector, v: Vector): Vector => are2D(u, v) 
@@ -29,7 +30,7 @@ const add = (u: Vector, v: Vector): Vector => are2D(u, v)
     : zip((cs) => cs.reduce((acc, c) => acc + c, 0), [u, v]);
 const areOrthogonal = (u: Vector, v: Vector): boolean => dot(u, v) === 0;
 const distance = (u: Vector, v: Vector): number => norm(subtract(u, v));
-const angleBetween = (u: Vector, v: Vector): number => Math.atan2(cross(u, v), dot(u, v)); //Math.acos(dot(u, v) / (norm(u) * norm(v)));
+const angleBetween = (u: Vector, v: Vector): number => Math.atan2(cross(u, v), dot(u, v)); 
 const proj = (u: Vector, v: Vector): Vector => scale(dot(u, v) / dot(v, v), v);
 const rotate = (angle: number, u: Vector): Vector => [...math.multiply(createRotation(angle), u) as any as number[]]
 const cross = (u: Vector, v: Vector): number => {
@@ -38,7 +39,7 @@ const cross = (u: Vector, v: Vector): number => {
 }
 const perpendicular = (u: Vector): Vector => [-getY(u), getX(u)];
 
-export {getX, getY, dot, dim, norm, normalize, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, cross, perpendicular};
+export {getX, getY, dot, dim, norm, normSqr, normalize, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, cross, perpendicular};
 
 const createRotation = (angle: number) => [
     [Math.cos(angle), -1 * Math.sin(angle)],

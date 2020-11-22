@@ -10,7 +10,7 @@ import { ActionHandler, ActiveActions } from "./actionHandler";
 import { World } from "./world";
 import { createGeometry } from "./geometry";
 import { GeometrySelector } from "./geometrySelector";
-import { IGeometry, IVertex } from "./vertex";
+import { IEdge, IGeometry, IVertex } from "./vertex";
 import { ICamera, makeCamera, makeRays } from "./camera";
 
 const ui = {    
@@ -80,17 +80,21 @@ const drawCamera = (context: CanvasRenderingContext2D, cam: ICamera) => {
 const drawGeometry = (context: CanvasRenderingContext2D, geometry: IGeometry) => {
     geometry.polygons.forEach(p => {
         p.vertices.forEach(e => drawVertex(context, e));
-        p.edges.forEach(e => drawSegment(context, [e.start.vector, e.end.vector], 'rgb(255,255,255)'));    
+        p.edges.forEach(e => drawEdge(context, e));
     });    
 };
 
+const drawEdge = (context: CanvasRenderingContext2D, edge: IEdge) => {
+    const color = world.selection.includes(edge)? 'rgb(250,100,0)' : 'rgb(255,255,255)';
+    drawSegment(context, [edge.start.vector, edge.end.vector], color);
+}
 const drawSegment = (context: CanvasRenderingContext2D, segment: ILineSegment, color: string = 'white') => {
     context.beginPath();
     context.moveTo(getX(segment[0]), getY(segment[0]));
     context.lineTo(getX(segment[1]), getY(segment[1]));
     context.lineWidth = 1;
     context.setLineDash([]);
-    context.strokeStyle = color;
+    context.strokeStyle = color;    
     context.stroke();
 };
 const drawVertex = (context: CanvasRenderingContext2D, vertex: IVertex) => {

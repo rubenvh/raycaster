@@ -19,4 +19,4 @@ export const getCastedRays = (resolution: number, camera: ICamera, geometry: IGe
         });
 };
 
-const isTranslucentEdge = (e: IEdge) => e.material?.color[3] < 255;
+const isTranslucentEdge = (e: IEdge) => e.material?.color[3] < 1;

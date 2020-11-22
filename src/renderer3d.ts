@@ -9,7 +9,7 @@ export class Renderer3d {
     constructor(private world: World, private canvas: HTMLCanvasElement, private context2D: CanvasRenderingContext2D) {
         this.context = canvas.getContext('2d');
     }
-    private resolution = 320;
+    private resolution = 640;
     private horizonDistance = 250;
     
     private mapToColumn = (column: number) => {

@@ -1,3 +1,4 @@
+import { ILineSegment } from './lineSegment';
 import { Guid } from "guid-typescript";
 
 import * as vector from './vector';
@@ -14,6 +15,7 @@ export type IGeometry = { polygons: IPolygon[]};
 
 const makeVertex = (v: vector.Vector): IVertex => ({vector: v});
 export const makeEdge = (v: vector.Vector, u: vector.Vector): IEdge => ({start: makeVertex(v), end: makeVertex(u)});
+export const segmentFrom = (e: IEdge): ILineSegment => [e.start.vector, e.end.vector];
 const isVertex = (v: IVertex|vector.Vector): v is IVertex => (v as IVertex).vector !== undefined;    
 const giveIdentity = <T extends IEntity>(e : T): T => e.id ? e : ({...e, id: Guid.create()});
 const getVector = (vertexOrVector: IVertex|vector.Vector): vector.Vector => isVertex(vertexOrVector) ? vertexOrVector.vector : vertexOrVector;

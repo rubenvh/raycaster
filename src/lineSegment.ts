@@ -1,6 +1,6 @@
 
 import { IRay } from './camera';
-import { add, angleBetween, cross, dot, getX, getY, norm, normalize, perpendicular, scale, subtract, Vector } from './vector';
+import { add, angleBetween, cross, dot, getX, getY, norm, normalize, normSqr, perpendicular, scale, subtract, Vector } from './vector';
 
 export type ILine = [Vector, Vector]; // or other representations
 export type ILineSegment = [Vector, Vector];
@@ -70,3 +70,13 @@ export const intersectRay = (ray: IRay, s: ILineSegment): Vector => {
   if (t1 >=  0 && t2 >= 0 && t2 <= 1) return add(o, scale(t1, rd));
   return null;
 }
+
+export const distanceTo = (p: Vector, s: ILineSegment): number => {
+  let v = s[0], w = s[1];
+  let l2 = normSqr(subtract(v, w));
+  if (l2 === 0) return normSqr(subtract(p, v));
+  let wv = subtract(w,v);
+  let t = dot(subtract(p, v), wv) / l2;
+  t = Math.max(0, Math.min(1, t));
+  return norm(subtract(p, add(v, scale(t, wv))));
+};
