@@ -1,11 +1,17 @@
-- refactor 2d view into separate class
 - refactor drawing primitives into separate file
-- simplify camera calculations by introducing pos, dir and plane vectors
 - when moving camera: send ray for fwd/back + sidestep movements => when distance of collision is smaller than some threshold => movement blocked
 - add linter
 - select with right click
 - ability to move selection (drag & drop) + snap to 20x20 grid
-- display selected item's JSON + ability to change
+- ability to split edge (inject vertex)
+- ability to remove vertex (join edges)
+- display selected item's JSON
+- modify selected item's JSON and save it
 - load textures in a virtual canvas
 - draw texture on wall column (copying from virtual canvas)
+- store textures in localstorage? 
 - atmospheric lightning (tunnel effect = reduce luminosity of walls further away, mist = dampen color of walls further away)
+- implement scrolling in 2d view
+- implement zooming in 2d view (+ impact on distance threshold for selection)
+- implement mirror walls
+- implement doors

@@ -1,6 +1,7 @@
 import { IStoredGeometry } from './vertex';
-import { createGeometry, loadGeometry } from './geometry';
+import { createGeometry, detectCollisions, loadGeometry } from './geometry';
 import { Vector } from './vector';
+import { makeCamera, makeRays } from './camera';
 describe('geometry tests', () => {
     describe('creating geometry from vectors', () => {
         const invokeSut = (vectors: Vector[][]) => createGeometry(vectors);
@@ -63,5 +64,25 @@ describe('geometry tests', () => {
             });   
         });
     });
-  });
+    describe('perf test', () => {
+        // it('running intersections for all rays', () => {
+        //     const world = {
+        //         camera: makeCamera({position: [50,50], direction: [0,-10], plane: [-15, 0]}),
+        //         geometry: createGeometry([
+        //              [[30,20],[60,20],[60,80],[100,80],[100,60],[120,60],[125,75],[140,80],[140,60],[160,60],[160,80],[180,80],[180,40],[160,40],[160,0],[260,0],[260,40],[200,40],[200,140],[240,140],[240,380],[120,380],[120,140],[180,140],[180,100],[20,100]]
+        //         ]),
+        //     };
+        //     const start = process.hrtime();
+        //     for (let i = 0; i < 600; i++) {
+        //         const rays = makeRays(1280, world.camera);
+
+        //         for (let ray of rays){
+        //             var hits = detectCollisions(ray, world.geometry).sort((a,b)=> a.distance - b.distance);
+        //         }
+        //     }      
+        //     const end = process.hrtime(start);
+        //     console.log(end);
+        // })
+    });
+});
   

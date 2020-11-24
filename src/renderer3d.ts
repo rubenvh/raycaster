@@ -12,8 +12,7 @@ export class Renderer3d {
     private resolution = 1280;
     private horizonDistance = 250;
     
-    public render = () => {        
-        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+    public render = () => {                
         // draw floor + sky
         this.drawRect(this.context, [[0, 0], [this.canvas.width, this.canvas.height/2]], 'rgb(200,200,200)');
         this.drawRect(this.context, [[0, this.canvas.height/2], [this.canvas.width, this.canvas.height]], 'rgb(50,80,80)');

@@ -24,7 +24,7 @@ const ui = {
 let storedWorld = localStorage.getItem('world');
 let world: World = storedWorld ? JSON.parse(storedWorld) :
 {
-    camera: makeCamera({location: [50,50], target: [70,70]}),
+    camera: makeCamera({position: [50,50], direction: [0,-10], plane: [-15, 0]}),
     geometry: createGeometry([
          [[30,20],[60,20],[60,80],[100,80],[100,60],[120,60],[125,75],[140,80],[140,60],[160,60],[160,80],[180,80],[180,40],[160,40],[160,0],[260,0],[260,40],[200,40],[200,140],[240,140],[240,380],[120,380],[120,140],[180,140],[180,100],[20,100]]
     ]),

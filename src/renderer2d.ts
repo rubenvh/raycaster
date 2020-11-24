@@ -27,7 +27,7 @@ export class Renderer2d {
                 c.hits.forEach(hit => {
                     if (hit?.intersection) {
                         this.drawVector(this.context, hit.intersection, 'rgb(0,255,0)');
-                        if (rayIndex % 20 === 0) this.drawSegment(this.context, [hit.intersection, hit.ray.line[0]], 'green');
+                        if (rayIndex % (this.canvas.width/10) === 0) this.drawSegment(this.context, [hit.intersection, hit.ray.line[0]], 'green');
                     };
                 });
             });
