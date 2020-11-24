@@ -42,13 +42,20 @@ export const strafe = (ratio: number, camera: ICamera) => {
 
 export const makeRays = (resolution: number, camera: ICamera): IRay[] => {    
     const result = [];
-    const midLine: ILineSegment = [camera.position, vector.add(camera.position, camera.direction)];
+    const m: ILineSegment = [camera.position, vector.add(camera.position, camera.direction)];
     for(let x: number = 0; x < resolution; x++)
     {
         let factor = 2 * x / resolution - 1;
         let rayDir = vector.add(camera.direction, vector.scale(factor, camera.plane));
         let rayLine = [camera.position, vector.add(camera.position, rayDir)] as ILine;
-        result.push({ line: rayLine, angle: lineAngle(midLine, rayLine) });
+        result.push({ line: rayLine, angle: lineAngle(m, rayLine) });
     }
     return result;    
 };
+
+export const makeDirectionRay = (direction: 1|-1, camera: ICamera): IRay => direction === 1 
+    ? ({line: [camera.position, vector.add(camera.position, camera.direction)], angle: 0}) 
+    : ({line: [camera.position, vector.subtract(camera.position, camera.direction)], angle: 0});
+export const makeStrafeRay = (direction: 1|-1, camera: ICamera): IRay => direction === 1 
+    ? ({line: [camera.position, vector.subtract(camera.position, camera.plane)], angle: 0})
+    : ({line: [camera.position, vector.add(camera.position, camera.plane)], angle: 0});
