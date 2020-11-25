@@ -24,9 +24,7 @@ export const adaptDepth = (direction: 1|-1, camera: ICamera): ICamera => {
 
 export const move = (ratio: number, camera: ICamera) => {
     let delta = vector.scale(ratio, camera.direction);
-    return makeCamera({...camera, 
-        position: vector.add(camera.position, delta),        
-    });
+    return changeLocation(delta, camera);
 };
 export const rotate = (angle: number, camera: ICamera) => {  
     return makeCamera({...camera,
@@ -37,8 +35,11 @@ export const rotate = (angle: number, camera: ICamera) => {
 export const strafe = (ratio: number, camera: ICamera) => {        
     let sign = ratio > 0 ? 1 : -1;
     let n = vector.scale(Math.abs(ratio), vector.rotate(sign * Math.PI/2, camera.direction));
-    return makeCamera({...camera, position: vector.add(camera.position, n) });    
+    return changeLocation(n, camera);
 };
+export const changeLocation = (delta: vector.Vector, camera:ICamera): ICamera  => {
+    return makeCamera({...camera, position: vector.add(camera.position, delta) });    
+}
 
 export const makeRays = (resolution: number, camera: ICamera): IRay[] => {    
     const result = [];
