@@ -54,23 +54,28 @@ const constrainedMove = (direction: 1|-1, cam: ICamera,
     raymaker: (direction: 1|-1, cam: ICamera)=> IRay,
     geometry: IGeometry): ICamera => {
     
+    let movementRatio = direction * 0.15;
     const hit = castRays([raymaker(direction, cam)], geometry)[0].hits[0];    
-    if (hit.distance >= 2) { // magic number 2 should actually depend on size of direction/plane vector and 0.15 scale increment above (prevent overshooting the wall)
-        return mover(direction * 0.15, cam);
+    if (hit.distance >= 2) { // magic number 2 should actually depend on size of direction/plane vector and 0.15 scale increment above (prevent overshooting the wall)        
+        // distance large enough: safe to move
+        return mover(movementRatio, cam);
     }
 
+    // calculate angle with collided edge
     const s = segmentFrom(hit.edge);
     const collisionAngle = Math.abs(lineAngle(s, hit.ray.line))-Math.PI/2;
-    if (Math.abs(collisionAngle) > Math.PI/8) {
-        // TODO: size of target should depend on angle => faster when angle is further from PI/2
-        const target = vector.normalize(collisionAngle < 0 ? vector.subtract(s[1], s[0]) : vector.subtract(s[0], s[1]));
-        return constrainedMove(direction, cam,                 
-            (_r, c)=> changeLocation(target, c), // move function
-            (_d, c) => ({angle: 0, line: [c.position, vector.add(c.position, target)]}),// ray creation function
-            geometry); 
-    }
 
-    return cam;
+    // if angle is small enough, stop movement by returning original camera
+    if (Math.abs(collisionAngle) <= Math.PI/8) return cam;
+
+    // angle is large enough, move parallel to collided edge
+    // TODO: size of target could depend on angle => faster when angle is further from PI/2
+    movementRatio = vector.norm(vector.scale(movementRatio, cam.direction))
+    const target = vector.scale(movementRatio, vector.normalize(collisionAngle < 0 ? vector.subtract(s[1], s[0]) : vector.subtract(s[0], s[1])));
+    return constrainedMove(direction, cam,                 
+        (_r, c)=> changeLocation(target, c), // move function: change location to calculated target
+        (_d, c) => ({angle: 0, line: [c.position, vector.add(c.position, target)]}),// ray creation function: cast ray from camera position to new target
+        geometry);     
 }
 
 export const makeRays = (resolution: number, camera: ICamera): IRay[] => {    

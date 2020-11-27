@@ -12,6 +12,9 @@ export class ActionHandler {
     constructor(private actions: ActiveActions, private world: World) {}
 
     handle() {
+        // TODO: speed of movement is partially here (rotation) and partially inside camera
+        // (what about a running mode ? )
+
         if (this.actions.turnleft) this.world.camera = rotate(-0.15, this.world.camera);
         if (this.actions.turnright) this.world.camera = rotate(0.15, this.world.camera);
         if (this.actions.left) this.world.camera = this.strafe(-1);
