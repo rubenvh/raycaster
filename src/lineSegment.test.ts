@@ -1,5 +1,4 @@
-import { intersectRay, ILineSegment, distanceTo } from './lineSegment';
-import { IRay } from "./camera";
+import { intersectRay, ILineSegment, distanceTo, IRay } from './lineSegment';
 import { Vector } from './vector';
 
 describe('line segment tests', () => {

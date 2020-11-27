@@ -1,9 +1,9 @@
 
-import { IRay } from './camera';
 import { add, angleBetween, cross, dot, getX, getY, norm, normalize, normSqr, perpendicular, scale, subtract, Vector } from './vector';
 
 export type ILine = [Vector, Vector]; // or other representations
 export type ILineSegment = [Vector, Vector];
+export type IRay = {line: ILine, angle: number}; 
 
 const start = (a: ILineSegment): Vector => a[0];
 const end = (a: ILineSegment): Vector => a[1];

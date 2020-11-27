@@ -1,9 +1,11 @@
+import { IGeometry, segmentFrom } from './vertex';
 import * as vector from './vector';
-import { ILine, ILineSegment, lineAngle } from "./lineSegment";
+import { ILine, ILineSegment, lineAngle, IRay } from "./lineSegment";
+import { castRays } from './raycaster';
 
 export type ICameraData = { position: vector.Vector, direction: vector.Vector, plane?: vector.Vector};
 export type ICamera = ICameraData & { screen: ILineSegment};
-export type IRay = {line: ILine, angle: number}
+
 
 const makeScreen = (data: ICameraData): ILineSegment => {
     let plane = data.plane || vector.perpendicular(data.direction);    
@@ -22,23 +24,53 @@ export const adaptDepth = (direction: 1|-1, camera: ICamera): ICamera => {
     return makeCamera(({...camera, direction: vector.add(camera.direction, delta)}));
 };    
 
-export const move = (ratio: number, camera: ICamera) => {
+export const freeMove = (ratio: number, camera: ICamera) => {
     let delta = vector.scale(ratio, camera.direction);
     return changeLocation(delta, camera);
 };
+export const move = (direction: 1|-1, camera: ICamera, geometry: IGeometry): ICamera => 
+    constrainedMove(direction, camera, freeMove, makeDirectionRay, geometry);
+
 export const rotate = (angle: number, camera: ICamera) => {  
     return makeCamera({...camera,
         direction: vector.rotate(angle, camera.direction),
         plane: vector.rotate(angle, camera.plane),
     });    
 };
-export const strafe = (ratio: number, camera: ICamera) => {        
+export const freeStrafe = (ratio: number, camera: ICamera) => {        
     let sign = ratio > 0 ? 1 : -1;
     let n = vector.scale(Math.abs(ratio), vector.rotate(sign * Math.PI/2, camera.direction));
     return changeLocation(n, camera);
 };
-export const changeLocation = (delta: vector.Vector, camera:ICamera): ICamera  => {
+export const strafe = (direction: 1|-1, camera: ICamera, geometry: IGeometry): ICamera =>
+    constrainedMove(direction, camera, freeStrafe, makeStrafeRay, geometry);
+
+const changeLocation = (delta: vector.Vector, camera:ICamera): ICamera  => {
     return makeCamera({...camera, position: vector.add(camera.position, delta) });    
+}
+
+const constrainedMove = (direction: 1|-1, cam: ICamera, 
+    mover: (ratio: number, cam: ICamera) => ICamera, 
+    raymaker: (direction: 1|-1, cam: ICamera)=> IRay,
+    geometry: IGeometry): ICamera => {
+    
+    const hit = castRays([raymaker(direction, cam)], geometry)[0].hits[0];    
+    if (hit.distance >= 2) { // magic number 2 should actually depend on size of direction/plane vector and 0.15 scale increment above (prevent overshooting the wall)
+        return mover(direction * 0.15, cam);
+    }
+
+    const s = segmentFrom(hit.edge);
+    const collisionAngle = Math.abs(lineAngle(s, hit.ray.line))-Math.PI/2;
+    if (Math.abs(collisionAngle) > Math.PI/8) {
+        // TODO: size of target should depend on angle => faster when angle is further from PI/2
+        const target = vector.normalize(collisionAngle < 0 ? vector.subtract(s[1], s[0]) : vector.subtract(s[0], s[1]));
+        return constrainedMove(direction, cam,                 
+            (_r, c)=> changeLocation(target, c), // move function
+            (_d, c) => ({angle: 0, line: [c.position, vector.add(c.position, target)]}),// ray creation function
+            geometry); 
+    }
+
+    return cam;
 }
 
 export const makeRays = (resolution: number, camera: ICamera): IRay[] => {    
@@ -54,9 +86,9 @@ export const makeRays = (resolution: number, camera: ICamera): IRay[] => {
     return result;    
 };
 
-export const makeDirectionRay = (direction: 1|-1, camera: ICamera): IRay => direction === 1 
+const makeDirectionRay = (direction: 1|-1, camera: ICamera): IRay => direction === 1 
     ? ({line: [camera.position, vector.add(camera.position, camera.direction)], angle: 0}) 
     : ({line: [camera.position, vector.subtract(camera.position, camera.direction)], angle: 0});
-export const makeStrafeRay = (direction: 1|-1, camera: ICamera): IRay => direction === 1 
+const makeStrafeRay = (direction: 1|-1, camera: ICamera): IRay => direction === 1 
     ? ({line: [camera.position, vector.subtract(camera.position, camera.plane)], angle: 0})
     : ({line: [camera.position, vector.add(camera.position, camera.plane)], angle: 0});

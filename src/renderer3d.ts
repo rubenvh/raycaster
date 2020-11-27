@@ -1,3 +1,4 @@
+import { makeRays } from './camera';
 import { RayHit } from './geometry';
 import { ILineSegment, slope } from './lineSegment';
 import * as raycaster from './raycaster';
@@ -17,7 +18,7 @@ export class Renderer3d {
         this.drawRect(this.context, [[0, 0], [this.canvas.width, this.canvas.height/2]], 'rgb(200,200,200)');
         this.drawRect(this.context, [[0, this.canvas.height/2], [this.canvas.width, this.canvas.height]], 'rgb(50,80,80)');
         
-        this.world.rays = raycaster.getCastedRays(this.resolution, this.world.camera, this.world.geometry);
+        this.world.rays = raycaster.castRays(makeRays(this.resolution, this.world.camera), this.world.geometry, raycaster.passTroughTranslucentEdges);
         this.world.rays.forEach((c, rayIndex) => {
             for (let index = c.hits.length; index > 0; index--) {
                 const hit = c.hits[index-1];

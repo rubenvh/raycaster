@@ -1,6 +1,5 @@
 
-import { IRay } from './camera';
-import { distanceTo, intersectRay } from './lineSegment';
+import { distanceTo, intersectRay, IRay } from './lineSegment';
 import * as vector from './vector';
 import { IGeometry, IVertex, distance, IPolygon, loadPolygon, createPolygon, IStoredGeometry, IEdge, segmentFrom } from './vertex';
 
@@ -32,16 +31,12 @@ export const detectCollisionAt = (vector: vector.Vector, geometry: IGeometry): V
 
 export const detectCollisions = (ray: IRay, geometry: IGeometry): RayHit[] => {
     const result: RayHit[] = [];
-    for (const p of geometry.polygons){
-        for (const e of p.edges) {
-            const i = intersectRay(ray, [e.start.vector, e.end.vector]);
-            if (i) {
-                result.push({
-                    polygon: p,
-                    ray,
-                    edge: e,
-                    intersection: i,
-                    distance: vector.distance(i, ray.line[0]) * Math.cos(ray.angle)
+    for (const polygon of geometry.polygons){
+        for (const edge of polygon.edges) {
+            const intersection = intersectRay(ray, segmentFrom(edge));
+            if (intersection) {
+                result.push({polygon, ray, edge, intersection,
+                    distance: vector.distance(intersection, ray.line[0]) * Math.cos(ray.angle)
                 })
             }
         }
