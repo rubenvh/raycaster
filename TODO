@@ -1,7 +1,5 @@
 - refactor drawing primitives into separate file
-- when moving camera: send ray for fwd/back + sidestep movements => when distance of collision is smaller than some threshold => movement blocked
 - add linter
-- select with right click
 - ability to move selection (drag & drop) + snap to 20x20 grid
 - ability to split edge (inject vertex)
 - ability to remove vertex (join edges)

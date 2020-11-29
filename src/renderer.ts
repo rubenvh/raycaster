@@ -1,3 +1,4 @@
+import { GeometryModifier } from './geometryModifier';
 import { Renderer3d } from './renderer3d';
 import { Renderer2d } from "./renderer2d";
 // This file is required by the index.html file and will
@@ -6,7 +7,7 @@ import { Renderer2d } from "./renderer2d";
 
 import { KeyBoardListener } from "./keyboard-listener";
 import { ActionHandler, ActiveActions } from "./actionHandler";
-import { World } from "./world";
+import { loadWorld, World } from "./world";
 import { createGeometry } from "./geometry";
 import { GeometrySelector } from "./geometrySelector";
 import { makeCamera } from "./camera";
@@ -22,13 +23,14 @@ const ui = {
 };
 
 let storedWorld = localStorage.getItem('world');
-let world: World = storedWorld ? JSON.parse(storedWorld) :
+let world: World = storedWorld ? loadWorld(JSON.parse(storedWorld)) :
 {
     camera: makeCamera({position: [50,50], direction: [0,-10], plane: [-15, 0]}),
     geometry: createGeometry([
          [[30,20],[60,20],[60,80],[100,80],[100,60],[120,60],[125,75],[140,80],[140,60],[160,60],[160,80],[180,80],[180,40],[160,40],[160,0],[260,0],[260,40],[200,40],[200,140],[240,140],[240,380],[120,380],[120,140],[180,140],[180,100],[20,100]]
     ]),
-    selection: []
+    selection: [],
+    rays: []
 };
 
 let activeActions = {} as ActiveActions;
@@ -36,7 +38,7 @@ let actionHandler = new ActionHandler(activeActions, world);
 new KeyBoardListener(activeActions).start();
 new GeometrySelector(ui.view_2d.canvas, world).start();
 let renderer3d = new Renderer3d(world, ui.view_3d.canvas);
-let renderer2d = new Renderer2d(world, ui.view_2d.canvas);
+let renderer2d = new Renderer2d(world, ui.view_2d.canvas, new GeometryModifier(ui.view_2d.canvas, world).start());
 
 const times: number[] = [];
 let fps: number;
@@ -55,7 +57,7 @@ function loop() {
 }
 window.requestAnimationFrame(loop)
 
-function redraw() {  
+function redraw() {      
     renderer2d.render(fps);
     renderer3d.render();
 }

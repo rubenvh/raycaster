@@ -62,6 +62,19 @@ describe('geometry tests', () => {
                 expect(actual.polygons[0].vertices.length).toBe(3);
                 expect(actual.polygons[0].edges.length).toBe(3);
             });   
+            it('then start of next is same as end of previous', () => {
+                let actual = invokeSut({polygons: [{edges: [
+                    {start: {vector: [0, 0]}, end: {vector: [0, 1]}},
+                    {start: {vector: [0, 1]}, end: {vector: [1, 0]}},
+                    {start: {vector: [1, 0]}, end: {vector: [0, 0]}},
+                ]}]});  
+
+                let p = actual.polygons[0];
+                p.edges.reduce((acc, p) => {
+                    expect(p.start).toBe(acc.end);
+                    return p;
+                });                
+            }); 
         });
     });
     describe('perf test', () => {
