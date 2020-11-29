@@ -64,6 +64,6 @@ export class GeometryModifier {
     };
 
     private roundToGrid(value: number) {
-        return Math.floor(value / 20) * 20;
+        return Math.round(value / 20) * 20;
     }
 }
