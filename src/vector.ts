@@ -38,8 +38,17 @@ const cross = (u: Vector, v: Vector): number => {
     throw new Error('not yet implemented');
 }
 const perpendicular = (u: Vector): Vector => [-getY(u), getX(u)];
+const copyIn = (u: Vector, v: Vector): Vector => {
+    if (are2D(u, v))
+    {
+        u[0] = v[0];
+        u[1] = v[1];
+    }
+    else throw new Error('not yet implemented');    
+    return u;
+}
 
-export {getX, getY, dot, dim, norm, normSqr, normalize, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, cross, perpendicular};
+export {getX, getY, dot, dim, norm, normSqr, normalize, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, cross, perpendicular, copyIn};
 
 const createRotation = (angle: number) => [
     [Math.cos(angle), -1 * Math.sin(angle)],

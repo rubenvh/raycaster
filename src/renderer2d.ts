@@ -1,4 +1,3 @@
-import { GeometryModifier } from './geometryModifier';
 import { ICamera, makeRays } from './camera';
 import { ILineSegment } from './lineSegment';
 import { getX, getY, Vector } from './vector';
@@ -9,7 +8,7 @@ export class Renderer2d {
     private context: CanvasRenderingContext2D;
     private background: HTMLCanvasElement;
 
-    constructor(private world: World, private canvas: HTMLCanvasElement, private geometryModifier: GeometryModifier) {
+    constructor(private world: World, private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');
         this.background = document.createElement('canvas') as HTMLCanvasElement;
         this.initGrid();
@@ -32,9 +31,7 @@ export class Renderer2d {
                     };
                 });
             });
-        }        
-
-        this.geometryModifier.draw();
+        }
     };
 
     private drawCamera = (context: CanvasRenderingContext2D, cam: ICamera) => {

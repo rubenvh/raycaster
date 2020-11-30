@@ -72,6 +72,8 @@ const constrainedMove = (direction: 1|-1, cam: ICamera,
     // TODO: size of target could depend on angle => faster when angle is further from PI/2
     movementRatio = vector.norm(vector.scale(movementRatio, cam.direction))
     const target = vector.scale(movementRatio, vector.normalize(collisionAngle < 0 ? vector.subtract(s[1], s[0]) : vector.subtract(s[0], s[1])));
+    
+    // TODO: recursion => prevent call stack errors
     return constrainedMove(direction, cam,                 
         (_r, c)=> changeLocation(target, c), // move function: change location to calculated target
         (_d, c) => ({angle: 0, line: [c.position, vector.add(c.position, target)]}),// ray creation function: cast ray from camera position to new target

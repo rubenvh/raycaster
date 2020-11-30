@@ -1,5 +1,5 @@
 
-import { distanceTo, intersectRay, IRay } from './lineSegment';
+import { distanceTo, intersectRay, IRay, distanceToMidPoint } from './lineSegment';
 import * as vector from './vector';
 import { IGeometry, IVertex, distance, IPolygon, loadPolygon, createPolygon, IStoredGeometry, IEdge, segmentFrom } from './vertex';
 
@@ -13,16 +13,15 @@ export const createGeometry = (polygonCollection: vector.Vector[][]): IGeometry 
 export const addPolygon = (p: IPolygon, geometry: IGeometry): IGeometry => ({polygons: [...geometry.polygons, p]});
 
 export const detectCollisionAt = (vector: vector.Vector, geometry: IGeometry): VertexCollision|EdgeCollision => {
-    const distanceComparer = (x: {distance:number}, y: {distance:number}) => y.distance - x.distance;
-
+    const distanceComparer = (x: {distance:number}, y: {distance:number}) => x.distance - y.distance;
         return geometry.polygons.reduce((acc, p) => {            
             let edges: Collision[] = p.edges
-                .map(e => ({polygon: p, kind: "edge", edge: e, distance: distanceTo(vector, segmentFrom(e))} as const));
+                .map(e => ({polygon: p, kind: "edge", edge: e, distance: distanceToMidPoint(vector, segmentFrom(e))} as const));
             let vertices: Collision[] = p.vertices
             .map(v => ({ polygon: p, kind: "vertex", vertex: v, distance: distance(v, vector)} as const));
 
             let closest = edges.concat(vertices)                
-            .filter(_ => _.distance <= 10)
+            .filter(_ => _.distance <= 50)
             .sort(distanceComparer)[0];
             return closest ? acc.concat(closest) : acc;
         }, [])

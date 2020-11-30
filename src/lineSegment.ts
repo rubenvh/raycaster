@@ -1,5 +1,4 @@
-
-import { add, angleBetween, cross, dot, getX, getY, norm, normalize, normSqr, perpendicular, scale, subtract, Vector } from './vector';
+import { add, distance, angleBetween, cross, dot, getX, getY, norm, normalize, normSqr, perpendicular, scale, subtract, Vector } from './vector';
 
 export type ILine = [Vector, Vector]; // or other representations
 export type ILineSegment = [Vector, Vector];
@@ -8,6 +7,7 @@ export type IRay = {line: ILine, angle: number};
 const start = (a: ILineSegment): Vector => a[0];
 const end = (a: ILineSegment): Vector => a[1];
 
+export const midpoint = (a: ILineSegment): Vector => [(a[0][0]+a[1][0])/2, (a[0][1]+a[1][1])/2];
 export const slope = (s: ILineSegment): number => {
   const [x1, x2] = [s[0][0], s[1][0]];
   const [y1, y2] = [s[0][1], s[1][1]];
@@ -80,3 +80,4 @@ export const distanceTo = (p: Vector, s: ILineSegment): number => {
   t = Math.max(0, Math.min(1, t));
   return norm(subtract(p, add(v, scale(t, wv))));
 };
+export const distanceToMidPoint = (p: Vector, s: ILineSegment): number => distance(p, midpoint(s));

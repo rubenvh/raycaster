@@ -37,8 +37,9 @@ let activeActions = {} as ActiveActions;
 let actionHandler = new ActionHandler(activeActions, world);
 new KeyBoardListener(activeActions).start();
 new GeometrySelector(ui.view_2d.canvas, world).start();
+new GeometryModifier(ui.view_2d.canvas, world).start()
 let renderer3d = new Renderer3d(world, ui.view_3d.canvas);
-let renderer2d = new Renderer2d(world, ui.view_2d.canvas, new GeometryModifier(ui.view_2d.canvas, world).start());
+let renderer2d = new Renderer2d(world, ui.view_2d.canvas);
 
 const times: number[] = [];
 let fps: number;
