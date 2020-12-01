@@ -14,6 +14,7 @@ export class KeyBoardListener {
         109: 'camera_angle_down'
     };
     private ctrlKeyMap: KeyMap = {   
+        65: 'add_geometry',          // CTRL A
         83: 'save_world',           // CTRL S
         107: 'camera_depth_up',     // CTRL +
         109: 'camera_depth_down',   // CTRL -
@@ -33,8 +34,7 @@ export class KeyBoardListener {
     };
 
     private keyup = (event: KeyboardEvent) => {
-        var keyMap = event.ctrlKey ? this.ctrlKeyMap : this.keyMap;     
-        var key = keyMap[event.keyCode];
-        this.state[key] = false;
+        this.state[this.ctrlKeyMap[event.keyCode]] = false;
+        this.state[this.keyMap[event.keyCode]] = false;
     };
 }

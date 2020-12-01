@@ -3,6 +3,7 @@ import { World } from "./world";
 
 export type Action = "turnleft"|"turnright"|"right"|"left"|"up"|"down"
     |"camera_angle_up"|"camera_angle_down"|"camera_depth_up"|"camera_depth_down"
+    |'add_geometry'
     |"save_world";
 
 
