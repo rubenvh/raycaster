@@ -3,7 +3,7 @@ import { RayHit } from './geometry';
 import { ILineSegment, slope } from './lineSegment';
 import * as raycaster from './raycaster';
 import { getX, getY } from './vector';
-import { World } from './world';
+import { hasEdge, World } from './world';
 
 export class Renderer3d {
     private context: CanvasRenderingContext2D;
@@ -44,8 +44,7 @@ export class Renderer3d {
         let [col1, col2] = [this.mapToColumn(rayIndex), this.mapToColumn(rayIndex+1)];
                     
         // draw selection borders if edge was selected
-        if (this.world.selection.includes(hit.edge))
-        {
+        if (hasEdge(hit.edge, this.world.selection)) {
             this.drawRect(this.context, [[col1, startRow-2], [col2, startRow]], 'rgb(250,100,0)');
             this.drawRect(this.context, [[col1, endRow], [col2, endRow+2]], 'rgb(250,100,0)');
         }                            

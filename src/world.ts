@@ -3,7 +3,10 @@ import { ICamera } from "./camera";
 import { IEdge, IVertex, IPolygon, IGeometry } from './vertex';
 import { loadGeometry } from './geometry';
 
-export type SelectableElement = IVertex | IEdge | IPolygon;
+export type SelectedVertex = {kind: 'vertex', vertex: IVertex, polygon: IPolygon};
+export type SelectedEdge = {kind: 'edge', edge: IEdge, polygon: IPolygon};
+
+export type SelectableElement = SelectedVertex | SelectedEdge;
 export type World = {
     camera: ICamera,    
     geometry: IGeometry,
@@ -12,3 +15,10 @@ export type World = {
 }
 
 export const loadWorld = (world : World): World => ({...world, geometry: loadGeometry(world.geometry)});
+
+export const hasEdge = (edge: IEdge, selection: SelectableElement[]): boolean => {
+    return selection.some(_=>_.kind === 'edge' && _.edge === edge);
+}
+export const hasVertex = (vertex: IVertex, selection: SelectableElement[]): boolean => {
+    return selection.some(_=>_.kind === 'vertex' && _.vertex === vertex);
+}

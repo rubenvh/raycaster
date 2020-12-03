@@ -42,15 +42,15 @@ export class GeometryMover implements IActionHandler {
         let delta = this.snap(event.ctrlKey, subtract(destination, this.origin));
 
         // TODO: refactor this using typescript type checks
-        this.selectedGeometry.forEach((e: any) => {
-            if (e.vector) {
-                copyIn(e.vector, this.snap(event.ctrlKey, add(e.vector, delta)));
+        this.selectedGeometry.forEach((e) => {
+            if (e.kind === 'vertex') {
+                copyIn(e.vertex.vector, this.snap(event.ctrlKey, add(e.vertex.vector, delta)));
             }
-            else if (e.start && e.end) {
-                if (!this.selectedGeometry.includes(e.start))
-                    copyIn(e.start.vector, this.snap(event.ctrlKey, add(e.start.vector, delta)));
-                if (!this.selectedGeometry.includes(e.end))
-                    copyIn(e.end.vector, this.snap(event.ctrlKey, add(e.end.vector, delta)));
+            else if (e.kind === 'edge') {
+                if (!this.selectedGeometry.some(s => s.kind === 'vertex' && s.vertex === e.edge.start))
+                    copyIn(e.edge.start.vector, this.snap(event.ctrlKey, add(e.edge.start.vector, delta)));
+                if (!this.selectedGeometry.some(s => s.kind === 'vertex' && s.vertex === e.edge.end))
+                    copyIn(e.edge.end.vector, this.snap(event.ctrlKey, add(e.edge.end.vector, delta)));
             }
         });
 

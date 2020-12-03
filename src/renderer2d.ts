@@ -2,7 +2,7 @@ import { ICamera, makeRays } from './camera';
 import { ILineSegment } from './lineSegment';
 import { getX, getY, Vector } from './vector';
 import { IEdge, IGeometry, IVertex } from './vertex';
-import { World } from './world';
+import { hasEdge, hasVertex, World } from './world';
 
 export class Renderer2d {
     private context: CanvasRenderingContext2D;
@@ -49,7 +49,7 @@ export class Renderer2d {
     };
 
     private drawEdge = (context: CanvasRenderingContext2D, edge: IEdge) => {
-        const color = this.world.selection.includes(edge) ? 'rgb(250,100,0)' : 'rgb(255,255,255)';
+        const color = hasEdge(edge, this.world.selection) ? 'rgb(250,100,0)' : 'rgb(255,255,255)';
         this.drawSegment(context, [edge.start.vector, edge.end.vector], color);
     };
 
@@ -64,7 +64,7 @@ export class Renderer2d {
     };
 
     private drawVertex = (context: CanvasRenderingContext2D, vertex: IVertex, color: string = 'rgb(100,100,0)') => {
-        this.drawVector(context, vertex.vector, this.world.selection.includes(vertex) ? 'rgb(250,100,0)' : color);
+        this.drawVector(context, vertex.vector, hasVertex(vertex, this.world.selection) ? 'rgb(250,100,0)' : color);
     };
 
     private drawVector = (context: CanvasRenderingContext2D, vector: Vector, color: string = 'rgb(100,100,0)') => {

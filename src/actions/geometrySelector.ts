@@ -47,5 +47,7 @@ export const spaceTranslator = (canvas: HTMLCanvasElement): ISpaceTranslator => 
 }
 
 const selectedElement = (collision : VertexCollision|EdgeCollision): SelectableElement => {
-    return collision.kind === "edge"? collision.edge : collision.vertex;
+    return collision.kind === 'edge' 
+    ? ({kind: collision.kind, edge: collision.edge, polygon: collision.polygon }) 
+    : ({kind: collision.kind, vertex: collision.vertex, polygon: collision.polygon });
 }

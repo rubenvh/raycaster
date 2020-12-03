@@ -1,9 +1,9 @@
 
-import { distanceTo, intersectRay, IRay, distanceToMidPoint } from './lineSegment';
+import { intersectRay, IRay, distanceToMidPoint } from './lineSegment';
 import * as vector from './vector';
 import { IGeometry, IVertex, distance, IPolygon, loadPolygon, createPolygon, IStoredGeometry, IEdge, segmentFrom } from './vertex';
 
-export type Collision = {polygon: IPolygon, distance: number};
+export type Collision = {polygon: IPolygon, distance: number, kind: string};
 export type VertexCollision = Collision & { vertex: IVertex, kind: "vertex"};
 export type EdgeCollision = Collision & {edge: IEdge, kind: "edge" };
 export type RayHit = {polygon: IPolygon, edge: IEdge, intersection: vector.Vector, ray: IRay, distance: number};
@@ -27,6 +27,11 @@ export const detectCollisionAt = (vector: vector.Vector, geometry: IGeometry): V
         }, [])
         .sort(distanceComparer)[0];
 } 
+
+export const splitEdge = (edge: IEdge, cut: vector.Vector, geometry: IGeometry) => {
+    
+    return geometry;
+}
 
 export const detectCollisions = (ray: IRay, geometry: IGeometry): RayHit[] => {
     const result: RayHit[] = [];
