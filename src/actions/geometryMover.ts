@@ -1,5 +1,5 @@
 import { ISpaceTranslator } from "./geometrySelector";
-import { Vector, subtract, add, copyIn } from "../vector";
+import { Vector, subtract, add, copyIn } from "../geometry/vector";
 import { SelectableElement } from "../world";
 import { IActionHandler } from "./actions";
 

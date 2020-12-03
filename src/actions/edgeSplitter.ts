@@ -1,7 +1,8 @@
+import { splitEdge } from './../geometry/geometry';
 import { SelectedEdge } from './../world';
 import { ISpaceTranslator } from "./geometrySelector";
-import { midpoint } from "../lineSegment";
-import { IEdge, segmentFrom } from "../vertex";
+import { midpoint } from "../geometry/lineSegment";
+import { IEdge, segmentFrom } from "../geometry/vertex";
 import { SelectableElement } from "../world";
 import { bindFlagToKey, deactivate, Flag, IActionHandler, isActive } from "./actions";
 export class EdgeSplitter implements IActionHandler {
@@ -28,10 +29,13 @@ export class EdgeSplitter implements IActionHandler {
     }
     private selectCut = (event: MouseEvent): boolean => {
         if (!this.isActive()) { return false; }
-
+        
+        
         const target = this.spaceTranslator.toWorldSpace(event);
         const candidate = midpoint(segmentFrom(this.selectedEdge.edge));
 
+        //splitEdge()
+        
         // TODO: calculate projection of target on edge and delegate to geometry: add to candidate geometry element list (on geometry, so it can be drawn)
         console.log('deciding cut candidate at', target, this.active);
 

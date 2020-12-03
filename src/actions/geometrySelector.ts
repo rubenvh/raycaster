@@ -1,6 +1,6 @@
 import { IActionHandler } from './actions';
-import { detectCollisionAt, EdgeCollision, VertexCollision } from '../geometry';
-import { Vector } from '../vector';
+import { detectCollisionAt, EdgeCollision, VertexCollision } from '../geometry/geometry';
+import { Vector } from '../geometry/vector';
 import { World, SelectableElement } from '../world';
 
 export class GeometrySelector implements IActionHandler {    

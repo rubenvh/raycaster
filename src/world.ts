@@ -1,7 +1,7 @@
 import { CastedRay } from './raycaster';
 import { ICamera } from "./camera";
-import { IEdge, IVertex, IPolygon, IGeometry } from './vertex';
-import { loadGeometry } from './geometry';
+import { IEdge, IVertex, IPolygon, IGeometry } from './geometry/vertex';
+import { loadGeometry } from './geometry/geometry';
 
 export type SelectedVertex = {kind: 'vertex', vertex: IVertex, polygon: IPolygon};
 export type SelectedEdge = {kind: 'edge', edge: IEdge, polygon: IPolygon};

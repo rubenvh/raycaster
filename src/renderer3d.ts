@@ -1,8 +1,8 @@
 import { makeRays } from './camera';
-import { RayHit } from './geometry';
-import { ILineSegment, slope } from './lineSegment';
+import { RayHit } from './geometry/geometry';
+import { ILineSegment, slope } from './geometry/lineSegment';
 import * as raycaster from './raycaster';
-import { getX, getY } from './vector';
+import { getX, getY } from './geometry/vector';
 import { hasEdge, World } from './world';
 
 export class Renderer3d {

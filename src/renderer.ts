@@ -4,7 +4,7 @@
 // All of the Node.js APIs are available in this process.
 
 import { loadWorld, World } from "./world";
-import { createGeometry } from "./geometry";
+import { createGeometry } from "./geometry/geometry";
 import { makeCamera } from "./camera";
 import { createCanvasHandlers, createGlobalActionHandlers } from './actions/actionHandlerFactory';
 import { Renderer3d } from './renderer3d';

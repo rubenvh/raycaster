@@ -1,7 +1,7 @@
 import { ICamera, makeRays } from './camera';
-import { ILineSegment } from './lineSegment';
-import { getX, getY, Vector } from './vector';
-import { IEdge, IGeometry, IVertex } from './vertex';
+import { ILineSegment } from './geometry/lineSegment';
+import { getX, getY, Vector } from './geometry/vector';
+import { IEdge, IGeometry, IVertex } from './geometry/vertex';
 import { hasEdge, hasVertex, World } from './world';
 
 export class Renderer2d {
