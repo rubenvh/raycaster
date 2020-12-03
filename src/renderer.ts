@@ -1,16 +1,14 @@
-import { GeometryModifier } from './geometryModifier';
-import { Renderer3d } from './renderer3d';
-import { Renderer2d } from "./renderer2d";
+
 // This file is required by the index.html file and will
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
 
-import { KeyBoardListener } from "./keyboard-listener";
-import { ActionHandler, ActiveActions } from "./actionHandler";
 import { loadWorld, World } from "./world";
 import { createGeometry } from "./geometry";
-import { GeometrySelector } from "./geometrySelector";
 import { makeCamera } from "./camera";
+import { createCanvasHandlers, createGlobalActionHandlers } from './actions/actionHandlerFactory';
+import { Renderer3d } from './renderer3d';
+import { Renderer2d } from "./renderer2d";
 
 const ui = {    
     rotateButton: document.getElementById('rotate'),
@@ -33,11 +31,7 @@ let world: World = storedWorld ? loadWorld(JSON.parse(storedWorld)) :
     rays: []
 };
 
-let activeActions = {} as ActiveActions;
-let actionHandler = new ActionHandler(activeActions, world);
-new KeyBoardListener(activeActions).start();
-new GeometrySelector(ui.view_2d.canvas, world).start();
-new GeometryModifier(ui.view_2d.canvas, world, activeActions).start()
+let handlers = [...createGlobalActionHandlers(world), ...createCanvasHandlers(ui.view_2d.canvas, world)];
 let renderer3d = new Renderer3d(world, ui.view_3d.canvas);
 let renderer2d = new Renderer2d(world, ui.view_2d.canvas);
 
@@ -63,8 +57,8 @@ function redraw() {
     renderer3d.render();
 }
 
-function update() {
-    actionHandler.handle();
+function update() {    
+    handlers.forEach(_=>_.handle());
 }
 
 

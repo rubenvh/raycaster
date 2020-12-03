@@ -1,17 +1,19 @@
-import { detectCollisionAt, EdgeCollision, VertexCollision } from './geometry';
-import { Vector } from './vector';
-import { World, SelectableElement } from './world';
+import { IActionHandler } from './actions';
+import { detectCollisionAt, EdgeCollision, VertexCollision } from '../geometry';
+import { Vector } from '../vector';
+import { World, SelectableElement } from '../world';
 
-export class GeometrySelector {    
-    private spaceTranslator: ISpaceTranslator;
-    constructor(private canvas: HTMLCanvasElement, private world: World,) {
-        this.spaceTranslator = spaceTranslator(canvas);
+export class GeometrySelector implements IActionHandler {    
+
+    constructor(private spaceTranslator: ISpaceTranslator, private world: World) {}
+
+    register(g: GlobalEventHandlers): IActionHandler {
+        g.addEventListener('contextmenu', this.selectElement, false);        
+        return this;
     }
 
-    start = () => {
-        this.canvas.addEventListener('contextmenu', this.selectElement, false);
-    };
-
+    handle(): void {}
+    
     private selectElement = (event: MouseEvent) => {
         const location = this.spaceTranslator.toWorldSpace(event);                
         const collision = detectCollisionAt(location, this.world.geometry);
@@ -28,6 +30,7 @@ export class GeometrySelector {
     };
 }
 
+// TODO: these declarations belong somewhere else
 export interface ISpaceTranslator {
     toWorldSpace: (event: MouseEvent) => Vector;
 }
