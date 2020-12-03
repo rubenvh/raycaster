@@ -1,4 +1,4 @@
-import { add, distance, angleBetween, cross, dot, getX, getY, norm, normalize, normSqr, perpendicular, scale, subtract, Vector } from './vector';
+import { add, distance, angleBetween, cross, dot, getX, getY, norm, normalize, normSqr, perpendicular, scale, subtract, Vector, proj } from './vector';
 
 export type ILine = [Vector, Vector]; // or other representations
 export type ILineSegment = [Vector, Vector];
@@ -80,4 +80,23 @@ export const distanceTo = (p: Vector, s: ILineSegment): number => {
   t = Math.max(0, Math.min(1, t));
   return norm(subtract(p, add(v, scale(t, wv))));
 };
+
+const vectorToSegment2D = (t: number, p: Vector, s: ILineSegment): Vector => {
+  return [
+      (1 - t) * s[0][0] + t * s[1][0] - p[0],
+      (1 - t) * s[0][1] + t * s[1][1] - p[1],
+  ]
+}
+export const projectOn = (p: Vector, s: ILineSegment): Vector => {
+  const v = subtract(s[1], s[0]);  
+  const u = subtract(s[0], p);
+  const vu = dot(v, u);
+  const vv = normSqr(v);
+  const t = -vu / vv
+  if (t >= 0 && t <= 1) return vectorToSegment2D(t, [0,0], s)
+  const g0 = normSqr(vectorToSegment2D(0, p, s))
+  const g1 = normSqr(vectorToSegment2D(1, p, s))
+  return g0 <= g1 ? s[0] : s[1];
+}
+  
 export const distanceToMidPoint = (p: Vector, s: ILineSegment): number => distance(p, midpoint(s));

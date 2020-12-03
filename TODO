@@ -1,6 +1,5 @@
 - refactor drawing primitives into separate file
 - add linter
-- ability to split edge (inject vertex)
 - ability to remove vertex (join edges)
 - display selected item's JSON
 - modify selected item's JSON and save it

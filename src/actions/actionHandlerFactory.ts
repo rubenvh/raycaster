@@ -21,7 +21,7 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, world: World): I
     return [
             new GeometrySelector(t, world),
             new GeometryMover(t, world.selection),
-            new EdgeSplitter(t, world.selection),
+            new EdgeSplitter(canvas.getContext('2d'), t, world),
         ]
         .map(_ => _.register(canvas));
 }

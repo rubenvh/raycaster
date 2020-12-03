@@ -45,9 +45,10 @@ function loop() {
     times.push(now);
     fps = times.length;
   
-     update();
+     
      redraw();
-  
+     update();
+     
      window.requestAnimationFrame(loop)    
 }
 window.requestAnimationFrame(loop)

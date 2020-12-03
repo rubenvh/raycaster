@@ -13,7 +13,7 @@ export type IPolygon = IStoredPolygon & { vertices: IVertex[]};
 export type IStoredGeometry = IEntity & { polygons: IStoredPolygon[]};
 export type IGeometry = { polygons: IPolygon[]};
 
-const makeVertex = (v: vector.Vector): IVertex => ({vector: v});
+export const makeVertex = (v: vector.Vector): IVertex => ({vector: v});
 export const makeEdge = (v: vector.Vector, u: vector.Vector): IEdge => ({start: makeVertex(v), end: makeVertex(u)});
 export const segmentFrom = (e: IEdge): ILineSegment => [e.start.vector, e.end.vector];
 const isVertex = (v: IVertex|vector.Vector): v is IVertex => (v as IVertex).vector !== undefined;    

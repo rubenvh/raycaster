@@ -1,7 +1,7 @@
 
 import { intersectRay, IRay, distanceToMidPoint } from './lineSegment';
 import * as vector from './vector';
-import { IGeometry, IVertex, distance, IPolygon, loadPolygon, createPolygon, IStoredGeometry, IEdge, segmentFrom } from './vertex';
+import { IGeometry, IVertex, distance, IPolygon, loadPolygon, createPolygon, IStoredGeometry, IEdge, makeVertex, segmentFrom } from './vertex';
 
 export type Collision = {polygon: IPolygon, distance: number, kind: string};
 export type VertexCollision = Collision & { vertex: IVertex, kind: "vertex"};
@@ -28,9 +28,26 @@ export const detectCollisionAt = (vector: vector.Vector, geometry: IGeometry): V
         .sort(distanceComparer)[0];
 } 
 
-export const splitEdge = (edge: IEdge, cut: vector.Vector, geometry: IGeometry) => {
-    
-    return geometry;
+export const splitEdge = (cut: vector.Vector, edge: IEdge, poligon: IPolygon, geometry: IGeometry) => {
+    let selectedPolygon: IPolygon;
+    let others = geometry.polygons.reduce((acc, p) => {
+        if (p.id === poligon.id) selectedPolygon = p;
+        return (p.id !== poligon.id) ? acc.concat(p) : acc
+    }, []);
+
+    let newEdges = selectedPolygon.edges.reduce((acc, e) => {
+        if (e.id === edge.id) {
+            const newEnd = e.end;
+            e.end = makeVertex(cut);
+            const newEdge: IEdge = {start: e.end, end: newEnd, material: e.material};
+            return acc.concat(e, newEdge);
+        }
+        return acc.concat(e);
+    }, [])
+
+    return ({...geometry, 
+        polygons: [...others, loadPolygon({id: selectedPolygon.id, edges: newEdges})]
+    });
 }
 
 export const detectCollisions = (ray: IRay, geometry: IGeometry): RayHit[] => {

@@ -1,17 +1,27 @@
 import { splitEdge } from './../geometry/geometry';
-import { SelectedEdge } from './../world';
+import { SelectedEdge, World } from './../world';
 import { ISpaceTranslator } from "./geometrySelector";
-import { midpoint } from "../geometry/lineSegment";
-import { IEdge, segmentFrom } from "../geometry/vertex";
-import { SelectableElement } from "../world";
+import { projectOn } from "../geometry/lineSegment";
+import { segmentFrom } from "../geometry/vertex";
 import { bindFlagToKey, deactivate, Flag, IActionHandler, isActive } from "./actions";
+import { Vector } from '../geometry/vector';
 export class EdgeSplitter implements IActionHandler {
 
     active: Flag = { value: false, blockKeyDown: false };
+    private candidate: Vector;
     constructor(
-        private spaceTranslator: ISpaceTranslator,
-        private selectedGeometry: SelectableElement[]) {
+        private context: CanvasRenderingContext2D,
+        private spaceTranslator: ISpaceTranslator,        
+        private world: World) {
     }
+
+    private get selectedGeometry() { return this.world.selection; }
+    private get selectedEdge(): SelectedEdge {
+        return this.selectedGeometry[0].kind === 'edge'
+            ? this.selectedGeometry[0] 
+            : null;
+    }
+
     register(g: GlobalEventHandlers): IActionHandler {
         bindFlagToKey(window, "add_geometry", this.active);
         g.addEventListener('mousemove', this.selectCut);
@@ -19,37 +29,40 @@ export class EdgeSplitter implements IActionHandler {
         return this;
     }
 
-    handle(): void {}
+    handle(): void {
+        if (this.isActive() && this.candidate) this.drawVector(this.context, this.candidate);
+    }
 
     private isActive = () => isActive(this.active) && this.selectedGeometry.length === 1 && (this.selectedGeometry[0].kind === 'edge');
-    private get selectedEdge(): SelectedEdge {
-        return this.selectedGeometry[0].kind === 'edge'
-            ? this.selectedGeometry[0] 
-            : null;
-    }
+    
     private selectCut = (event: MouseEvent): boolean => {
         if (!this.isActive()) { return false; }
-        
-        
-        const target = this.spaceTranslator.toWorldSpace(event);
-        const candidate = midpoint(segmentFrom(this.selectedEdge.edge));
-
-        //splitEdge()
-        
-        // TODO: calculate projection of target on edge and delegate to geometry: add to candidate geometry element list (on geometry, so it can be drawn)
-        console.log('deciding cut candidate at', target, this.active);
-
+        this.candidate = this.calculateCut(event);
         return true;
     };
+
+    // TODO: move drawing primitives to a central place
+    private drawVector = (context: CanvasRenderingContext2D, vector: Vector, color: string = 'rgb(255,0,0)') => {
+        context.beginPath();
+        context.arc(vector[0], vector[1], 2, 0, 2*Math.PI, false);
+        context.fillStyle = color;
+        context.fill();
+    }
 
     private cutEdge = (event: MouseEvent): boolean => {
         if (!this.isActive()) { return false; }
 
-        // TODO: calculate projection of target on edge and delegate to geometry: split edge => replace edge with 2 edges and add vertex 
-        console.log('add vertex to geometry', this.spaceTranslator.toWorldSpace(event));
+        const c = this.calculateCut(event);
+        this.world.geometry = splitEdge(c, this.selectedEdge.edge, this.selectedEdge.polygon, this.world.geometry);
 
         // stop cutting (even if keys are still pressed)
         deactivate(this.active);
+        this.candidate = null;
         return true;
     };
+
+    private calculateCut = (event: MouseEvent): Vector => {
+        const target = this.spaceTranslator.toWorldSpace(event);
+        return projectOn(target, segmentFrom(this.selectedEdge.edge));
+    }
 }

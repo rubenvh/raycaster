@@ -1,4 +1,4 @@
-import { intersectRay, ILineSegment, distanceTo, IRay } from './lineSegment';
+import { intersectRay, ILineSegment, distanceTo, IRay, projectOn } from './lineSegment';
 import { Vector } from './vector';
 
 describe('line segment tests', () => {
@@ -47,5 +47,21 @@ describe('line segment tests', () => {
         it('test8', () => expect(test([1/2,1/2], [[0,0],[1,1]])).toBe(0));
         it('test9', () => expect(test([1,1], [[0,0],[1,1]])).toBe(0));        
         it('test0', () => expect(test([-1,-1], [[0,0],[1,1]])).toBe(Math.sqrt(2)));        
+    });
+
+    describe('project point on segment tests', () => {  
+        const test = (p: Vector, s: ILineSegment)=> projectOn(p, s);        
+        
+        it('test1', () => expect(test([0,0], [[0,0],[1,0]])).toEqual([0,0]));
+        it('test2', () => expect(test([0.5,0], [[0,0],[1,0]])).toEqual([0.5,0]));
+        it('test3', () => expect(test([0,1], [[0,0],[1,0]])).toEqual([0,0]));
+        // it('test4', () => expect(test([0.5,1], [[0,0],[1,0]])).toBe(1));
+        // it('test5', () => expect(test([1,1], [[0,0],[1,0]])).toBe(1));        
+        // it('test6', () => expect(test([-1,0], [[0,0],[1,0]])).toBe(1));
+
+        // it('test7', () => expect(test([0,0], [[0,0],[1,1]])).toBe(0));
+        // it('test8', () => expect(test([1/2,1/2], [[0,0],[1,1]])).toBe(0));
+        // it('test9', () => expect(test([1,1], [[0,0],[1,1]])).toBe(0));        
+        // it('test0', () => expect(test([-1,-1], [[0,0],[1,1]])).toBe(Math.sqrt(2)));        
     });
 });
