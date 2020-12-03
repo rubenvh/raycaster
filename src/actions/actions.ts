@@ -3,8 +3,12 @@ export const ALL_ACTIONS = ["turnleft","turnright","right","left","up","down",
                             'add_geometry',
                             "save_world"] as const;
 export type Action = typeof ALL_ACTIONS[number]  ;
-export type Flag = {value: boolean};
+export type Flag = {value: boolean, blockKeyDown?: boolean};
 export const makeFlag = (): Flag => ({value: false});
+export const isActive = (f: Flag) => f.value && !f.blockKeyDown;
+export const activate = (f: Flag) => f.value = true;
+export const deactivate = (f: Flag) => f.blockKeyDown = true;
+export const reset = (f: Flag) => f.value = f.blockKeyDown = false;
 
 type KeyDefinition = {key: number, ctrl?: boolean}
 type KeyMap = {[key in Action]: KeyDefinition};
@@ -31,11 +35,13 @@ export interface IActionHandler {
 export function bindFlagToKey(g: GlobalEventHandlers, a: Action, flag: Flag) {
     const keyDefiniton = Keys[a];
     g.addEventListener("keydown", (event: KeyboardEvent) => {           
-        if (event.keyCode === keyDefiniton.key && !keyDefiniton.ctrl === !event.ctrlKey) {
-            flag.value = true;        
+        if (event.keyCode === keyDefiniton.key && !keyDefiniton.ctrl === !event.ctrlKey) {            
+            activate(flag);
         }
     }, false);
     g.addEventListener("keyup", (event: KeyboardEvent) => {  
-        if (event.keyCode === keyDefiniton.key) flag.value = false;        
+        if (event.keyCode === keyDefiniton.key) {             
+          reset(flag);  
+        }        
     }, false);
 }

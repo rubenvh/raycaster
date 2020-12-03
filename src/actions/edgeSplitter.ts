@@ -2,11 +2,11 @@ import { ISpaceTranslator } from "./geometrySelector";
 import { midpoint } from "../lineSegment";
 import { IEdge, segmentFrom } from "../vertex";
 import { SelectableElement } from "../world";
-import { bindFlagToKey, Flag, IActionHandler } from "./actions";
+import { bindFlagToKey, deactivate, Flag, IActionHandler, isActive } from "./actions";
 
 export class EdgeSplitter implements IActionHandler {
 
-    active: Flag = { value: false };
+    active: Flag = { value: false, blockKeyDown: false };
     constructor(
         private spaceTranslator: ISpaceTranslator,
         private selectedGeometry: SelectableElement[]) {
@@ -20,7 +20,7 @@ export class EdgeSplitter implements IActionHandler {
 
     handle(): void {}
 
-    private isActive = () => this.active.value && this.selectedGeometry.length === 1 && (this.selectedGeometry[0] as any).start;
+    private isActive = () => isActive(this.active) && this.selectedGeometry.length === 1 && (this.selectedGeometry[0] as any).start;
     private get edge(): IEdge {
         return this.selectedGeometry[0] as IEdge;
     }
@@ -42,10 +42,8 @@ export class EdgeSplitter implements IActionHandler {
         // TODO: calculate projection of target on edge and delegate to geometry: split edge => replace edge with 2 edges and add vertex 
         console.log('add vertex to geometry', this.spaceTranslator.toWorldSpace(event));
 
-        // TODO: this does not work obviously as the keydown listener still makes the flag true
-        // maybe we should have an extra property on flag that is put to true only the first time the key is pressed
-        // and set it to false here
-        this.active.value = false;
+        // stop cutting (even if keys are still pressed)
+        deactivate(this.active);
         return true;
     };
 }
