@@ -2,6 +2,7 @@
 import { intersectRay, IRay, distanceToMidPoint } from './lineSegment';
 import * as vector from './vector';
 import { IGeometry, IVertex, distance, IPolygon, loadPolygon, createPolygon, IStoredGeometry, IEdge, makeVertex, segmentFrom } from './vertex';
+const R = require('ramda')
 
 export type Collision = {polygon: IPolygon, distance: number, kind: string};
 export type VertexCollision = Collision & { vertex: IVertex, kind: "vertex"};
@@ -28,25 +29,52 @@ export const detectCollisionAt = (vector: vector.Vector, geometry: IGeometry): V
         .sort(distanceComparer)[0];
 } 
 
-export const splitEdge = (cut: vector.Vector, edge: IEdge, poligon: IPolygon, geometry: IGeometry) => {
+const adaptPolygon = (poligon: IPolygon, geometry: IGeometry, edgeTransformer: (poligon: IPolygon)=>IEdge[]) => {
     let selectedPolygon: IPolygon;
     let others = geometry.polygons.reduce((acc, p) => {
         if (p.id === poligon.id) selectedPolygon = p;
         return (p.id !== poligon.id) ? acc.concat(p) : acc
     }, []);
-
-    let newEdges = selectedPolygon.edges.reduce((acc, e) => {
-        if (e.id === edge.id) {
-            const newEnd = e.end;
-            e.end = makeVertex(cut);
-            const newEdge: IEdge = {start: e.end, end: newEnd, material: e.material};
-            return acc.concat(e, newEdge);
-        }
-        return acc.concat(e);
-    }, [])
-
     return ({...geometry, 
-        polygons: [...others, loadPolygon({id: selectedPolygon.id, edges: newEdges})]
+        polygons: [...others, loadPolygon({id: selectedPolygon.id, edges: edgeTransformer(selectedPolygon)})]
+    });
+};
+
+export const splitEdge = (cut: vector.Vector, edge: IEdge, poligon: IPolygon, geometry: IGeometry) => {
+    return adaptPolygon(poligon, geometry, (selectedPolygon) => {
+        return selectedPolygon.edges.reduce((acc, e) => {
+            if (e.id === edge.id) {
+                const newEnd = e.end;
+                e.end = makeVertex(cut);
+                const newEdge: IEdge = {start: e.end, end: newEnd, material: e.material};
+                return acc.concat(e, newEdge);
+            }
+            return acc.concat(e);
+        }, [])
+    });
+}
+
+export const removeVertex = (vertex: IVertex, poligon: IPolygon, geometry: IGeometry) => {
+    return adaptPolygon(poligon, geometry, (selectedPolygon) => {
+        const {edges} = selectedPolygon.edges.reduce((acc, e)=> {                
+            if (e.end === vertex && acc.lastEnd) { // first vertex in polygon was removed and we arrive at the last edge
+                e.end = acc.lastEnd;
+                acc.edges.push(e);
+            }
+            else if (e.end === vertex) {  // edge end vertex is removed => store for next iteration to reassign end vertex 
+                acc.previous = e;
+                acc.edges.push(e);            
+            } else if (acc.previous && e.start === vertex) { // ignore this edge and reassign previous end 
+                acc.previous.end = e.end;            
+            } else if (e.start === vertex) { // removing the start of the first edge, keep end until last edge
+                acc.lastEnd = e.end;
+            } else {
+                acc.edges.push(e);
+            }        
+            return acc;  
+            }, 
+            {edges: [], previous: null as IEdge, lastEnd: null as IVertex})
+        return edges;
     });
 }
 

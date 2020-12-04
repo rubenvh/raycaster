@@ -30,14 +30,16 @@ export const loadPolygon = (polygon: IStoredPolygon): IPolygon => {
     const result = {
         ...polygon,
         edges: polygon.edges.reduce((acc, e) => {
-            if (acc.first && areClose(e.end, acc.first.start)) {
-                e.end = acc.first.start;
+            e.start = giveIdentity(e.start);
+            if (acc.first && areClose(e.end, acc.first.start)) {                
+                e.end = giveIdentity(acc.first.start);
             }
             if (acc.previous && !areEqual(e.start, acc.previous.end)) {
                 throw new Error(`polygon cannot contain jumps: start of edge should be equal to previous edge's end: ${acc.previous.end.vector} does not equal ${e.start.vector}`);                
             }
             else {
-                e.start = acc.previous && acc.previous.end || e.start;
+                e.start = giveIdentity(acc.previous && acc.previous.end || e.start);
+                e.end = giveIdentity(e.end);
             }
             
             let edge = giveIdentity(e);            

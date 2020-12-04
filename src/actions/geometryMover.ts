@@ -1,13 +1,13 @@
 import { ISpaceTranslator } from "./geometrySelector";
 import { Vector, subtract, add, copyIn } from "../geometry/vector";
-import { SelectableElement } from "../world";
+import { SelectableElement, World } from "../world";
 import { IActionHandler } from "./actions";
 
 export class GeometryMover implements IActionHandler {
     private isDragging: boolean;
     private origin: Vector;
 
-    constructor(private spaceTranslator: ISpaceTranslator, private selectedGeometry: SelectableElement[]) {
+    constructor(private spaceTranslator: ISpaceTranslator, private world: World) {
     }
     
 
@@ -42,14 +42,14 @@ export class GeometryMover implements IActionHandler {
         let delta = this.snap(event.ctrlKey, subtract(destination, this.origin));
 
         // TODO: refactor this using typescript type checks
-        this.selectedGeometry.forEach((e) => {
+        this.world.selection.forEach((e) => {
             if (e.kind === 'vertex') {
                 copyIn(e.vertex.vector, this.snap(event.ctrlKey, add(e.vertex.vector, delta)));
             }
             else if (e.kind === 'edge') {
-                if (!this.selectedGeometry.some(s => s.kind === 'vertex' && s.vertex === e.edge.start))
+                if (!this.world.selection.some(s => s.kind === 'vertex' && s.vertex === e.edge.start))
                     copyIn(e.edge.start.vector, this.snap(event.ctrlKey, add(e.edge.start.vector, delta)));
-                if (!this.selectedGeometry.some(s => s.kind === 'vertex' && s.vertex === e.edge.end))
+                if (!this.world.selection.some(s => s.kind === 'vertex' && s.vertex === e.edge.end))
                     copyIn(e.edge.end.vector, this.snap(event.ctrlKey, add(e.edge.end.vector, delta)));
             }
         });
