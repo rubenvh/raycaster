@@ -1,6 +1,7 @@
-- refactor drawing primitives into separate file
 - add linter
 - ability to remove vertex (join edges)
+- ability to select region (vertices + edges)
+- ability to create new polygon
 - display selected item's JSON
 - modify selected item's JSON and save it
 - load textures in a virtual canvas

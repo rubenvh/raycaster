@@ -5,6 +5,7 @@ import { projectOn } from "../geometry/lineSegment";
 import { segmentFrom } from "../geometry/vertex";
 import { bindFlagToKey, deactivate, Flag, IActionHandler, isActive } from "./actions";
 import { Vector } from '../geometry/vector';
+import { drawVector } from '../drawing/drawing';
 export class EdgeSplitter implements IActionHandler {
 
     active: Flag = { value: false, blockKeyDown: false };
@@ -30,7 +31,7 @@ export class EdgeSplitter implements IActionHandler {
     }
 
     handle(): void {
-        if (this.isActive() && this.candidate) this.drawVector(this.context, this.candidate);
+        if (this.isActive() && this.candidate) drawVector(this.context, this.candidate, 'rgba(255,0,0,0.5)');
     }
 
     private isActive = () => isActive(this.active) && this.selectedGeometry.length === 1 && (this.selectedGeometry[0].kind === 'edge');
@@ -39,15 +40,7 @@ export class EdgeSplitter implements IActionHandler {
         if (!this.isActive()) { return false; }
         this.candidate = this.calculateCut(event);
         return true;
-    };
-
-    // TODO: move drawing primitives to a central place
-    private drawVector = (context: CanvasRenderingContext2D, vector: Vector, color: string = 'rgb(255,0,0)') => {
-        context.beginPath();
-        context.arc(vector[0], vector[1], 2, 0, 2*Math.PI, false);
-        context.fillStyle = color;
-        context.fill();
-    }
+    };    
 
     private cutEdge = (event: MouseEvent): boolean => {
         if (!this.isActive()) { return false; }

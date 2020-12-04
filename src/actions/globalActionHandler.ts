@@ -1,5 +1,5 @@
 import { World } from "../world";
-import { bindFlagToKey, Flag, IActionHandler, makeFlag } from "./actions";
+import { bindFlagToKey, Flag, IActionHandler, isActive, makeFlag } from "./actions";
 
 const GLOBAL_ACTIONS = ["save_world"] as const;
 type GlobalAction = typeof GLOBAL_ACTIONS[number];
@@ -21,6 +21,6 @@ export class GlobalActionsHandler implements IActionHandler {
     }
 
     handle() {
-        if (this.flags.save_world.value) localStorage.setItem('world', JSON.stringify(this.world));
+        if (isActive(this.flags.save_world)) localStorage.setItem('world', JSON.stringify(this.world));
     }    
 }

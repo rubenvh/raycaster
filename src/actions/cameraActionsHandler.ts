@@ -36,8 +36,6 @@ export class CameraActionsHandler implements IActionHandler {
         if (this.flags.camera_angle_down.value) this.world.camera = adaptAngle(-1, this.world.camera);
         if (this.flags.camera_depth_up.value)   this.world.camera = adaptDepth( 1, this.world.camera);
         if (this.flags.camera_depth_down.value) this.world.camera = adaptDepth(-1, this.world.camera);
-
-        //if (this.flags.save_world) localStorage.setItem('world', JSON.stringify(this.world));
     }
 
     private move = (direction: 1|-1): ICamera => move(direction, this.world.camera, this.world.geometry);
