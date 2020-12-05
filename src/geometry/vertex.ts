@@ -19,11 +19,11 @@ export const segmentFrom = (e: IEdge): ILineSegment => [e.start.vector, e.end.ve
 const isVertex = (v: IVertex|vector.Vector): v is IVertex => (v as IVertex).vector !== undefined;    
 const giveIdentity = <T extends IEntity>(e : T): T => e.id ? e : ({...e, id: Guid.create()});
 const getVector = (vertexOrVector: IVertex|vector.Vector): vector.Vector => isVertex(vertexOrVector) ? vertexOrVector.vector : vertexOrVector;
-export const distance = (vertex: IVertex, v: IVertex|vector.Vector): number => vector.distance(vertex.vector, getVector(v));
+export const distance = (vertex: IVertex|vector.Vector, v: IVertex|vector.Vector): number => vector.distance(getVector(vertex), getVector(v));
 const areEqual = (u: IVertex, v: IVertex) => u && v && u.vector.length === v.vector.length && u.vector.every((x, i) => x === v.vector[i]);
-const areClose = (vertex: IVertex, v: IVertex|vector.Vector): boolean => {                
+export const areClose = (vertex: IVertex|vector.Vector, v: IVertex|vector.Vector, epsilon: number = 0.005): boolean => { // TODO: magic constant
     let d = distance(vertex, v);
-    return d <= 0.005; // TODO: magic constant
+    return d <= epsilon; 
 }
 
 export const loadPolygon = (polygon: IStoredPolygon): IPolygon => {

@@ -6,6 +6,7 @@ import { EdgeSplitter } from './edgeSplitter';
 import { GeometryMover } from './geometryMover';
 import { GlobalActionsHandler } from './globalActionHandler';
 import { EdgeRemover } from './edgeRemover';
+import { PolygonCreator } from './polygonCreator';
 
 export function createGlobalActionHandlers(world: World): IActionHandler[] {
     return [
@@ -24,6 +25,7 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, world: World): I
             new GeometryMover(t, world),
             new EdgeSplitter(canvas.getContext('2d'), t, world),
             new EdgeRemover(world),
+            new PolygonCreator(canvas.getContext('2d'), t, world),
         ]
         .map(_ => _.register(canvas));
 }

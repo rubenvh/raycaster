@@ -40,8 +40,7 @@ export class GeometryMover implements IActionHandler {
     private move = (event: MouseEvent): boolean => {
         const destination = this.spaceTranslator.toWorldSpace(event);
         let delta = this.snap(event.ctrlKey, subtract(destination, this.origin));
-
-        // TODO: refactor this using typescript type checks
+        
         this.world.selection.forEach((e) => {
             if (e.kind === 'vertex') {
                 copyIn(e.vertex.vector, this.snap(event.ctrlKey, add(e.vertex.vector, delta)));
