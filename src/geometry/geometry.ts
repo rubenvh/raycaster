@@ -1,14 +1,15 @@
 
 import { intersectRay, IRay, distanceToMidPoint } from './lineSegment';
 import * as vector from './vector';
-import { IGeometry, IVertex, distance, IPolygon, loadPolygon, createPolygon, IStoredGeometry, IEdge, makeVertex, segmentFrom } from './vertex';
+import { IGeometry, IVertex, distance, IPolygon, loadPolygon, createPolygon, IStoredGeometry, IEdge, makeVertex, segmentFrom, hasIntersect } from './vertex';
 const R = require('ramda')
 
 export type Collision = {polygon: IPolygon, distance: number, kind: string};
 export type VertexCollision = Collision & { vertex: IVertex, kind: "vertex"};
 export type EdgeCollision = Collision & {edge: IEdge, kind: "edge" };
 export type RayHit = {polygon: IPolygon, edge: IEdge, intersection: vector.Vector, ray: IRay, distance: number};
-export type RayCollisions = {intersectionFactor: number, hits: RayHit[]};
+export type IntersectionStats = {percentage: number, amount: number };
+export type RayCollisions = {hits: RayHit[], stats: IntersectionStats};
 
 
 export const loadGeometry = (geometry : IStoredGeometry): IGeometry => ({polygons: geometry.polygons.map(loadPolygon)});
@@ -82,7 +83,7 @@ export const removeVertex = (vertex: IVertex, poligon: IPolygon, geometry: IGeom
 }
 
 export const detectCollisions = (ray: IRay, geometry: IGeometry): RayCollisions => {
-    const result: RayCollisions = {intersectionFactor: 0, hits: []};
+    const result: RayCollisions = {stats: {amount: 0, percentage: 0}, hits: []};
     let intersectionCalculations = 0;
     let totalEdges = 0;
 
@@ -92,6 +93,7 @@ export const detectCollisions = (ray: IRay, geometry: IGeometry): RayCollisions 
     // ...
     for (const polygon of geometry.polygons){
         totalEdges += polygon.edgeCount;
+        if (!hasIntersect(ray, polygon.boundingBox)) continue;
         for (const edge of polygon.edges) {            
             intersectionCalculations += 1;
             const intersection = intersectRay(ray, segmentFrom(edge));
@@ -102,7 +104,8 @@ export const detectCollisions = (ray: IRay, geometry: IGeometry): RayCollisions 
             }
         }
     }
-    result.intersectionFactor = intersectionCalculations/totalEdges;
+    result.stats.percentage = intersectionCalculations/totalEdges;
+    result.stats.amount = intersectionCalculations;
     return result;
 }
 

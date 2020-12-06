@@ -30,8 +30,12 @@ export class Renderer2d {
             });
         }
 
-        this.context.fillStyle = "rgb(255,255,255)";
-        this.context.fillText(`FPS=${fps}, I=${this.world.rays.reduce((acc, r)=> Math.max(acc, r.intersectionFactor), -Infinity)}`, this.canvas.height - 20, 10);
+        if (this.world.rays[0].stats) {
+            this.context.fillStyle = "rgb(255,255,255)";
+            this.context.fillText(`FPS=${fps}, I=${this.world.rays.reduce((acc, r)=> Math.max(acc, r.stats.percentage), -Infinity)}, #=${this.world.rays.reduce((acc, r)=> acc + r.stats.amount, 0)/this.world.rays.length}`, 
+                10, this.canvas.height - 20);
+        }
+        
     };
 
     private drawCamera = (context: CanvasRenderingContext2D, cam: ICamera) => {

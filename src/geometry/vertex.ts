@@ -1,7 +1,8 @@
-import { ILineSegment } from './lineSegment';
+import { ILineSegment, IRay, intersectRay } from './lineSegment';
 import { Guid } from "guid-typescript";
 
 import * as vector from './vector';
+import { intersect } from 'mathjs';
 
 export type Color = [number, number, number, number];
 export type IMaterial = {color: Color};
@@ -91,3 +92,12 @@ export const createPolygon = (vectors: vector.Vector[]): IPolygon => {
     
     return loadPolygon({edges});
 };
+
+export const hasIntersect = (ray: IRay, box: BoundingBox) => {
+    const [x1, y1, x2, y2] = [box[0][0], box[0][1], box[1][0], box[1][1]];
+    // TODO: improve ray/AABB intersection tests (we don't need the actual intersection, existance is enough)
+    return intersectRay(ray, [[x1, y1], [x2, y1]])
+        || intersectRay(ray, [[x2, y1], [x2, y2]])
+        || intersectRay(ray, [[x2, y2], [x1, y2]])
+        || intersectRay(ray, [[x1, y2], [x1, y1]]);
+}

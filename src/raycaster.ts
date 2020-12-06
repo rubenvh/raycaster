@@ -1,11 +1,11 @@
-import { detectCollisions, RayHit } from './geometry/geometry';
+import { detectCollisions, IntersectionStats, RayHit } from './geometry/geometry';
 import { IRay } from './geometry/lineSegment';
 import { IEdge, IGeometry } from './geometry/vertex';
 
-export type CastedRay = {hits: RayHit[], intersectionFactor: number};
+export type CastedRay = {hits: RayHit[], stats: IntersectionStats};
 const makeInfinity = (ray: IRay): CastedRay => ({
     hits: [{ray, edge: null, intersection: null, polygon: null, distance: Number.POSITIVE_INFINITY}],
-    intersectionFactor: 0
+    stats: {percentage: 0, amount: 0}
 });
 
 export const passThroughImmaterialEdges: (hits: RayHit[])=>RayHit[] = hits => hits.filter(_=>!_.edge.immaterial);
@@ -25,7 +25,7 @@ export const castRays = (rays: IRay[], geometry: IGeometry, hitFilter: (hits: Ra
             const result = collisions.hits.sort((a,b)=> a.distance - b.distance);
                         
             return {
-                intersectionFactor: collisions.intersectionFactor,
+                stats: collisions.stats,
                 hits: hitFilter ? hitFilter(result) : result.slice(0,1)};
         });
 };
