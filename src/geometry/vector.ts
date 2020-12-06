@@ -47,8 +47,10 @@ const copyIn = (u: Vector, v: Vector): Vector => {
     else throw new Error('not yet implemented');    
     return u;
 }
+const roundToGrid = (value: number) => Math.round(value / 20) * 20; // TODO centralize constants
+const snap = (u: Vector, ): Vector => [roundToGrid(u[0]), roundToGrid(u[1])];
 
-export {getX, getY, dot, dim, norm, normSqr, normalize, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, cross, perpendicular, copyIn};
+export {getX, getY, dot, dim, norm, normSqr, normalize, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, cross, perpendicular, copyIn, snap};
 
 const createRotation = (angle: number) => [
     [Math.cos(angle), -1 * Math.sin(angle)],

@@ -1,7 +1,8 @@
 import { ISpaceTranslator } from "./geometrySelector";
-import { Vector, subtract, add, copyIn } from "../geometry/vector";
+import { Vector, subtract, add, copyIn, snap } from "../geometry/vector";
 import { SelectableElement, World } from "../world";
 import { IActionHandler } from "./actions";
+import { IVertex } from "../geometry/vertex";
 
 export class GeometryMover implements IActionHandler {
     private isDragging: boolean;
@@ -41,23 +42,20 @@ export class GeometryMover implements IActionHandler {
         const destination = this.spaceTranslator.toWorldSpace(event);
         let delta = this.snap(event.ctrlKey, subtract(destination, this.origin));
         
-        this.world.selection.forEach((e) => {
-            if (e.kind === 'vertex') {
-                copyIn(e.vertex.vector, this.snap(event.ctrlKey, add(e.vertex.vector, delta)));
-            }
-            else if (e.kind === 'edge') {
-                if (!this.world.selection.some(s => s.kind === 'vertex' && s.vertex === e.edge.start))
-                    copyIn(e.edge.start.vector, this.snap(event.ctrlKey, add(e.edge.start.vector, delta)));
-                if (!this.world.selection.some(s => s.kind === 'vertex' && s.vertex === e.edge.end))
-                    copyIn(e.edge.end.vector, this.snap(event.ctrlKey, add(e.edge.end.vector, delta)));
-            }
-        });
+        // TODO: assemble list of vertices (with associated polygon) and delegate move operation into geometry.ts 
+        // (make sure load polygon is called for adapted polygons so bounding box is recalculated)
+        const movedVertices = Array.from(new Set<IVertex>(this.world.selection.reduce((acc, s) => {
+            return (s.kind === 'vertex') 
+                ? acc.concat(s.vertex)
+                : acc.concat(s.edge.start, s.edge.end);
+        }, [])));
+
+        movedVertices.forEach(v => copyIn(v.vector, this.snap(event.ctrlKey, add(v.vector, delta))));
 
         // calculate new origin for next drag operation
         this.origin = add(this.origin, delta);
         return true;
     };
 
-    private snap = (isSnapping: boolean, vector: Vector) => isSnapping ? [this.roundToGrid(vector[0]), this.roundToGrid(vector[1])] : vector;
-    private roundToGrid = (value: number) => Math.round(value / 20) * 20;
+    private snap = (isSnapping: boolean, vector: Vector) => isSnapping ? snap(vector) : vector;
 }

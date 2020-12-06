@@ -1,6 +1,6 @@
 import { drawSegment, drawVector } from './../drawing/drawing';
 import { createPolygon, IVertex } from './../geometry/vertex';
-import { Vector } from '../geometry/vector';
+import { snap, Vector } from '../geometry/vector';
 import { areClose } from '../geometry/vertex';
 import { World } from '../world';
 import { bindCallbackToKey, Flag, IActionHandler } from './actions';
@@ -51,7 +51,8 @@ export class PolygonCreator implements IActionHandler {
     private prepareNextVertex = (event: MouseEvent): boolean => {
         if (event.button)
         if (!this.isCreating) { return false; }
-        this.nextVertex = this.spaceTranslator.toWorldSpace(event);        
+        const v = this.spaceTranslator.toWorldSpace(event);
+        this.nextVertex = event.ctrlKey ? snap(v) : v;
         return true;
     };    
 

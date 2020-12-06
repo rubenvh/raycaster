@@ -1,5 +1,5 @@
 import { ICamera, makeRays } from './camera';
-import { drawSegment, drawVector } from './drawing/drawing';
+import { drawSegment, drawVector, drawRect, drawBoundingBox } from './drawing/drawing';
 import { IEdge, IGeometry, IVertex } from './geometry/vertex';
 import { hasEdge, hasVertex, World } from './world';
 
@@ -18,9 +18,7 @@ export class Renderer2d {
         this.drawGrid();
         this.drawCamera(this.context, this.world.camera);
         this.drawGeometry(this.context, this.world.geometry);
-        this.context.fillStyle = "rgb(255,255,255)";
-        this.context.fillText('fps = ' + fps, this.canvas.height - 20, 10);
-
+        
         if (this.world.rays) {
             this.world.rays.forEach((c, rayIndex) => {
                 c.hits.forEach(hit => {
@@ -31,6 +29,9 @@ export class Renderer2d {
                 });
             });
         }
+
+        this.context.fillStyle = "rgb(255,255,255)";
+        this.context.fillText(`FPS=${fps}, I=${this.world.rays.reduce((acc, r)=> Math.max(acc, r.intersectionFactor), -Infinity)}`, this.canvas.height - 20, 10);
     };
 
     private drawCamera = (context: CanvasRenderingContext2D, cam: ICamera) => {
@@ -42,6 +43,7 @@ export class Renderer2d {
 
     private drawGeometry = (context: CanvasRenderingContext2D, geometry: IGeometry) => {
         geometry.polygons.forEach(p => {
+            drawBoundingBox(context, p.boundingBox);
             p.vertices.forEach(e => this.drawVertex(context, e));
             p.edges.forEach(e => this.drawEdge(context, e));
         });

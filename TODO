@@ -1,5 +1,5 @@
 - add linter
-- ability to create new polygon
+- ability to select polygon
 - display selected item's JSON (or intersection when multiple items are selected)
 - modify selected item's JSON and save it (or intersection when multiple items are selected)
 - ability to select region (vertices + edges)

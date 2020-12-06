@@ -1,3 +1,4 @@
+import { BoundingBox } from './../geometry/vertex';
 import { ILineSegment } from "../geometry/lineSegment";
 import { getX, getY, Vector } from "../geometry/vector";
 
@@ -27,3 +28,15 @@ export const drawRect = (context: CanvasRenderingContext2D, segment: ILineSegmen
     context.fillStyle = color;
     context.fillRect(x1, y1, x2-x1, y2-y1);
 };   
+
+export const drawBoundingBox = (context: CanvasRenderingContext2D, boundingBox: BoundingBox, color: string = 'rgb(150,100,50,0.8)') => {
+    const x1 = getX(boundingBox[0])-5,
+          y1 = getY(boundingBox[0])-5,
+          x2 = getX(boundingBox[1])+5,
+          y2 = getY(boundingBox[1])+5;
+    context.beginPath();
+    context.strokeStyle = color;        
+    context.lineWidth = 1;
+    context.setLineDash([4, 2]);
+    context.strokeRect(x1, y1, x2-x1, y2-y1);
+}

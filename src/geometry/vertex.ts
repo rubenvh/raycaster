@@ -9,9 +9,10 @@ export type IEntity = {id?: Guid};
 export type IVertex = IEntity & { vector: vector.Vector };
 export type IEdge = IEntity & { start: IVertex, end: IVertex, material?: IMaterial};
 export type IStoredPolygon = IEntity & { edges: IEdge[]};
-export type IPolygon = IStoredPolygon & { vertices: IVertex[]};
+export type IPolygon = IStoredPolygon & { vertices: IVertex[], boundingBox: BoundingBox, edgeCount: number };
 export type IStoredGeometry = IEntity & { polygons: IStoredPolygon[]};
 export type IGeometry = { polygons: IPolygon[]};
+export type BoundingBox = [vector.Vector, vector.Vector];
 
 export const makeVertex = (v: vector.Vector): IVertex => ({vector: v});
 export const makeEdge = (v: vector.Vector, u: vector.Vector): IEdge => ({start: makeVertex(v), end: makeVertex(u)});
@@ -26,10 +27,14 @@ export const areClose = (vertex: IVertex|vector.Vector, v: IVertex|vector.Vector
     return d <= epsilon; 
 }
 
+const minimumComponents = (u: vector.Vector, v: vector.Vector): vector.Vector => [Math.min(u[0], v[0]), Math.min(u[1], v[1])];
+const maximumComponents = (u: vector.Vector, v: vector.Vector): vector.Vector => [Math.max(u[0], v[0]), Math.max(u[1], v[1])];
 export const loadPolygon = (polygon: IStoredPolygon): IPolygon => {
+    let [min, max]: BoundingBox = [[Infinity, Infinity], [-Infinity, -Infinity]];
     const result = {
         ...polygon,
         edges: polygon.edges.reduce((acc, e) => {
+            [min, max] = [minimumComponents(min, e.start.vector), maximumComponents(max, e.start.vector)];
             e.start = giveIdentity(e.start);
             if (acc.first && areClose(e.end, acc.first.start)) {                
                 e.end = giveIdentity(acc.first.start);
@@ -51,7 +56,10 @@ export const loadPolygon = (polygon: IStoredPolygon): IPolygon => {
         }, {edges:[]} as {first?: IEdge, previous?: IEdge, edges: IEdge[] }).edges,
         vertices: []};   
 
-    return giveIdentity({...result, vertices: result.edges.map(_=>_.start)});
+    return giveIdentity({...result, 
+        edgeCount: result.edges.length,
+        vertices: result.edges.map(_=>_.start),
+        boundingBox: [min, max]});
 }
 
 export const createPolygon = (vectors: vector.Vector[]): IPolygon => {

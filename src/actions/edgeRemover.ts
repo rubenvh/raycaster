@@ -3,7 +3,7 @@ import { World } from '../world';
 import { IActionHandler, Flag, bindCallbackToKey } from './actions';
 import { removeVertex } from '../geometry/geometry';
 
-export class EdgeRemover implements IActionHandler {
+export class VertexRemover implements IActionHandler {
     active: Flag = { value: false };
     
     constructor(      

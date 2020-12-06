@@ -90,7 +90,7 @@ describe('geometry tests', () => {
         //         const rays = makeRays(1280, world.camera);
 
         //         for (let ray of rays){
-        //             var hits = detectCollisions(ray, world.geometry).sort((a,b)=> a.distance - b.distance);
+        //             var hits = detectCollisions(ray, world.geometry).hits.sort((a,b)=> a.distance - b.distance);
         //         }
         //     }      
         //     const end = process.hrtime(start);

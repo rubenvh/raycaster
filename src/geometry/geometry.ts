@@ -8,6 +8,8 @@ export type Collision = {polygon: IPolygon, distance: number, kind: string};
 export type VertexCollision = Collision & { vertex: IVertex, kind: "vertex"};
 export type EdgeCollision = Collision & {edge: IEdge, kind: "edge" };
 export type RayHit = {polygon: IPolygon, edge: IEdge, intersection: vector.Vector, ray: IRay, distance: number};
+export type RayCollisions = {intersectionFactor: number, hits: RayHit[]};
+
 
 export const loadGeometry = (geometry : IStoredGeometry): IGeometry => ({polygons: geometry.polygons.map(loadPolygon)});
 export const createGeometry = (polygonCollection: vector.Vector[][]): IGeometry => ({polygons: polygonCollection.map(createPolygon)});
@@ -35,9 +37,10 @@ const adaptPolygon = (poligon: IPolygon, geometry: IGeometry, edgeTransformer: (
         if (p.id === poligon.id) selectedPolygon = p;
         return (p.id !== poligon.id) ? acc.concat(p) : acc
     }, []);
-    return ({...geometry, 
-        polygons: [...others, loadPolygon({id: selectedPolygon.id, edges: edgeTransformer(selectedPolygon)})]
-    });
+    let adaptedPolygon = edgeTransformer(selectedPolygon);
+    return (adaptedPolygon.length < 3) 
+    ? ({...geometry, polygons: others})
+    : ({...geometry, polygons: [...others, loadPolygon({id: selectedPolygon.id, edges: adaptedPolygon})]});
 };
 
 export const splitEdge = (cut: vector.Vector, edge: IEdge, poligon: IPolygon, geometry: IGeometry) => {
@@ -78,18 +81,28 @@ export const removeVertex = (vertex: IVertex, poligon: IPolygon, geometry: IGeom
     });
 }
 
-export const detectCollisions = (ray: IRay, geometry: IGeometry): RayHit[] => {
-    const result: RayHit[] = [];
+export const detectCollisions = (ray: IRay, geometry: IGeometry): RayCollisions => {
+    const result: RayCollisions = {intersectionFactor: 0, hits: []};
+    let intersectionCalculations = 0;
+    let totalEdges = 0;
+
+    // TODO: replace this naive implementation with something more efficient:
+    // 1) bounding box tests
+    // 2) BSP
+    // ...
     for (const polygon of geometry.polygons){
+        totalEdges += polygon.edgeCount;
         for (const edge of polygon.edges) {
+            intersectionCalculations += 1;
             const intersection = intersectRay(ray, segmentFrom(edge));
             if (intersection) {
-                result.push({polygon, ray, edge, intersection,
+                result.hits.push({polygon, ray, edge, intersection,
                     distance: vector.distance(intersection, ray.line[0]) * Math.cos(ray.angle)
                 })
             }
         }
     }
+    result.intersectionFactor = intersectionCalculations/totalEdges;
     return result;
 }
 
