@@ -1,7 +1,7 @@
 import { ICamera, makeRays } from './camera';
 import { drawSegment, drawVector, drawRect, drawBoundingBox } from './drawing/drawing';
 import { IEdge, IGeometry, IVertex } from './geometry/vertex';
-import { hasEdge, hasVertex, World } from './world';
+import { isSelectedEdge, isSelectedVertex, isSelectedPolygon, World } from './world';
 
 export class Renderer2d {
     private context: CanvasRenderingContext2D;
@@ -42,23 +42,26 @@ export class Renderer2d {
     };
 
     private drawGeometry = (context: CanvasRenderingContext2D, geometry: IGeometry) => {
+        
         geometry.polygons.forEach(p => {
-            drawBoundingBox(context, p.boundingBox);
-            p.vertices.forEach(e => this.drawVertex(context, e));
-            p.edges.forEach(e => this.drawEdge(context, e));
+            const selected = isSelectedPolygon(p, this.world.selection);
+            drawBoundingBox(context, p.boundingBox, selected ? 'rgb(255,100,0,0.8)' : 'rgb(150,100,50,0.8)');
+            p.vertices.forEach(e => this.drawVertex(context, e, selected));
+            p.edges.forEach(e => this.drawEdge(context, e, selected));
         });
     };
 
-    private drawEdge = (context: CanvasRenderingContext2D, edge: IEdge) => {
-        const selected = hasEdge(edge, this.world.selection);
+    private drawEdge = (context: CanvasRenderingContext2D, edge: IEdge, selected: boolean = false) => {
+        selected = selected || isSelectedEdge(edge, this.world.selection);
         const color = selected ? 'rgb(255,100,0)' : 'rgb(255,255,255)';
         const width = selected ? 2 : 1;
         drawSegment(context, [edge.start.vector, edge.end.vector], color, width);
     };
    
 
-    private drawVertex = (context: CanvasRenderingContext2D, vertex: IVertex, color: string = 'rgb(100,100,0)') => {
-        drawVector(context, vertex.vector, hasVertex(vertex, this.world.selection) ? 'rgb(250,100,0)' : color);
+    private drawVertex = (context: CanvasRenderingContext2D, vertex: IVertex, selected: boolean = false) => {
+        selected = selected || isSelectedVertex(vertex, this.world.selection);
+        drawVector(context, vertex.vector, selected ? 'rgb(250,100,0)' : 'rgb(100,100,0)');
     };    
 
     private initGrid = () => {        

@@ -19,9 +19,9 @@ export class GeometrySelector implements IActionHandler {
         const collision = detectCollisionAt(location, this.world.geometry);
         if (!event.ctrlKey) this.world.selection.length = 0;
         if (!collision) return;
-        let s = selectedElement(collision);
+        let s = selectedElement(collision, event.shiftKey);
         let i = this.world.selection.indexOf(s);
-    
+        
         if (i === -1) {               
             this.world.selection.push(s);
         } else {
@@ -46,7 +46,8 @@ export const spaceTranslator = (canvas: HTMLCanvasElement): ISpaceTranslator => 
     }
 }
 
-const selectedElement = (collision : VertexCollision|EdgeCollision): SelectableElement => {
+const selectedElement = (collision : VertexCollision|EdgeCollision, selectPolygon: boolean): SelectableElement => {
+    if (selectPolygon) { return ({kind: 'polygon', polygon: collision.polygon})};
     return collision.kind === 'edge' 
     ? ({kind: collision.kind, edge: collision.edge, polygon: collision.polygon }) 
     : ({kind: collision.kind, vertex: collision.vertex, polygon: collision.polygon });

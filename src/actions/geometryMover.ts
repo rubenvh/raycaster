@@ -47,7 +47,9 @@ export class GeometryMover implements IActionHandler {
         const movedVertices = Array.from(new Set<IVertex>(this.world.selection.reduce((acc, s) => {
             return (s.kind === 'vertex') 
                 ? acc.concat(s.vertex)
-                : acc.concat(s.edge.start, s.edge.end);
+                : (s.kind === 'edge') 
+                ? acc.concat(s.edge.start, s.edge.end)
+                : acc.concat(s.polygon.vertices);
         }, [])));
 
         movedVertices.forEach(v => copyIn(v.vector, this.snap(event.ctrlKey, add(v.vector, delta))));

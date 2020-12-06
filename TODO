@@ -1,5 +1,5 @@
 - add linter
-- ability to select polygon
+- add support for immaterial edges => non intersectable (= invisible, passable)
 - display selected item's JSON (or intersection when multiple items are selected)
 - modify selected item's JSON and save it (or intersection when multiple items are selected)
 - ability to select region (vertices + edges)
