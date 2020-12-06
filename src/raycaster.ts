@@ -8,6 +8,7 @@ const makeInfinity = (ray: IRay): CastedRay => ({
     intersectionFactor: 0
 });
 
+export const passThroughImmaterialEdges: (hits: RayHit[])=>RayHit[] = hits => hits.filter(_=>!_.edge.immaterial);
 export const passTroughTranslucentEdges: (hits: RayHit[])=>RayHit[] = hits => {
     // return all translucent edges && the first solid edge closest to the camera
     let i = 0;

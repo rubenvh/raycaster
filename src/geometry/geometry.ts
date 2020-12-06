@@ -92,7 +92,7 @@ export const detectCollisions = (ray: IRay, geometry: IGeometry): RayCollisions 
     // ...
     for (const polygon of geometry.polygons){
         totalEdges += polygon.edgeCount;
-        for (const edge of polygon.edges) {
+        for (const edge of polygon.edges) {            
             intersectionCalculations += 1;
             const intersection = intersectRay(ray, segmentFrom(edge));
             if (intersection) {

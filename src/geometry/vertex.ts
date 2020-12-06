@@ -7,7 +7,7 @@ export type Color = [number, number, number, number];
 export type IMaterial = {color: Color};
 export type IEntity = {id?: Guid};
 export type IVertex = IEntity & { vector: vector.Vector };
-export type IEdge = IEntity & { start: IVertex, end: IVertex, material?: IMaterial};
+export type IEdge = IEntity & { start: IVertex, end: IVertex, material?: IMaterial, immaterial?: boolean};
 export type IStoredPolygon = IEntity & { edges: IEdge[]};
 export type IPolygon = IStoredPolygon & { vertices: IVertex[], boundingBox: BoundingBox, edgeCount: number };
 export type IStoredGeometry = IEntity & { polygons: IStoredPolygon[]};
@@ -73,14 +73,19 @@ export const createPolygon = (vectors: vector.Vector[]): IPolygon => {
     
     // put start at the end and reduce over the vertices to create a collection of edges
     const edges = vertices.slice(1).concat([startingVertex])
-        .reduce((acc, v) => ({ 
+        .reduce((acc, v) => { 
+            const translucent = Math.random()<0.3;
+            const translucency = Math.random();
+            const immaterial = Math.random()<=0.2;
+            return ({ 
                                 edges: [...acc.edges, ({
                                     start: acc.previous, 
                                     end: v,
-                                    material: {color: [20, 20, 255, Math.random()>0.5 ? 1 : 0.6] as Color}
+                                    material: {color: [20, 20, 255, immaterial ? 0 : translucent ? translucency : 1] as Color},
+                                    immaterial
                                 })],
                                 previous: v,
-                            }), 
+                            });}, 
             {previous: startingVertex, edges: [] as IEdge[]})
         .edges;
     
