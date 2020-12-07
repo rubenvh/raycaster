@@ -1,5 +1,5 @@
 import { splitEdge } from './../geometry/geometry';
-import { SelectedEdge, World } from './../world';
+import { isEdge, SelectedEdge, World } from './../world';
 import { ISpaceTranslator } from "./geometrySelector";
 import { projectOn } from "../geometry/lineSegment";
 import { segmentFrom } from "../geometry/vertex";
@@ -18,13 +18,13 @@ export class EdgeSplitter implements IActionHandler {
 
     private get selectedGeometry() { return this.world.selection; }
     private get selectedEdge(): SelectedEdge {
-        return this.selectedGeometry[0].kind === 'edge'
+        return isEdge(this.selectedGeometry[0])
             ? this.selectedGeometry[0] 
             : null;
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
-        bindFlagToKey(window, "add_geometry", this.active);
+        bindFlagToKey(window, 'geo_add', this.active);
         g.addEventListener('mousemove', this.selectCut);
         g.addEventListener('mouseup', this.cutEdge);
         return this;
@@ -34,7 +34,7 @@ export class EdgeSplitter implements IActionHandler {
         if (this.isActive() && this.candidate) drawVector(this.context, this.candidate, 'rgba(255,0,0,0.5)');
     }
 
-    private isActive = () => isActive(this.active) && this.selectedGeometry.length === 1 && (this.selectedGeometry[0].kind === 'edge');
+    private isActive = () => isActive(this.active) && this.selectedGeometry.length === 1 && isEdge(this.selectedGeometry[0]);
     
     private selectCut = (event: MouseEvent): boolean => {
         if (!this.isActive()) { return false; }

@@ -18,7 +18,7 @@ export class PolygonCreator implements IActionHandler {
     
 
     register(g: GlobalEventHandlers): IActionHandler {
-        bindCallbackToKey(window, "add_geometry", this.startCreation);                
+        bindCallbackToKey(window, 'geo_add', this.startCreation);                
         g.addEventListener('mousemove', this.prepareNextVertex);
         g.addEventListener('mouseup', this.decideNextVertex);
         g.addEventListener('contextmenu', this.cancel, false); 

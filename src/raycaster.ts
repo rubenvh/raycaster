@@ -17,16 +17,14 @@ export const passTroughTranslucentEdges: (hits: RayHit[])=>RayHit[] = hits => {
 };
 
 export const castRays = (rays: IRay[], geometry: IGeometry, hitFilter: (hits: RayHit[])=>RayHit[] = null): CastedRay[] => {    
+    if (!hitFilter) { hitFilter = x => x.slice(0,1);}
     return rays
         .map(_ => {
-            const collisions = detectCollisions(_, geometry);
-            if (!collisions.hits || collisions.hits.length < 1) { return makeInfinity(_); }
-                        
-            const result = collisions.hits.sort((a,b)=> a.distance - b.distance);
-                        
-            return {
-                stats: collisions.stats,
-                hits: hitFilter ? hitFilter(result) : result.slice(0,1)};
+            const collisions = detectCollisions(_, geometry);                                    
+            const result = hitFilter(collisions.hits.sort((a,b)=> a.distance - b.distance));
+
+            if (!result || result.length < 1) { return makeInfinity(_); }                                    
+            return { stats: collisions.stats, hits: result };
         });
 };
 

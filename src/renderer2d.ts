@@ -19,21 +19,26 @@ export class Renderer2d {
         this.drawCamera(this.context, this.world.camera);
         this.drawGeometry(this.context, this.world.geometry);
         
+        // TODO: put stats in UI element (status bar?) instead of canvas
+        let edgePercentage = 0;
+        let avgIntersectionsPerRay = 0;
         if (this.world.rays) {
             this.world.rays.forEach((c, rayIndex) => {
-                c.hits.forEach(hit => {
-                    if (hit?.intersection) {
-                        drawVector(this.context, hit.intersection, 'rgba(0,255, 0, 0.03)');
-                        if (rayIndex % (this.canvas.width/10) === 0) drawSegment(this.context, [hit.intersection, hit.ray.line[0]], 'green');
-                    };
-                });
+                edgePercentage = Math.max(edgePercentage, c.stats.percentage);
+                avgIntersectionsPerRay += c.stats.amount;
+                // c.hits.forEach(hit => {
+                //     if (hit?.intersection) {
+                //         drawVector(this.context, hit.intersection, 'rgba(0,255, 0, 0.03)');
+                //         if (rayIndex % (this.canvas.width/10) === 0) drawSegment(this.context, [hit.intersection, hit.ray.line[0]], 'green');
+                //     };
+                // });
             });
+            avgIntersectionsPerRay /= this.world.rays.length;
         }
 
         if (this.world.rays[0].stats) {
             this.context.fillStyle = "rgb(255,255,255)";
-            this.context.fillText(`FPS=${fps}, I=${this.world.rays.reduce((acc, r)=> Math.max(acc, r.stats.percentage), -Infinity)}, #=${this.world.rays.reduce((acc, r)=> acc + r.stats.amount, 0)/this.world.rays.length}`, 
-                10, this.canvas.height - 20);
+            this.context.fillText(`FPS=${fps}, I=${edgePercentage}, #=${avgIntersectionsPerRay}`, 10, this.canvas.height - 20);
         }
         
     };
@@ -56,8 +61,8 @@ export class Renderer2d {
     };
 
     private drawEdge = (context: CanvasRenderingContext2D, edge: IEdge, selected: boolean = false) => {
-        selected = selected || isSelectedEdge(edge, this.world.selection);
-        const color = selected ? 'rgb(255,100,0)' : 'rgb(255,255,255)';
+        selected = selected || isSelectedEdge(edge, this.world.selection);        
+        const color = selected ? 'rgb(255,100,0)' : edge.immaterial ? 'rgb(100,100,0)' : 'rgb(255,255,255)';
         const width = selected ? 2 : 1;
         drawSegment(context, [edge.start.vector, edge.end.vector], color, width);
     };

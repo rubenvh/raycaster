@@ -18,7 +18,7 @@ export class VertexRemover implements IActionHandler {
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
-        bindCallbackToKey(window, "remove_geometry", this.deleteVertex);        
+        bindCallbackToKey(window, 'geo_remove', this.deleteVertex);        
         return this;
     }
 

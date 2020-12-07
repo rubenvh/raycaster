@@ -1,6 +1,6 @@
 import { ISpaceTranslator } from "./geometrySelector";
 import { Vector, subtract, add, copyIn, snap } from "../geometry/vector";
-import { SelectableElement, World } from "../world";
+import { isEdge, isVertex, SelectableElement, World } from "../world";
 import { IActionHandler } from "./actions";
 import { IVertex } from "../geometry/vertex";
 
@@ -45,9 +45,9 @@ export class GeometryMover implements IActionHandler {
         // TODO: assemble list of vertices (with associated polygon) and delegate move operation into geometry.ts 
         // (make sure load polygon is called for adapted polygons so bounding box is recalculated)
         const movedVertices = Array.from(new Set<IVertex>(this.world.selection.reduce((acc, s) => {
-            return (s.kind === 'vertex') 
+            return isVertex(s)
                 ? acc.concat(s.vertex)
-                : (s.kind === 'edge') 
+                : isEdge(s)
                 ? acc.concat(s.edge.start, s.edge.end)
                 : acc.concat(s.polygon.vertices);
         }, [])));

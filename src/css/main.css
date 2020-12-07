@@ -8,13 +8,13 @@ body {
 } */
 
 div.views {
-    width: 1930px;    
+    width: 2580px;    
     height: 962px;
     /*overflow: hidden; /* add this to contain floated children */
 }
 div.dim2 {
-    width: 640px;
-    height: 480px;
+    width: 1280px;
+    height: 960px;
     float:left; /* add this */
     border: 1px solid black;
 }

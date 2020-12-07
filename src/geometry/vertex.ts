@@ -74,16 +74,13 @@ export const createPolygon = (vectors: vector.Vector[]): IPolygon => {
     
     // put start at the end and reduce over the vertices to create a collection of edges
     const edges = vertices.slice(1).concat([startingVertex])
-        .reduce((acc, v) => { 
-            const translucent = Math.random()<0.3;
-            const translucency = Math.random();
-            const immaterial = Math.random()<=0.2;
+        .reduce((acc, v) => {            
             return ({ 
                                 edges: [...acc.edges, ({
                                     start: acc.previous, 
                                     end: v,
-                                    material: {color: [20, 20, 255, immaterial ? 0 : translucent ? translucency : 1] as Color},
-                                    immaterial
+                                    material: {color: [20, 20, 255, 1] as Color},
+                                    immaterial: false
                                 })],
                                 previous: v,
                             });}, 

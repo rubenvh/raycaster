@@ -6,6 +6,9 @@ import { loadGeometry } from './geometry/geometry';
 export type SelectedVertex = {kind: 'vertex', vertex: IVertex, polygon: IPolygon};
 export type SelectedEdge = {kind: 'edge', edge: IEdge, polygon: IPolygon};
 export type SelectedPolygon = {kind: 'polygon', polygon: IPolygon};
+export const isVertex = (_: SelectableElement): _ is SelectedVertex => _.kind === 'vertex';
+export const isEdge = (_: SelectableElement): _ is SelectedEdge => _.kind === 'edge';
+export const isPolygon = (_: SelectableElement): _ is SelectedPolygon => _.kind === 'polygon';
 
 export type SelectableElement = SelectedVertex | SelectedEdge | SelectedPolygon;
 export type World = {

@@ -1,3 +1,4 @@
+import { EdgeModifier } from './edgeModifier';
 import { CameraActionsHandler } from './cameraActionsHandler';
 import { spaceTranslator, GeometrySelector } from './geometrySelector';
 import { World } from '../world';
@@ -26,6 +27,7 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, world: World): I
             new EdgeSplitter(canvas.getContext('2d'), t, world),
             new VertexRemover(world),
             new PolygonCreator(canvas.getContext('2d'), t, world),
+            new EdgeModifier(world),
         ]
         .map(_ => _.register(canvas));
 }

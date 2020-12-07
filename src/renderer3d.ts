@@ -2,7 +2,7 @@ import { makeRays } from './camera';
 import { RayHit } from './geometry/geometry';
 import { slope } from './geometry/lineSegment';
 import * as raycaster from './raycaster';
-import { World } from './world';
+import { World, isSelectedEdge } from './world';
 import { drawRect } from './drawing/drawing';
 
 export class Renderer3d {
@@ -44,7 +44,7 @@ export class Renderer3d {
         let [col1, col2] = [this.mapToColumn(rayIndex), this.mapToColumn(rayIndex+1)];
                     
         // // draw selection borders if edge was selected
-        // if (hasEdge(hit.edge, this.world.selection)) {
+        // if (isSelectedEdge(hit.edge, this.world.selection)) {
         //     drawRect(this.context, [[col1, startRow-2], [col2, startRow]], 'rgb(250,100,0)');
         //     drawRect(this.context, [[col1, endRow], [col2, endRow+2]], 'rgb(250,100,0)');
         // }                            
@@ -53,8 +53,8 @@ export class Renderer3d {
 }
 
 const determineColor = (hit: RayHit) => {
-    const luminosity = determineLight(hit);
-    if (hit?.edge?.material?.color) {
+    const luminosity = determineLight(hit);    
+    if (hit?.edge?.material?.color) {        
         const color = hit.edge.material.color.map((c, i) => i === 3 ? c : c/255 * luminosity);
         return `rgba(${color.join()})`;
     }

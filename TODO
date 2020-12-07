@@ -1,5 +1,9 @@
 - add linter
-- add support for immaterial edges => non intersectable (= invisible, passable)
+- BUG: splitting edge does not copy material
+- recalculate bounding box for polygons with moved edges/vertices (make immutable like the other operations)- 
+- display stats in statusbar
+- optimize canvas drawing performance: try single beginpath + fill operation for all walls, create column map, round coordinates
+- support for splitting a polygon into 2 (when selecting 2 vertices => introduce new edge in 2 sets)
 - display selected item's JSON (or intersection when multiple items are selected)
 - modify selected item's JSON and save it (or intersection when multiple items are selected)
 - ability to select region (vertices + edges)
@@ -7,7 +11,6 @@
 - draw texture on wall column (copying from virtual canvas)
 - store textures in localstorage? 
 - atmospheric lightning (tunnel effect = reduce luminosity of walls further away, mist = dampen color of walls further away)
-- add bounding box when storing a polygon
 - reduce intersection tests by testing bounding box first
 - highlight edges that are being tested for intersection
 - implement BSP or quadtree structure to further reduce intersection tests

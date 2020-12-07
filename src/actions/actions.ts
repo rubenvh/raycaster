@@ -1,7 +1,7 @@
 export const ALL_ACTIONS = ["turnleft","turnright","right","left","up","down",
                             "camera_angle_up","camera_angle_down","camera_depth_up","camera_depth_down",
-                            'add_geometry','remove_geometry',
-                            "save_world"] as const;
+                            'geo_add','geo_remove','geo_change_immateriality','geo_change_translucency_down', 'geo_change_translucency_up',
+                            'save_world'] as const;
 export type Action = typeof ALL_ACTIONS[number]  ;
 export type Flag = {value: boolean, blockKeyDown?: boolean};
 export const makeFlag = (): Flag => ({value: false});
@@ -13,19 +13,22 @@ export const reset = (f: Flag) => f.value = f.blockKeyDown = false;
 type KeyDefinition = {key: number, ctrl?: boolean}
 type KeyMap = {[key in Action]: KeyDefinition};
 const Keys: KeyMap = {
-    'turnleft': {key: 37 },                         // left
-    'turnright': {key: 39 },                        // right
-    'left': {key: 65 },                             // A
-    'right': {key: 68 },                            // D
-    'down': {key: 83 },                             // S
-    'up': {key: 87 },                               // W
-    'camera_angle_up': {key: 107 },                 // +
-    'camera_angle_down': {key: 109 },               // -
-    'add_geometry': {key: 65, ctrl: true },         // A
-    'remove_geometry': {key: 88, ctrl: true },      // X
-    'save_world': {key: 83, ctrl: true },           // S
-    'camera_depth_up': {key: 107, ctrl: true },     // +
-    'camera_depth_down': {key: 109, ctrl: true },   // -
+    'turnleft': {key: 37 },                             // left
+    'turnright': {key: 39 },                            // right
+    'left': {key: 65 },                                 // A
+    'right': {key: 68 },                                // D
+    'down': {key: 83 },                                 // S
+    'up': {key: 87 },                                   // W
+    'camera_angle_up': {key: 107 },                     // +
+    'camera_angle_down': {key: 109 },                   // -
+    'geo_add': {key: 65, ctrl: true },                  // A
+    'geo_remove': {key: 88, ctrl: true },               // X
+    'geo_change_immateriality': {key: 73, ctrl: true},  // I
+    'geo_change_translucency_down': {key: 219, ctrl: true},// [
+    'geo_change_translucency_up': {key: 221, ctrl: true},// ]
+    'save_world': {key: 83, ctrl: true },               // S
+    'camera_depth_up': {key: 107, ctrl: true },         // +
+    'camera_depth_down': {key: 109, ctrl: true },       // -
 }
 
 export interface IActionHandler {
