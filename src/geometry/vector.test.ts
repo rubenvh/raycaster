@@ -2,10 +2,8 @@ import { add, angleBetween, areOrthogonal, dim, distance, dot, getX, getY, norm,
 import math = require("mathjs");
 
 describe('vector tests', () => {
-  describe('dimension tests', () => {
-    it('one dimensional vertices', () => expect(dim([1])).toBe(1));
+  describe('dimension tests', () => {    
     it('two dimensional vertices', () => expect(dim([1, 1])).toBe(2));
-    it('three dimensional vertices', () => expect(dim([1, 1, 1])).toBe(3));
   });
 
   describe('component getter tests', () => {
@@ -85,8 +83,7 @@ describe('vector tests', () => {
   });
   describe('projection tests', () => {
     const test = (u: Vector, v: Vector, e: Vector) => expect(proj(u, v)).toEqual(e);
-    it('proj([1,0],[0,1])     = [0,0]',       () => test([1,0],[0,1], [0,0]));
-    it('proj([1,-2,3],[2,4,5])= [2/5,4/5,1]', () => test([1,-2,3],[2,4,5], [2/5,4/5,1]));
+    it('proj([1,0],[0,1])     = [0,0]',       () => test([1,0],[0,1], [0,0]));    
   });
   describe('perpendicular calculation', () => {
     const test = (u: Vector, e: Vector) => {
