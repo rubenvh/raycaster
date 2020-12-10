@@ -1,8 +1,10 @@
 import { ISpaceTranslator } from "./geometrySelector";
-import { Vector, subtract, add, copyIn, snap } from "../geometry/vector";
-import { isEdge, isVertex, SelectableElement, World } from "../world";
+import { Vector, subtract, add, snap } from "../geometry/vector";
+import { isEdge, isVertex, World } from "../world";
 import { IActionHandler } from "./actions";
 import { IVertex } from "../geometry/vertex";
+import { Guid } from "guid-typescript";
+import { moveVertices } from "../geometry/geometry";
 
 export class GeometryMover implements IActionHandler {
     private isDragging: boolean;
@@ -11,7 +13,6 @@ export class GeometryMover implements IActionHandler {
     constructor(private spaceTranslator: ISpaceTranslator, private world: World) {
     }
     
-
     register(g: GlobalEventHandlers): IActionHandler {
         g.addEventListener('mousedown', this.dragStart);
         g.addEventListener('mousemove', this.drag);
@@ -41,18 +42,19 @@ export class GeometryMover implements IActionHandler {
     private move = (event: MouseEvent): boolean => {
         const destination = this.spaceTranslator.toWorldSpace(event);
         let delta = this.snap(event.ctrlKey, subtract(destination, this.origin));
-        
-        // TODO: assemble list of vertices (with associated polygon) and delegate move operation into geometry.ts 
-        // (make sure load polygon is called for adapted polygons so bounding box is recalculated)
-        const movedVertices = Array.from(new Set<IVertex>(this.world.selection.reduce((acc, s) => {
-            return isVertex(s)
-                ? acc.concat(s.vertex)
+                
+        const verticesByPolygon: Map<Guid, IVertex[]> = this.world.selection.reduce((acc, s) => {
+            return acc.set(s.polygon.id, Array.from(new Set<IVertex>([...(acc.get(s.polygon.id)||[]).concat(
+                isVertex(s)
+                ? [s.vertex]
                 : isEdge(s)
-                ? acc.concat(s.edge.start, s.edge.end)
-                : acc.concat(s.polygon.vertices);
-        }, [])));
+                ? [s.edge.start, s.edge.end]
+                : s.polygon.vertices)])));
+        }, new Map());
+        
+        // TODO: selection should contain only id's => it prevents all modifications from losing selection
 
-        movedVertices.forEach(v => copyIn(v.vector, this.snap(event.ctrlKey, add(v.vector, delta))));
+        this.world.geometry = moveVertices(event.ctrlKey, delta, verticesByPolygon, this.world.geometry);
 
         // calculate new origin for next drag operation
         this.origin = add(this.origin, delta);

@@ -37,13 +37,15 @@ export class EdgeSplitter implements IActionHandler {
     private isActive = () => isActive(this.active) && this.selectedGeometry.length === 1 && isEdge(this.selectedGeometry[0]);
     
     private selectCut = (event: MouseEvent): boolean => {
-        if (!this.isActive()) { return false; }
+        if (!this.isActive()) { return false; }        
         this.candidate = this.calculateCut(event);
         return true;
     };    
 
     private cutEdge = (event: MouseEvent): boolean => {
         if (!this.isActive()) { return false; }
+
+        // TODO select id's instead of entities: lookup edge based on selected edge id
 
         const c = this.calculateCut(event);
         this.world.geometry = splitEdge(c, this.selectedEdge.edge, this.selectedEdge.polygon, this.world.geometry);

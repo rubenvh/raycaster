@@ -1,12 +1,11 @@
 - add linter
-- BUG: splitting edge does not copy material
-- recalculate bounding box for polygons with moved edges/vertices (make immutable like the other operations)- 
+- BUGFIX: when moving polygons => we lose selection => transform selection into ID's instead of entities themselves
 - display stats in statusbar
-- optimize canvas drawing performance: try single beginpath + fill operation for all walls, create column map, round coordinates
 - support for splitting a polygon into 2 (when selecting 2 vertices => introduce new edge in 2 sets)
 - display selected item's JSON (or intersection when multiple items are selected)
 - modify selected item's JSON and save it (or intersection when multiple items are selected)
 - ability to select region (vertices + edges)
+- adapt remove vertex, remove edge to support multiple selected elements ?
 - load textures in a virtual canvas
 - draw texture on wall column (copying from virtual canvas)
 - store textures in localstorage? 
@@ -18,5 +17,4 @@
 - implement zooming in 2d view (+ impact on distance threshold for selection)
 - implement mirror walls
 - implement doors
-- ability to select region (vertices + edges)
-- adapt remove vertex, remove edge to support multiple selected elements ?
+- add circles to geometry to represent sprites ?

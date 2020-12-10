@@ -1,4 +1,5 @@
 
+import { Guid } from 'guid-typescript';
 import { intersectRay, IRay, distanceToMidPoint } from './lineSegment';
 import * as vector from './vector';
 import { IGeometry, IVertex, distance, IPolygon, loadPolygon, createPolygon, IStoredGeometry, IEdge, makeVertex, segmentFrom, hasIntersect } from './vertex';
@@ -32,6 +33,21 @@ export const detectCollisionAt = (vector: vector.Vector, geometry: IGeometry): V
         .sort(distanceComparer)[0];
 } 
 
+const adaptPolygons = (ids: Guid[], geometry: IGeometry, edgeTransformer: (poligon: IPolygon)=>IEdge[]) => {
+    
+    let [unchanged, adapted] = geometry.polygons.reduce((acc, p) => {
+        acc[+ids.includes(p.id)].push(p);
+        return acc;
+    }, [[],[]]);
+
+    let adaptedPolygons = adapted.map(p => ({p, edges: edgeTransformer(p)}))
+        .filter(_ => _.edges.length >= 3)
+        .map(_ => loadPolygon({id: _.p.id, edges: _.edges}));
+
+    return ({...geometry, polygons: [...unchanged, ...adaptedPolygons]});
+};
+
+// TODO: remove this function and use more general adaptPolygons 
 const adaptPolygon = (poligon: IPolygon, geometry: IGeometry, edgeTransformer: (poligon: IPolygon)=>IEdge[]) => {
     let selectedPolygon: IPolygon;
     let others = geometry.polygons.reduce((acc, p) => {
@@ -50,9 +66,28 @@ export const splitEdge = (cut: vector.Vector, edge: IEdge, poligon: IPolygon, ge
             if (e.id === edge.id) {
                 const newEnd = e.end;
                 e.end = makeVertex(cut);
-                const newEdge: IEdge = {start: e.end, end: newEnd, material: e.material};
+                const newEdge: IEdge = {start: e.end, end: newEnd, immaterial: e.immaterial, material: {color: [...e.material.color]}};
                 return acc.concat(e, newEdge);
             }
+            return acc.concat(e);
+        }, [])
+    });
+}
+
+export const moveVertices = (isSnapping: boolean, delta: vector.Vector, map: Map<Guid, IVertex[]>, geometry: IGeometry): IGeometry => {
+    const doSnap = (v: vector.Vector) => isSnapping ? vector.snap(v) : v;
+    return adaptPolygons(Array.from(map.keys()), geometry, p => {
+        const vertices = [...map.get(p.id)];
+        const moveVertex = (v: IVertex) => {
+            const index = vertices.indexOf(v);
+            if (index >= 0) { 
+                vertices.splice(index, 1);
+                vector.copyIn(v.vector, doSnap(vector.add(v.vector, delta)));
+            }
+        };
+        return p.edges.reduce((acc, e) => {
+            moveVertex(e.start);
+            moveVertex(e.end);            
             return acc.concat(e);
         }, [])
     });

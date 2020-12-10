@@ -29,6 +29,7 @@ export class VertexRemover implements IActionHandler {
     private deleteVertex = () => {
         if (this.isActive()) {
             const v = this.selectedVertex;
+            // TODO pass id's instead of entities
             this.world.geometry = removeVertex(this.selectedVertex.vertex, this.selectedVertex.polygon, this.world.geometry);
             this.world.selection = this.world.selection.filter(x => x!==v);            
         }
