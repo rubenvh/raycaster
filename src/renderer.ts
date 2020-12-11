@@ -20,8 +20,8 @@ const ui = {
     }    
 };
 
-let storedWorld = localStorage.getItem('world');
-let world: World = storedWorld ? loadWorld(JSON.parse(storedWorld)) :
+let storedWorld = {rays: [], selection: [], geometry: JSON.parse(localStorage.getItem('geometry')), camera: JSON.parse(localStorage.getItem('camera'))};
+let world: World = storedWorld ? loadWorld(storedWorld) :
 {
     camera: makeCamera({position: [50,50], direction: [0,-10], plane: [-15, 0]}),
     geometry: createGeometry([

@@ -52,8 +52,6 @@ export class GeometryMover implements IActionHandler {
                 : s.polygon.vertices)])));
         }, new Map());
         
-        // TODO: selection should contain only id's => it prevents all modifications from losing selection
-
         this.world.geometry = moveVertices(event.ctrlKey, delta, verticesByPolygon, this.world.geometry);
 
         // calculate new origin for next drag operation

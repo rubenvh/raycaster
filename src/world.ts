@@ -21,11 +21,11 @@ export type World = {
 export const loadWorld = (world : World): World => ({...world, geometry: loadGeometry(world.geometry)});
 
 export const isSelectedPolygon = (p: IPolygon, selection: SelectableElement[]): boolean => {
-    return selection.some(_=>_.kind === 'polygon' && _.polygon === p);
+    return selection.some(_=>_.kind === 'polygon' && _.polygon.id === p.id);
 }
 export const isSelectedEdge = (edge: IEdge, selection: SelectableElement[]): boolean => {
-    return selection.some(_=>_.kind === 'edge' && _.edge === edge);
+    return selection.some(_=>_.kind === 'edge' && _.edge.id === edge.id);
 }
 export const isSelectedVertex = (vertex: IVertex, selection: SelectableElement[]): boolean => {
-    return selection.some(_=>_.kind === 'vertex' && _.vertex === vertex);
+    return selection.some(_=>_.kind === 'vertex' && _.vertex.id === vertex.id);
 }

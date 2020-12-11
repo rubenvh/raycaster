@@ -21,6 +21,9 @@ export class GlobalActionsHandler implements IActionHandler {
     }
 
     handle() {
-        if (isActive(this.flags.save_world)) localStorage.setItem('world', JSON.stringify(this.world));
+        if (isActive(this.flags.save_world)){
+            localStorage.setItem('geometry', JSON.stringify(this.world.geometry));
+            localStorage.setItem('camera', JSON.stringify(this.world.camera));
+        } 
     }    
 }

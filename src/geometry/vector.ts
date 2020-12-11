@@ -28,7 +28,7 @@ const copyIn = (u: Vector, v: Vector): Vector => {
     u[1] = v[1];    
     return u;
 }
-const roundToGrid = (value: number) => Math.round(value / 20) * 20; // TODO centralize constants
+const roundToGrid = (value: number) => Math.round(value / 10) * 10; // TODO centralize constants
 const snap = (u: Vector, ): Vector => [roundToGrid(u[0]), roundToGrid(u[1])];
 
 export {getX, getY, dot, dim, norm, normSqr, normalize, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, cross, perpendicular, copyIn, snap};

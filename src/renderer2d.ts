@@ -22,7 +22,7 @@ export class Renderer2d {
         // TODO: put stats in UI element (status bar?) instead of canvas
         let edgePercentage = 0;
         let avgIntersectionsPerRay = 0;
-        if (this.world.rays) {
+        if (this.world.rays?.length > 0) {
             this.world.rays.forEach((c, rayIndex) => {
                 edgePercentage = Math.max(edgePercentage, c.stats.percentage);
                 avgIntersectionsPerRay += c.stats.amount;
@@ -34,12 +34,13 @@ export class Renderer2d {
                 // });
             });
             avgIntersectionsPerRay /= this.world.rays.length;
+            if (this.world.rays[0].stats) {
+                this.context.fillStyle = "rgb(255,255,255)";
+                this.context.fillText(`FPS=${fps}, I=${edgePercentage}, #=${avgIntersectionsPerRay}`, 10, this.canvas.height - 20);
+            }
         }
 
-        if (this.world.rays[0].stats) {
-            this.context.fillStyle = "rgb(255,255,255)";
-            this.context.fillText(`FPS=${fps}, I=${edgePercentage}, #=${avgIntersectionsPerRay}`, 10, this.canvas.height - 20);
-        }
+       
         
     };
 

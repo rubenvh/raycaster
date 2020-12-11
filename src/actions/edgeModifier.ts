@@ -21,16 +21,13 @@ export class EdgeModifier implements IActionHandler {
 
     handle(): void {}
     
-    private toggleImmateriality = () => {
-        // TODO select id's instead of entities: lookup edges based on selected id's
+    private toggleImmateriality = () => {        
         this.selectedEdges.forEach(_=>_.immaterial = !_.immaterial );        
     };    
     private increaseTranslucency = () => {
-        // TODO select id's instead of entities: lookup edges based on selected id's
         this.selectedEdges.forEach(_=>_.material.color[3] = Math.max(0, _.material.color[3] - 0.1));
     };  
     private decreaseTranslucency = () => {
-        // TODO select id's instead of entities: lookup edges based on selected id's
         this.selectedEdges.forEach(_=>_.material.color[3] = Math.min(1, _.material.color[3] + 0.1));
     };  
     

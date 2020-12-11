@@ -1,5 +1,4 @@
 - add linter
-- BUGFIX: when moving polygons => we lose selection => transform selection into ID's instead of entities themselves
 - display stats in statusbar
 - support for splitting a polygon into 2 (when selecting 2 vertices => introduce new edge in 2 sets)
 - display selected item's JSON (or intersection when multiple items are selected)
