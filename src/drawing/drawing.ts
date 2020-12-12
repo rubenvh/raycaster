@@ -1,6 +1,6 @@
-import { BoundingBox } from './../geometry/vertex';
-import { ILineSegment } from "../geometry/lineSegment";
-import { Vector } from "../geometry/vector";
+import { BoundingBox } from "../geometry/polygon";
+import { ILineSegment } from "../math/lineSegment";
+import { Vector } from "../math/vector";
 
 export const drawVector = (context: CanvasRenderingContext2D, vector: Vector, color: string = 'rgb(100,100,0)') => {
     context.beginPath();

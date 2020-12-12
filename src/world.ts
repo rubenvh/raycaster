@@ -1,7 +1,11 @@
+import { distanceTo } from './math/lineSegment';
+import { Vector } from './math/vector';
 import { CastedRay } from './raycaster';
 import { ICamera } from "./camera";
-import { IEdge, IVertex, IPolygon, IGeometry } from './geometry/vertex';
-import { loadGeometry } from './geometry/geometry';
+import { IGeometry, loadGeometry } from './geometry/geometry';
+import { distance, IVertex } from './geometry/vertex';
+import { IEdge, segmentFrom } from './geometry/edge';
+import { IPolygon } from './geometry/polygon';
 
 export type SelectedVertex = {kind: 'vertex', vertex: IVertex, polygon: IPolygon};
 export type SelectedEdge = {kind: 'edge', edge: IEdge, polygon: IPolygon};
@@ -28,4 +32,13 @@ export const isSelectedEdge = (edge: IEdge, selection: SelectableElement[]): boo
 }
 export const isSelectedVertex = (vertex: IVertex, selection: SelectableElement[]): boolean => {
     return selection.some(_=>_.kind === 'vertex' && _.vertex.id === vertex.id);
+}
+
+export const isCloseToSelected = (v: Vector, element: SelectableElement) => {
+    const epsilon = 5;
+    return isVertex(element)
+        ? distance(v, element.vertex) < epsilon
+        : isEdge(element)
+        ? distanceTo(v, segmentFrom(element.edge)) < epsilon
+        : element.polygon.edges.map(e => distanceTo(v, segmentFrom(e)) < epsilon).some(x => x);
 }

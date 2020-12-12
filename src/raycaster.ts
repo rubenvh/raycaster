@@ -1,6 +1,7 @@
-import { detectCollisions, IntersectionStats, RayHit } from './geometry/geometry';
-import { IRay } from './geometry/lineSegment';
-import { IEdge, IGeometry } from './geometry/vertex';
+import { IntersectionStats, IRay, RayHit } from "./geometry/collision";
+import { IEdge } from "./geometry/edge";
+import { detectCollisions, IGeometry } from "./geometry/geometry";
+
 
 export type CastedRay = {hits: RayHit[], stats: IntersectionStats};
 const makeInfinity = (ray: IRay): CastedRay => ({

@@ -1,6 +1,7 @@
 import { determineLight } from './renderer3d';
-import { Vector } from './geometry/vector';
-import { makeEdge } from './geometry/vertex';
+import { Vector } from './math/vector';
+import { makeEdge } from './geometry/edge';
+
 describe('renderer3d tests', () => {
     describe('light intensity tests', () => {  
         const test = (e: [Vector, Vector]) => determineLight({edge: makeEdge(...e), distance: 0, intersection: null, polygon: null, ray: null});

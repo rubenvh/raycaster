@@ -31,9 +31,12 @@ const copyIn = (u: Vector, v: Vector): Vector => {
 const roundToGrid = (value: number) => Math.round(value / 10) * 10; // TODO centralize constants
 const snap = (u: Vector, ): Vector => [roundToGrid(u[0]), roundToGrid(u[1])];
 
-export {getX, getY, dot, dim, norm, normSqr, normalize, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, cross, perpendicular, copyIn, snap};
+export {getX, getY, dot, dim, norm, normSqr, normalize, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, cross, perpendicular, copyIn, snap, minimumComponents, maximumComponents};
 
 const createRotation = (angle: number) => [
     [Math.cos(angle), -1 * Math.sin(angle)],
     [Math.sin(angle), Math.cos(angle)]
 ];
+
+const minimumComponents = (u: Vector, v: Vector): Vector => [Math.min(u[0], v[0]), Math.min(u[1], v[1])];
+const maximumComponents = (u: Vector, v: Vector): Vector => [Math.max(u[0], v[0]), Math.max(u[1], v[1])];

@@ -2,7 +2,6 @@ import { add, distance, angleBetween, cross, dot, getX, getY, norm, normalize, n
 
 export type ILine = [Vector, Vector]; // or other representations
 export type ILineSegment = [Vector, Vector];
-export type IRay = {line: ILine, angle: number}; 
 
 const start = (a: ILineSegment): Vector => a[0];
 const end = (a: ILineSegment): Vector => a[1];
@@ -56,13 +55,13 @@ export const lineIntersect = (a: ILine, b: ILine): Vector => {
     return [(B2 * C1 - B1 * C2) / denominator, (A1 * C2 - A2 * C1) / denominator];
 };
 
-export const intersectRay = (ray: IRay, s: ILineSegment): Vector => {
+export const intersectRay = (halfLine: ILine, s: ILineSegment): Vector => {
   let a = s[0];
   let b = s[1];
-  let o = ray.line[0];  
+  let o = halfLine[0];  
   let v1 = subtract(o, a);
   let v2 = subtract(b, a);
-  let rd = normalize(subtract(ray.line[1], o));     
+  let rd = normalize(subtract(halfLine[1], o));     
   let v3: Vector = [-rd[1], rd[0]];
   let t1 = cross(v2, v1)/dot(v2, v3);
   let t2 = dot(v1, v3)/dot(v2, v3);

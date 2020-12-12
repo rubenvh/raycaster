@@ -1,7 +1,7 @@
 import { isEdge, isPolygon } from './../world';
 import { World } from "../world";
 import { bindCallbackToKey, IActionHandler } from "./actions";
-import { IEdge } from '../geometry/vertex';
+import { IEdge } from '../geometry/edge';
 
 export class EdgeModifier implements IActionHandler {
     

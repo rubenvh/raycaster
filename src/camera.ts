@@ -1,7 +1,9 @@
-import { IGeometry, segmentFrom } from './geometry/vertex';
-import * as vector from './geometry/vector';
-import { ILine, ILineSegment, lineAngle, IRay } from "./geometry/lineSegment";
+import * as vector from './math/vector';
+import { ILine, ILineSegment, lineAngle } from "./math/lineSegment";
 import { castRays, passThroughImmaterialEdges } from './raycaster';
+import { IGeometry } from './geometry/geometry';
+import { IRay } from './geometry/collision';
+import { segmentFrom } from './geometry/edge';
 
 export type ICameraData = { position: vector.Vector, direction: vector.Vector, plane?: vector.Vector};
 export type ICamera = ICameraData & { screen: ILineSegment};

@@ -1,7 +1,6 @@
-import { IStoredGeometry } from './vertex';
-import { createGeometry, detectCollisions, loadGeometry } from './geometry';
-import { Vector } from './vector';
-import { makeCamera, makeRays } from '../camera';
+import { createGeometry, IStoredGeometry, loadGeometry } from './geometry';
+import { Vector } from '../math/vector';
+
 describe('geometry tests', () => {
     describe('creating geometry from vectors', () => {
         const invokeSut = (vectors: Vector[][]) => createGeometry(vectors);

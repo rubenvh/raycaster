@@ -1,11 +1,11 @@
 import { drawSegment, drawVector } from './../drawing/drawing';
-import { createPolygon, IVertex } from './../geometry/vertex';
-import { snap, Vector } from '../geometry/vector';
+import { snap, Vector } from '../math/vector';
 import { areClose } from '../geometry/vertex';
 import { World } from '../world';
 import { bindCallbackToKey, Flag, IActionHandler } from './actions';
 import { ISpaceTranslator } from './geometrySelector';
 import { addPolygon } from '../geometry/geometry';
+import { createPolygon } from '../geometry/polygon';
 export class PolygonCreator implements IActionHandler {
     private isCreating: boolean;
     private emergingPolygon: Vector[] = [];

@@ -1,6 +1,6 @@
 import { ISpaceTranslator } from "./geometrySelector";
-import { Vector, subtract, add, snap } from "../geometry/vector";
-import { isEdge, isVertex, World } from "../world";
+import { Vector, subtract, add, snap } from "../math/vector";
+import { isCloseToSelected, isEdge, isVertex, World } from "../world";
 import { IActionHandler } from "./actions";
 import { IVertex } from "../geometry/vertex";
 import { Guid } from "guid-typescript";
@@ -23,10 +23,10 @@ export class GeometryMover implements IActionHandler {
     handle(): void {}    
 
     private dragStart = (event: MouseEvent): boolean => {
-        if (event.button !== 0)
-            return false; // left mouse click
-        this.isDragging = true;
-        this.origin = this.spaceTranslator.toWorldSpace(event);
+        // left mouse click for moving
+        if (event.button !== 0) { return false; }
+        this.origin = this.spaceTranslator.toWorldSpace(event);        
+        this.isDragging = this.world.selection.some(s => isCloseToSelected(this.origin, s));        
         return true;
     };
     private drag = (event: MouseEvent): boolean => this.isDragging ? this.move(event) : true;

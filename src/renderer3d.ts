@@ -1,10 +1,10 @@
 import { makeRays } from './camera';
-import { RayHit } from './geometry/geometry';
-import { ILineSegment, slope } from './geometry/lineSegment';
+import { slope } from './math/lineSegment';
 import * as raycaster from './raycaster';
-import { isSelectedEdge, World } from './world';
+import { World } from './world';
 import { drawRect } from './drawing/drawing';
 import { Guid } from 'guid-typescript';
+import { RayHit } from './geometry/collision';
 
 type WallProps = {
     edgeId: Guid,

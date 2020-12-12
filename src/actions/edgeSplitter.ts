@@ -1,11 +1,11 @@
 import { splitEdge } from './../geometry/geometry';
 import { isEdge, SelectedEdge, World } from './../world';
 import { ISpaceTranslator } from "./geometrySelector";
-import { projectOn } from "../geometry/lineSegment";
-import { segmentFrom } from "../geometry/vertex";
+import { projectOn } from "../math/lineSegment";
 import { bindFlagToKey, deactivate, Flag, IActionHandler, isActive } from "./actions";
-import { Vector } from '../geometry/vector';
+import { Vector } from '../math/vector';
 import { drawVector } from '../drawing/drawing';
+import { segmentFrom } from '../geometry/edge';
 export class EdgeSplitter implements IActionHandler {
 
     active: Flag = { value: false, blockKeyDown: false };

@@ -1,9 +1,9 @@
-import { intersectRay, ILineSegment, distanceTo, IRay, projectOn } from './lineSegment';
-import { Vector } from './vector';
+import { intersectRay, ILineSegment, distanceTo, projectOn, ILine } from './lineSegment';
+import { Vector } from '../math/vector';
 
 describe('line segment tests', () => {
     describe('ray intersection tests', () => {  
-        let ray: IRay;
+        let ray: ILine;
         const test = (s: ILineSegment, expected: Vector)=> {
             let actual = intersectRay(ray, s);            
             expect(actual).toEqual(expected);
@@ -11,7 +11,7 @@ describe('line segment tests', () => {
 
         describe('horizontal up ray', () => {
             beforeEach(() => {
-                ray = {line: [[3,2],[3,5]], angle: 0};            
+                ray = [[3,2],[3,5]];
             });
             it('test1', () => test([[1,6],[5,6]], [3,6]));
             it('test2', () => test([[3,3],[5,6]], [3,3]));
@@ -22,7 +22,7 @@ describe('line segment tests', () => {
         });      
         describe('horizontal down ray', () => {
             beforeEach(() => {
-                ray = {line: [[3,5],[3,2]], angle: 0};            
+                ray = [[3,5],[3,2]];
             });
             it('test1', () => test([[1,6],[5,6]], null));
             it('test2', () => test([[1,1],[5,1]], [3,1]));

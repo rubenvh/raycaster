@@ -1,6 +1,8 @@
 import { ICamera, makeRays } from './camera';
 import { drawSegment, drawVector, drawRect, drawBoundingBox } from './drawing/drawing';
-import { IEdge, IGeometry, IVertex } from './geometry/vertex';
+import { IEdge } from './geometry/edge';
+import { IGeometry } from './geometry/geometry';
+import { IVertex } from './geometry/vertex';
 import { isSelectedEdge, isSelectedVertex, isSelectedPolygon, World } from './world';
 
 export class Renderer2d {
