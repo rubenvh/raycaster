@@ -22,8 +22,8 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, world: World): I
     const t = spaceTranslator(canvas);
 
     return [
-            new GeometrySelector(canvas.getContext('2d'), t, world),
             new GeometryMover(t, world),
+            new GeometrySelector(canvas.getContext('2d'), t, world),            
             new EdgeSplitter(canvas.getContext('2d'), t, world),
             new VertexRemover(world),
             new PolygonCreator(canvas.getContext('2d'), t, world),

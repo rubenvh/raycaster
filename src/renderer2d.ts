@@ -2,8 +2,9 @@ import { ICamera, makeRays } from './camera';
 import { drawSegment, drawVector, drawRect, drawBoundingBox } from './drawing/drawing';
 import { IEdge } from './geometry/edge';
 import { IGeometry } from './geometry/geometry';
+import { isSelectedEdge, isSelectedPolygon, isSelectedVertex } from './geometry/selectable';
 import { IVertex } from './geometry/vertex';
-import { isSelectedEdge, isSelectedVertex, isSelectedPolygon, World } from './world';
+import { World } from './world';
 
 export class Renderer2d {
     private context: CanvasRenderingContext2D;

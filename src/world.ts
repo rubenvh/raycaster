@@ -1,20 +1,9 @@
-import { distanceTo } from './math/lineSegment';
-import { Vector } from './math/vector';
 import { CastedRay } from './raycaster';
 import { ICamera } from "./camera";
 import { IGeometry, loadGeometry } from './geometry/geometry';
-import { distance, IVertex } from './geometry/vertex';
-import { IEdge, segmentFrom } from './geometry/edge';
-import { IPolygon } from './geometry/polygon';
+import { SelectableElement } from './geometry/selectable';
 
-export type SelectedVertex = {kind: 'vertex', vertex: IVertex, polygon: IPolygon};
-export type SelectedEdge = {kind: 'edge', edge: IEdge, polygon: IPolygon};
-export type SelectedPolygon = {kind: 'polygon', polygon: IPolygon};
-export const isVertex = (_: SelectableElement): _ is SelectedVertex => _.kind === 'vertex';
-export const isEdge = (_: SelectableElement): _ is SelectedEdge => _.kind === 'edge';
-export const isPolygon = (_: SelectableElement): _ is SelectedPolygon => _.kind === 'polygon';
 
-export type SelectableElement = SelectedVertex | SelectedEdge | SelectedPolygon;
 export type World = {
     camera: ICamera,    
     geometry: IGeometry,
@@ -24,21 +13,3 @@ export type World = {
 
 export const loadWorld = (world : World): World => ({...world, geometry: loadGeometry(world.geometry)});
 
-export const isSelectedPolygon = (p: IPolygon, selection: SelectableElement[]): boolean => {
-    return selection.some(_=>_.kind === 'polygon' && _.polygon.id === p.id);
-}
-export const isSelectedEdge = (edge: IEdge, selection: SelectableElement[]): boolean => {
-    return selection.some(_=>_.kind === 'edge' && _.edge.id === edge.id);
-}
-export const isSelectedVertex = (vertex: IVertex, selection: SelectableElement[]): boolean => {
-    return selection.some(_=>_.kind === 'vertex' && _.vertex.id === vertex.id);
-}
-
-export const isCloseToSelected = (v: Vector, element: SelectableElement) => {
-    const epsilon = 5;
-    return isVertex(element)
-        ? distance(v, element.vertex) < epsilon
-        : isEdge(element)
-        ? distanceTo(v, segmentFrom(element.edge)) < epsilon
-        : element.polygon.edges.map(e => distanceTo(v, segmentFrom(e)) < epsilon).some(x => x);
-}

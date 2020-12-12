@@ -4,7 +4,8 @@ import * as vector from '../math/vector';
 import * as collision from './collision';
 import { IEdge } from './edge';
 import { IEntity } from './entity';
-import { createPolygon, IPolygon, IStoredPolygon, loadPolygon } from './polygon';
+import { BoundingBox, createPolygon, IPolygon, IStoredPolygon, loadPolygon, contains } from './polygon';
+import { SelectableElement } from './selectable';
 import { IVertex, makeVertex } from './vertex';
 
 
@@ -94,6 +95,10 @@ export const removeVertex = (vertex: IVertex, poligon: IPolygon, geometry: IGeom
             {edges: [], previous: null as IEdge, lastEnd: null as IVertex})
         return edges;
     });
+}
+
+export const selectRegion = (region: BoundingBox, geometry: IGeometry): SelectableElement[] => {
+    return geometry.polygons.filter(p => contains(region, p.boundingBox)).map(p => ({kind: 'polygon', polygon: p}));
 }
 
 // export const saveGeometry = (geometry: Geometry): IGeometry => {

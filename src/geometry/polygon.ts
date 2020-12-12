@@ -67,3 +67,13 @@ export const createPolygon = (vectors: Vector[]): IPolygon => {
     
     return loadPolygon({edges});
 };
+
+export const normalize = (box: BoundingBox): BoundingBox => {
+    return [minimumComponents(box[0], box[1]), maximumComponents(box[0], box[1])];
+}
+export const contains = (region: BoundingBox, box: BoundingBox) => {
+    const [a1, a2] = normalize(region);
+    const [b1, b2] = normalize(box);
+    return a1[0] <= b1[0] && a1[1] <= b1[1]
+        && a2[0] >= b2[0] && a2[1] >= b2[1];    
+}

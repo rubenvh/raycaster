@@ -1,7 +1,7 @@
-import { SelectedVertex } from './../world';
 import { World } from '../world';
 import { IActionHandler, Flag, bindCallbackToKey } from './actions';
 import { removeVertex } from '../geometry/geometry';
+import { SelectedVertex } from '../geometry/selectable';
 
 export class VertexRemover implements IActionHandler {
     active: Flag = { value: false };
