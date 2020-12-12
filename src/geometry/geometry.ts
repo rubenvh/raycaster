@@ -1,9 +1,8 @@
 
 import { Guid } from 'guid-typescript';
-import { intersectRay } from '../math/lineSegment';
 import * as vector from '../math/vector';
 import * as collision from './collision';
-import { IEdge, segmentFrom } from './edge';
+import { IEdge } from './edge';
 import { IEntity } from './entity';
 import { createPolygon, IPolygon, IStoredPolygon, loadPolygon } from './polygon';
 import { IVertex, makeVertex } from './vertex';
@@ -33,27 +32,15 @@ const adaptPolygons = (ids: Guid[], geometry: IGeometry, edgeTransformer: (polig
     }, [[],[]]);
 
     let adaptedPolygons = adapted.map(p => ({p, edges: edgeTransformer(p)}))
-        .filter(_ => _.edges.length >= 3)
+        .filter(_ => _.edges.length >= 2)
         .map(_ => loadPolygon({id: _.p.id, edges: _.edges}));
 
     return ({...geometry, polygons: [...unchanged, ...adaptedPolygons]});
 };
 
-// TODO: remove this function and use more general adaptPolygons 
-const adaptPolygon = (poligon: IPolygon, geometry: IGeometry, edgeTransformer: (poligon: IPolygon)=>IEdge[]) => {
-    let selectedPolygon: IPolygon;
-    let others = geometry.polygons.reduce((acc, p) => {
-        if (p.id === poligon.id) selectedPolygon = p;
-        return (p.id !== poligon.id) ? acc.concat(p) : acc
-    }, []);
-    let adaptedPolygon = edgeTransformer(selectedPolygon);
-    return (adaptedPolygon.length < 3) 
-    ? ({...geometry, polygons: others})
-    : ({...geometry, polygons: [...others, loadPolygon({id: selectedPolygon.id, edges: adaptedPolygon})]});
-};
 
 export const splitEdge = (cut: vector.Vector, edge: IEdge, poligon: IPolygon, geometry: IGeometry) => {
-    return adaptPolygon(poligon, geometry, (selectedPolygon) => {
+    return adaptPolygons([poligon.id], geometry, (selectedPolygon) => {
         return selectedPolygon.edges.reduce((acc, e) => {
             if (e.id === edge.id) {
                 const newEnd = e.end;
@@ -86,7 +73,7 @@ export const moveVertices = (isSnapping: boolean, delta: vector.Vector, map: Map
 }
 
 export const removeVertex = (vertex: IVertex, poligon: IPolygon, geometry: IGeometry) => {
-    return adaptPolygon(poligon, geometry, (selectedPolygon) => {
+    return adaptPolygons([poligon.id], geometry, (selectedPolygon) => {
         const {edges} = selectedPolygon.edges.reduce((acc, e)=> {                
             if (e.end === vertex && acc.lastEnd) { // first vertex in polygon was removed and we arrive at the last edge
                 e.end = acc.lastEnd;
@@ -108,8 +95,6 @@ export const removeVertex = (vertex: IVertex, poligon: IPolygon, geometry: IGeom
         return edges;
     });
 }
-
-
 
 // export const saveGeometry = (geometry: Geometry): IGeometry => {
 //     return geometry;

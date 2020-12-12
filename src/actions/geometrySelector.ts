@@ -1,19 +1,32 @@
 import { IActionHandler } from './actions';
 import { detectCollisionAt } from '../geometry/geometry';
 import { Vector } from '../math/vector';
-import { World, SelectableElement } from '../world';
+import { World, SelectableElement, isCloseToSelected } from '../world';
 import { EdgeCollision, VertexCollision } from '../geometry/collision';
+import { BoundingBox } from '../geometry/polygon';
+import { drawBoundingBox } from '../drawing/drawing';
 
 export class GeometrySelector implements IActionHandler {    
+    private isDragging: boolean;
+    private region: BoundingBox;
 
-    constructor(private spaceTranslator: ISpaceTranslator, private world: World) {}
+    constructor(
+        private context: CanvasRenderingContext2D,
+        private spaceTranslator: ISpaceTranslator, private world: World) {}
 
     register(g: GlobalEventHandlers): IActionHandler {
-        g.addEventListener('contextmenu', this.selectElement, false);        
+        g.addEventListener('contextmenu', this.selectElement, false);    
+        g.addEventListener('mousedown', this.dragStart);
+        g.addEventListener('mousemove', this.drag);
+        g.addEventListener('mouseup', this.dragStop);    
         return this;
     }
 
-    handle(): void {}
+    handle(): void {
+        if (this.isDragging) {
+            drawBoundingBox(this.context, this.region, 'rgba(255,100,0,0.8)')
+        }
+    }
     
     private selectElement = (event: MouseEvent) => {
         const location = this.spaceTranslator.toWorldSpace(event);                
@@ -28,6 +41,36 @@ export class GeometrySelector implements IActionHandler {
         } else {
             this.world.selection.splice(i, 1);
         }
+    };
+
+    private dragStart = (event: MouseEvent): boolean => {
+        // left mouse click for selecting region
+        if (event.button !== 0) { return false; }
+        const origin = this.spaceTranslator.toWorldSpace(event);        
+        this.isDragging = this.world.selection.every(s => !isCloseToSelected(origin, s));   
+        this.region = [origin, origin];
+        return true;
+    };
+    private drag = (event: MouseEvent): boolean => { 
+        if (this.isDragging) this.region = this.growRegion(event);
+        return true; 
+    };
+    private dragStop = (event: MouseEvent): boolean => {
+        if (this.isDragging) {
+            this.isDragging = false;
+            this.selectRegion(this.growRegion(event));
+            return true;
+        }
+        return false;
+    };
+    private growRegion = (event: MouseEvent): BoundingBox => {        
+        return [this.region[0], this.spaceTranslator.toWorldSpace(event)];
+    }
+    private selectRegion = (region: BoundingBox): boolean => {
+        
+        
+        
+        return true;
     };
 }
 
