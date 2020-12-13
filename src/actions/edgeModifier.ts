@@ -1,3 +1,4 @@
+import { Guid } from 'guid-typescript';
 import { World } from "../world";
 import { bindCallbackToKey, IActionHandler } from "./actions";
 import { IEdge } from '../geometry/edge';
@@ -16,6 +17,7 @@ export class EdgeModifier implements IActionHandler {
         bindCallbackToKey(window, 'geo_change_immateriality', this.toggleImmateriality);
         bindCallbackToKey(window, 'geo_change_translucency_down', this.decreaseTranslucency);
         bindCallbackToKey(window, 'geo_change_translucency_up', this.increaseTranslucency);
+        bindCallbackToKey(window, 'geo_texture_down', this.toggleTexture);
         return this;
     }
 
@@ -23,6 +25,9 @@ export class EdgeModifier implements IActionHandler {
     
     private toggleImmateriality = () => {        
         this.selectedEdges.forEach(_=>_.immaterial = !_.immaterial );        
+    };   
+    private toggleTexture = () => {        
+        this.selectedEdges.forEach(_=>_.material.texture = !_.material.texture ? Guid.create() : null)
     };    
     private increaseTranslucency = () => {
         this.selectedEdges.forEach(_=>_.material.color[3] = Math.max(0, _.material.color[3] - 0.1));

@@ -5,11 +5,16 @@ import { World } from './world';
 import { drawRect } from './drawing/drawing';
 import { Guid } from 'guid-typescript';
 import { RayHit } from './geometry/collision';
+import { distance, Vector } from './math/vector';
+import { IMaterial } from './geometry/properties';
 
 type WallProps = {
     edgeId: Guid,
     height: number, 
-    color: string, 
+    material: IMaterial,
+    intersection: Vector,
+    origin: Vector,
+    length: number,
     rowRange: [number, number], 
     colRange: [number,number]
 };
@@ -19,11 +24,24 @@ export class Renderer3d {
     // private floorSky: ImageData;
     private width: number;
     private height: number;
+    private textures: HTMLCanvasElement;
 
     constructor(private world: World, private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');
         this.width = canvas.width;
         this.height = canvas.height;
+        
+        // load some test textures from the web
+        const imgUrl = 'https://lodev.org/cgtutor/images/wolftextures.png';
+        this.textures = document.createElement('canvas') as HTMLCanvasElement;
+
+        const textureContext = this.textures.getContext('2d');
+        const img = new Image();
+        img.onload = function() {            
+            textureContext.drawImage(img, 0, 0);
+        }
+        img.src = imgUrl;
+
 
         // this.floorSky = this.context.createImageData(this.width, this.height);        
         // let floorSkyPixels = this.floorSky.data;
@@ -40,10 +58,15 @@ export class Renderer3d {
         const endRow = Math.floor((this.height + height)/2);
         const edgeId = hit.edge && hit.edge.id || Guid.createEmpty();
 
+
         return ({edgeId, height, 
-            color: determineColor(hit),
+            material: hit.edge && {...hit.edge.material, luminosity: determineLight(hit)},
             rowRange: [startRow, endRow],
-            colRange: [this.mapToColumn(rayIndex), this.mapToColumn(rayIndex+1)]
+            colRange: [this.mapToColumn(rayIndex), this.mapToColumn(rayIndex+1)],
+            intersection: hit.intersection,
+            origin: hit.edge?.start.vector,
+            length: hit.edge && distance(hit.edge.start.vector, hit.edge.end.vector),
+            
         });
     };
     public render = () => {                   
@@ -90,14 +113,14 @@ export class Renderer3d {
     private drawZBuffer = (zbuffer: ZBuffer) => {
         while (zbuffer.length > 0) {
             const z = zbuffer.pop();
-            z.forEach((wallProps, edgeId) => {
+            z.forEach((wallProps, ) => {
                 if (wallProps.length === 0) return;
-                if (wallProps.length === 1) {
-                    const w = wallProps[0];
-                    drawRect(this.context, [[w.colRange[0], w.rowRange[0]], [w.colRange[1], w.rowRange[1]]], w.color);
-                } else {
+                // if (wallProps.length === 1) {
+                //     const w = wallProps[0];
+                //     drawRect(this.context, [[w.colRange[0], w.rowRange[0]], [w.colRange[1], w.rowRange[1]]], w.color);
+                // } else {
                     this.drawWall(wallProps);           
-                }
+                //}
             } );
         }  
     };
@@ -105,18 +128,34 @@ export class Renderer3d {
     private convertDistanceToWallHeight = (d: number) => 10 * this.height / d;
     private mapToColumn = (column: number) => Math.floor(this.width - column * this.width / this.resolution);
 
-    private drawWall = (wallProps: WallProps[]) => {
-        const start = wallProps[0];
-        const end = wallProps[wallProps.length-1];
-        this.context.fillStyle = wallProps[0].color;
-        this.context.beginPath();
-        this.context.moveTo(start.colRange[0], start.rowRange[0]);
-        this.context.lineTo(start.colRange[0], start.rowRange[1]);
-        this.context.lineTo(end.colRange[1], end.rowRange[1]);
-        this.context.lineTo(end.colRange[1], end.rowRange[0]);
-        this.context.closePath();
-        this.context.fill();
-
+    private drawWall = (wallProps: WallProps[]) => {        
+        const start = wallProps[wallProps.length-1];
+        const end = wallProps[0];
+        if (start.height <= 0) return;
+        if (!start.material?.texture) {
+            this.context.fillStyle = determineColor(wallProps[0].material);
+            this.context.beginPath();
+            this.context.moveTo(start.colRange[1], start.rowRange[0]);
+            this.context.lineTo(start.colRange[1], start.rowRange[1]);
+            this.context.lineTo(end.colRange[0], end.rowRange[1]);
+            this.context.lineTo(end.colRange[0], end.rowRange[0]);
+            this.context.closePath();
+            this.context.fill();
+        } else {            
+            const tileFactor = 20 // => w.length for stretching
+            const twidth = 64;
+            const theight = 64;
+            const textureIndex = 3;
+            for(let windex=wallProps.length-1; windex >= 0;windex--) {
+                const w = wallProps[windex];
+                const wx = distance(w.origin, w.intersection);
+                const [x1, x2] = wallProps[windex].colRange;
+                const [y1, y2] = wallProps[windex].rowRange;                
+                const tx = (twidth * wx / tileFactor) % (twidth-1);                
+                this.context.drawImage(this.textures, tx+textureIndex*twidth, 0, 1, theight, x1, y1, x2-x1, y2-y1);                
+            }          
+        }
+        
         // // draw selection borders if edge was selected
         // if (isSelectedEdge(hit.edge, this.world.selection)) {
         //      drawRect(this.context, [[col1, startRow-2], [col2, startRow]], 'rgb(250,100,0)');
@@ -125,13 +164,12 @@ export class Renderer3d {
     };
 }
 
-const determineColor = (hit: RayHit) => {
-    const luminosity = determineLight(hit);        
-    if (hit?.edge?.material?.color) {        
-        const color = hit.edge.material.color;
-        return `rgba(${color[0]/255 * luminosity},${color[1]/255 * luminosity},${color[2]/255 * luminosity},${color[3]})`;
+const determineColor = (material: IMaterial): string => {    
+    if (material?.color) {        
+        const color = material.color;
+        return `rgba(${color[0]/255 * material.luminosity},${color[1]/255 * material.luminosity},${color[2]/255 * material.luminosity},${color[3]})`;
     }
-    return `rgb(0,0,${luminosity})`;
+    return `rgb(0,0,${material.luminosity})`;
 };
 
 export const determineLight = (hit: RayHit) => {
