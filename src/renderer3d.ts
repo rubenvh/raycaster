@@ -32,10 +32,11 @@ export class Renderer3d {
         this.height = canvas.height;
         
         // load some test textures from the web
-        const imgUrl = 'https://lodev.org/cgtutor/images/wolftextures.png';
+        const imgUrl = 'https://filecache.garrysmods.org/2373/2/1024x768.jpg';
         this.textures = document.createElement('canvas') as HTMLCanvasElement;
 
         const textureContext = this.textures.getContext('2d');
+        this.textures.width = 1024; this.textures.height= 768;
         const img = new Image();
         img.onload = function() {            
             textureContext.drawImage(img, 0, 0);
@@ -49,7 +50,7 @@ export class Renderer3d {
         // this.rect(floorSkyPixels, 0, this.height/2,this.width, this.height, [50,80,80, 255]);
         // this.context.putImageData(this.floorSky,0,0);
     }
-    private resolution = 1280;
+    private resolution = 640;
     private horizonDistance = 250;
     
     private createWall = (hit: RayHit, rayIndex: number): WallProps => {
@@ -143,15 +144,15 @@ export class Renderer3d {
             this.context.fill();
         } else {            
             const tileFactor = 20 // => w.length for stretching
-            const twidth = 64;
-            const theight = 64;
-            const textureIndex = 3;
+            const twidth = 192;
+            const theight = 192;
+            const textureIndex = 1;
             for(let windex=wallProps.length-1; windex >= 0;windex--) {
                 const w = wallProps[windex];
                 const wx = distance(w.origin, w.intersection);
                 const [x1, x2] = wallProps[windex].colRange;
                 const [y1, y2] = wallProps[windex].rowRange;                
-                const tx = (twidth * wx / tileFactor) % (twidth-1);                
+                const tx = Math.floor((twidth * wx / tileFactor) % (twidth - 1));
                 this.context.drawImage(this.textures, tx+textureIndex*twidth, 0, 1, theight, x1, y1, x2-x1, y2-y1);                
             }          
         }
