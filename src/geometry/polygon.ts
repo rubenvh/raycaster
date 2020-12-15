@@ -77,3 +77,5 @@ export const contains = (region: BoundingBox, box: BoundingBox) => {
     return a1[0] <= b1[0] && a1[1] <= b1[1]
         && a2[0] >= b2[0] && a2[1] >= b2[1];    
 }
+export const containsEdge = (edge: IEdge, box: BoundingBox) => contains(box, [edge.start.vector, edge.end.vector]);
+export const containsVertex = (vertex: IVertex, box: BoundingBox) => contains(box, [vertex.vector, vertex.vector]);

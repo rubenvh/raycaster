@@ -8,9 +8,11 @@ export class EdgeModifier implements IActionHandler {
     
     constructor(private world: World) {}
 
-    private get selectedGeometry() { return this.world.selection; }
     private get selectedEdges(): IEdge[] { 
-        return this.world.selection.filter(isEdge).map(_=>_.edge).concat(...this.world.selection.filter(isPolygon).map(_=>_.polygon.edges));
+        return Array.from(new Set<IEdge>(this.world.selection
+            .filter(isEdge).map(_=>_.edge)
+            .concat(...this.world.selection
+                .filter(isPolygon).map(_=>_.polygon.edges))));
     }
 
     register(g: GlobalEventHandlers): IActionHandler {

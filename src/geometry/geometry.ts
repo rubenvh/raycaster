@@ -4,8 +4,8 @@ import * as vector from '../math/vector';
 import * as collision from './collision';
 import { IEdge } from './edge';
 import { IEntity } from './entity';
-import { BoundingBox, createPolygon, IPolygon, IStoredPolygon, loadPolygon, contains } from './polygon';
-import { SelectableElement } from './selectable';
+import { BoundingBox, createPolygon, IPolygon, IStoredPolygon, loadPolygon, contains, containsVertex, containsEdge } from './polygon';
+import { SelectableElement, SelectedEdge, SelectedPolygon, SelectedVertex } from './selectable';
 import { IVertex, makeVertex } from './vertex';
 
 
@@ -73,7 +73,7 @@ export const moveVertices = (isSnapping: boolean, delta: vector.Vector, map: Map
     });
 }
 
-export const removeVertex = (vertex: IVertex, poligon: IPolygon, geometry: IGeometry) => {
+export const removeVertex = (vertex: IVertex, poligon: IPolygon, geometry: IGeometry) => {    
     return adaptPolygons([poligon.id], geometry, (selectedPolygon) => {
         const {edges} = selectedPolygon.edges.reduce((acc, e)=> {                
             if (e.end === vertex && acc.lastEnd) { // first vertex in polygon was removed and we arrive at the last edge
@@ -98,7 +98,14 @@ export const removeVertex = (vertex: IVertex, poligon: IPolygon, geometry: IGeom
 }
 
 export const selectRegion = (region: BoundingBox, geometry: IGeometry): SelectableElement[] => {
-    return geometry.polygons.filter(p => contains(region, p.boundingBox)).map(p => ({kind: 'polygon', polygon: p}));
+    const ps = geometry.polygons.filter(p => contains(region, p.boundingBox));
+    const [vs, es] = geometry.polygons.filter(p => !ps.includes(p)).reduce((acc, p) => ([
+        [...acc[0], ...p.vertices.filter(v => containsVertex(v, region)).map(v => ({kind: 'vertex', vertex: v, polygon: p} as SelectedVertex))],
+        [...acc[1], ...p.edges.filter(v => containsEdge(v, region)).map(e => ({kind: 'edge', edge: e, polygon: p} as SelectedEdge))]]), [[], []]);
+
+    return [...ps.map(p => ({kind: 'polygon', polygon: p} as SelectedPolygon)),
+            ...es, ...vs,
+    ];
 }
 
 // export const saveGeometry = (geometry: Geometry): IGeometry => {

@@ -6,7 +6,7 @@ import { IActionHandler } from './actions';
 import { EdgeSplitter } from './edgeSplitter';
 import { GeometryMover } from './geometryMover';
 import { GlobalActionsHandler } from './globalActionHandler';
-import { VertexRemover } from './edgeRemover';
+import { VertexRemover } from './vertexRemover';
 import { PolygonCreator } from './polygonCreator';
 
 export function createGlobalActionHandlers(world: World): IActionHandler[] {

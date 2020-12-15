@@ -32,7 +32,7 @@ export class EdgeSplitter implements IActionHandler {
     }
 
     handle(): void {
-        if (this.isActive() && this.candidate) drawVector(this.context, this.candidate, 'rgba(255,0,0,0.5)');
+        if (this.isActive() && this.candidate) drawVector(this.context, this.candidate, 'rgb(255,0,0)');
     }
 
     private isActive = () => isActive(this.active) && this.selectedGeometry.length === 1 && isEdge(this.selectedGeometry[0]);

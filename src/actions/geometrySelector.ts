@@ -1,3 +1,4 @@
+import { isEdge, isPolygon, selectedElement } from './../geometry/selectable';
 import { IActionHandler } from './actions';
 import { detectCollisionAt, selectRegion } from '../geometry/geometry';
 import { Vector } from '../math/vector';
@@ -5,7 +6,7 @@ import { World } from '../world';
 import { EdgeCollision, VertexCollision } from '../geometry/collision';
 import { BoundingBox } from '../geometry/polygon';
 import { drawBoundingBox } from '../drawing/drawing';
-import { SelectableElement } from '../geometry/selectable';
+import { isVertex, SelectableElement } from '../geometry/selectable';
 
 export class GeometrySelector implements IActionHandler {    
     private isDragging: boolean;
@@ -60,8 +61,7 @@ export class GeometrySelector implements IActionHandler {
         return [this.region[0], this.spaceTranslator.toWorldSpace(event)];
     }
     private selectRegion = (region: BoundingBox, event: MouseEvent): boolean => {
-        // TODO: ask geometry for elements that are inside the bounding box
-
+        
         const elements = selectRegion(region, this.world.geometry);
 
         this.performSelection(event, elements);
@@ -73,7 +73,10 @@ export class GeometrySelector implements IActionHandler {
         if (!ss || ss.length === 0) return;
         
         ss.forEach(s => {
-            let i = this.world.selection.indexOf(s);
+            let i = this.world.selection.findIndex(_ => 
+                isPolygon(_) && isPolygon(s) && _.polygon.id === s.polygon.id 
+                || isVertex(_) && isVertex(s) && _.vertex.id === s.vertex.id
+                || isEdge(_) && isEdge(s) && _.edge.id === s.edge.id);
         
             if (i === -1) {               
                 this.world.selection.push(s);
@@ -98,12 +101,4 @@ export const spaceTranslator = (canvas: HTMLCanvasElement): ISpaceTranslator => 
                 event.pageY - elemTop];
         }
     }
-}
-
-const selectedElement = (collision : VertexCollision|EdgeCollision, selectPolygon: boolean): SelectableElement => {
-    if (!collision) return null;
-    if (selectPolygon) { return ({kind: 'polygon', polygon: collision.polygon})};
-    return collision.kind === 'edge' 
-    ? ({kind: collision.kind, edge: collision.edge, polygon: collision.polygon }) 
-    : ({kind: collision.kind, vertex: collision.vertex, polygon: collision.polygon });
 }

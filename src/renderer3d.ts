@@ -183,7 +183,7 @@ const determineColor = (material: IMaterial): string => {
 };
 
 export const determineLight = (hit: RayHit) => {
-    let color = 0.5;
+    let color = 0.4;
     if (hit?.edge) {
         let m = Math.abs(slope([hit.edge.start.vector, hit.edge.end.vector]));            
         if (!isFinite(m)) return 1;        

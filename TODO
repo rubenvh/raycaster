@@ -1,10 +1,9 @@
 - add linter
 - display stats in statusbar
 - support for splitting a polygon into 2 (when selecting 2 vertices => introduce new edge in 2 sets)
+- support for transforming a polygon when edge is selected: remove edge and make polygon form solid (trace it)
 - display selected item's JSON (or intersection when multiple items are selected)
 - modify selected item's JSON and save it (or intersection when multiple items are selected)
-- ability to select region (vertices + edges)
-- adapt remove vertex, remove edge to support multiple selected elements ?
 - load textures in a virtual canvas
 - draw texture on wall column (copying from virtual canvas)
 - store textures in localstorage? 
