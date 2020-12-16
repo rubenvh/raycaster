@@ -21,10 +21,12 @@ export function createGlobalActionHandlers(world: World): IActionHandler[] {
 export function createCanvasHandlers(canvas: HTMLCanvasElement, world: World): IActionHandler[] {
     const t = spaceTranslator(canvas);
 
+    const splitter = new EdgeSplitter(canvas.getContext('2d'), t, world);
+
     return [
-            new GeometryMover(t, world),
-            new GeometrySelector(canvas.getContext('2d'), t, world),            
-            new EdgeSplitter(canvas.getContext('2d'), t, world),
+            splitter,
+            new GeometryMover(t, world, [splitter]),
+            new GeometrySelector(canvas.getContext('2d'), t, world, [splitter]),
             new VertexRemover(world),
             new PolygonCreator(canvas.getContext('2d'), t, world),
             new EdgeModifier(world),

@@ -24,6 +24,7 @@ export class EdgeModifier implements IActionHandler {
     }
 
     handle(): void {}
+    isActive = (): boolean => true;
     
     private toggleImmateriality = () => {        
         this.selectedEdges.forEach(_=>_.immaterial = !_.immaterial );        

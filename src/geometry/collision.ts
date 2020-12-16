@@ -31,7 +31,7 @@ export const detectCollisionAt = (vector: Vector, polygons: IPolygon[]): VertexC
             .map(v => ({ polygon: p, kind: "vertex", vertex: v, distance: distance(v, vector)} as const));
 
             let closest = edges.concat(vertices)                
-            .filter(_ => _.distance <= 50)
+            .filter(_ => _.distance <= 10)
             .sort(distanceComparer)[0];
             return closest ? acc.concat(closest) : acc;
         }, [])

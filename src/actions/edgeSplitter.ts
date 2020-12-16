@@ -34,8 +34,8 @@ export class EdgeSplitter implements IActionHandler {
     handle(): void {
         if (this.isActive() && this.candidate) drawVector(this.context, this.candidate, 'rgb(255,0,0)');
     }
-
-    private isActive = () => isActive(this.active) && this.selectedGeometry.length === 1 && isEdge(this.selectedGeometry[0]);
+    
+    isActive = () => isActive(this.active) && this.selectedGeometry.length === 1 && isEdge(this.selectedGeometry[0]);
     
     private selectCut = (event: MouseEvent): boolean => {
         if (!this.isActive()) { return false; }        
@@ -45,7 +45,8 @@ export class EdgeSplitter implements IActionHandler {
 
     private cutEdge = (event: MouseEvent): boolean => {
         if (!this.isActive()) { return false; }
-        
+        event.stopImmediatePropagation();
+
         const c = this.calculateCut(event);
         this.world.geometry = splitEdge(c, this.selectedEdge.edge, this.selectedEdge.polygon, this.world.geometry);
 

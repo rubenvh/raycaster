@@ -38,6 +38,8 @@ export class CameraActionsHandler implements IActionHandler {
         if (this.flags.camera_depth_down.value) this.world.camera = adaptDepth(-1, this.world.camera);
     }
 
+    isActive = () => true;
+
     private move = (direction: 1|-1): ICamera => move(direction, this.world.camera, this.world.geometry);
     private strafe = (direction: 1|-1): ICamera => strafe(direction, this.world.camera, this.world.geometry);    
 }

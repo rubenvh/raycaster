@@ -14,11 +14,11 @@ export class GeometrySelector implements IActionHandler {
 
     constructor(
         private context: CanvasRenderingContext2D,
-        private spaceTranslator: ISpaceTranslator, private world: World) {}
+        private spaceTranslator: ISpaceTranslator, private world: World, private blockingHandlers: IActionHandler[] = []) {}
 
     register(g: GlobalEventHandlers): IActionHandler {
-        g.addEventListener('contextmenu', this.selectElement, false);    
-        g.addEventListener('mousedown', this.dragStart);
+        // g.addEventListener('contextmenu', this.selectElement, false);    
+        g.addEventListener('mousedown', this.selectOrDrag);
         g.addEventListener('mousemove', this.drag);
         g.addEventListener('mouseup', this.dragStop);    
         return this;
@@ -29,19 +29,33 @@ export class GeometrySelector implements IActionHandler {
             drawBoundingBox(this.context, this.region, 'rgba(255,100,0,0.8)')
         }
     }
+
+    isActive = (): boolean => this.isDragging;
     
-    private selectElement = (event: MouseEvent) => {
-        const location = this.spaceTranslator.toWorldSpace(event);                
+    // private selectElement = (event: MouseEvent) => {
+    //     const location = this.spaceTranslator.toWorldSpace(event);                
+    //     const collision = detectCollisionAt(location, this.world.geometry);
+    //     let s = selectedElement(collision, event.shiftKey);
+    //     this.performSelection(event, [s]);
+    // };
+
+    private trySelectElement = (location: Vector, event: MouseEvent): boolean => {
+        
         const collision = detectCollisionAt(location, this.world.geometry);
-        let s = selectedElement(collision, event.shiftKey);
-        this.performSelection(event, [s]);
+        
+        if (collision) {            
+            let s = selectedElement(collision, event.shiftKey);
+            this.performSelection(event, [s]);
+        }
+        return !!collision;        
     };
 
-    private dragStart = (event: MouseEvent): boolean => {
+    private selectOrDrag = (event: MouseEvent): boolean => {        
+        if (this.blockingHandlers.some(_ => _.isActive())) { return false; }
         // left mouse click for selecting region
-        if (event.button !== 0) { return false; }
+        if (event.button !== 0) { return false; }        
         const origin = this.spaceTranslator.toWorldSpace(event);        
-        this.isDragging = true;
+        this.isDragging = !this.trySelectElement(origin, event);
         this.region = [origin, origin];
         return true;
     };

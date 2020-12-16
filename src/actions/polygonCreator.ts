@@ -41,8 +41,9 @@ export class PolygonCreator implements IActionHandler {
         } 
     }
 
-    private startCreation = () => this.isCreating = this.isActive();
-    private isActive = () => this.world.selection.length === 0;
+    public isActive = () => this.isCreating;
+    private startCreation = () => this.isCreating = this.canActivate();
+    private canActivate = () => this.world.selection.length === 0;
     private cancel = () => {
         this.isCreating = false;
         this.nextVertex = null;

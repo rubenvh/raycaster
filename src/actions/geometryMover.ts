@@ -1,3 +1,4 @@
+import { isSelectedVertex } from './../geometry/selectable';
 import { ISpaceTranslator } from "./geometrySelector";
 import { Vector, subtract, add, snap } from "../math/vector";
 import { World } from "../world";
@@ -11,7 +12,7 @@ export class GeometryMover implements IActionHandler {
     private isDragging: boolean;
     private origin: Vector;
 
-    constructor(private spaceTranslator: ISpaceTranslator, private world: World) {
+    constructor(private spaceTranslator: ISpaceTranslator, private world: World, private blockingHandlers: IActionHandler[] = []) {
     }
     
     register(g: GlobalEventHandlers): IActionHandler {
@@ -22,12 +23,14 @@ export class GeometryMover implements IActionHandler {
     }
 
     handle(): void {}    
+    isActive = (): boolean => this.isDragging;
 
     private dragStart = (event: MouseEvent): boolean => {
+        if (this.blockingHandlers.some(_ => _.isActive())) { return false; }
         // left mouse click for moving
         if (event.button !== 0) { return false; }
         this.origin = this.spaceTranslator.toWorldSpace(event);        
-        this.isDragging = this.world.selection.some(s => isCloseToSelected(this.origin, s));    
+        this.isDragging = !event.ctrlKey && this.world.selection.some(s => isCloseToSelected(this.origin, s));    
         // moving started => prevent other mousedown listeners    
         if (this.isDragging) event.stopImmediatePropagation();
         return true;

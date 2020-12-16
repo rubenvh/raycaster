@@ -36,6 +36,7 @@ const Keys: KeyMap = {
 export interface IActionHandler {
     register(g: GlobalEventHandlers): IActionHandler;    
     handle(): void;
+    isActive(): boolean;
 }
 
 export function bindFlagToKey(g: GlobalEventHandlers, a: Action, flag: Flag) {

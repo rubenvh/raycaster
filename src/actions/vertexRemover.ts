@@ -20,7 +20,7 @@ export class VertexRemover implements IActionHandler {
 
     handle(): void {}
 
-    private isActive = () => this.world.selection.length > 0;
+    public isActive = () => this.world.selection.length > 0;
     
     private deleteVertex = () => {
         if (this.isActive()) {
