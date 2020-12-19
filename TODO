@@ -2,12 +2,12 @@
 - display stats in statusbar
 - support for splitting a polygon into 2 (when selecting 2 vertices => introduce new edge in 2 sets)
 - support for transforming a polygon when edge is selected: remove edge and make polygon form solid (trace it)
+- change fading strategy on key press (null, dark or mist)
 - display selected item's JSON (or intersection when multiple items are selected)
 - modify selected item's JSON and save it (or intersection when multiple items are selected)
 - load textures in a virtual canvas
 - draw texture on wall column (copying from virtual canvas)
 - store textures in localstorage? 
-- atmospheric lightning (tunnel effect = reduce luminosity of walls further away, mist = dampen color of walls further away)
 - reduce intersection tests by testing bounding box first
 - highlight edges that are being tested for intersection
 - implement BSP or quadtree structure to further reduce intersection tests
@@ -15,4 +15,4 @@
 - implement zooming in 2d view (+ impact on distance threshold for selection)
 - implement mirror walls
 - implement doors
-- add circles to geometry to represent sprites ?
+- add circles to geometry to represent sprites ? (no we need direction, ellipse ?)

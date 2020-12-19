@@ -19,7 +19,7 @@ export const drawSegment = (context: CanvasRenderingContext2D, segment: ILineSeg
     context.stroke();
 };
 
-export const drawRect = (context: CanvasRenderingContext2D, segment: ILineSegment, color: string = 'rgb(0,0,255)') => {
+export const drawRect = (context: CanvasRenderingContext2D, segment: ILineSegment, color: string|CanvasGradient = 'rgb(0,0,255)') => {
     const x1 = segment[0][0],
           y1 = segment[0][1],
           x2 = segment[1][0],
@@ -38,3 +38,14 @@ export const drawBoundingBox = (context: CanvasRenderingContext2D, boundingBox: 
     context.setLineDash([4, 2]);
     context.strokeRect(x1, y1, x2-x1, y2-y1);
 }
+
+export const drawTrapezoid = (context: CanvasRenderingContext2D, p: [Vector, Vector, Vector, Vector], color: string): void => {    
+    context.beginPath();    
+    context.moveTo(p[0][0], p[0][1]);
+    context.lineTo(p[1][0], p[1][1]);
+    context.lineTo(p[2][0], p[2][1]);
+    context.lineTo(p[3][0], p[3][1]);
+    context.closePath();    
+    context.fillStyle = color;
+    context.fill();
+};
