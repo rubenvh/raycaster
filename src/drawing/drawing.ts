@@ -39,7 +39,7 @@ export const drawBoundingBox = (context: CanvasRenderingContext2D, boundingBox: 
     context.strokeRect(x1, y1, x2-x1, y2-y1);
 }
 
-export const drawTrapezoid = (context: CanvasRenderingContext2D, p: [Vector, Vector, Vector, Vector], color: string): void => {    
+export const drawTrapezoid = (context: CanvasRenderingContext2D, p: [Vector, Vector, Vector, Vector], color: string|CanvasGradient): void => {    
     context.beginPath();    
     context.moveTo(p[0][0], p[0][1]);
     context.lineTo(p[1][0], p[1][1]);

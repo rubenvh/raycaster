@@ -27,9 +27,9 @@ export class Renderer3d {
     private height: number;
     private textures: HTMLCanvasElement;
     private textureContext: CanvasRenderingContext2D;
-    private convergenceShade = 250;
+    private convergenceShade = 0;
     private resolution = 640;
-    private horizonDistance = 250;
+    private horizonDistance = 500;
 
     constructor(private world: World, private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');
@@ -52,7 +52,7 @@ export class Renderer3d {
         const height = this.convertDistanceToWallHeight(hit.distance || this.horizonDistance);                    
         const startRow = Math.floor((this.height - height)/2);
         const endRow = Math.floor((this.height + height)/2);
-        const edgeId = hit.edge && hit.edge.id || Guid.createEmpty();
+        const edgeId = hit.edge && hit.edge.id || Guid.parse(Guid.EMPTY);
 
         return ({edgeId, height, 
             material: hit.edge && {...hit.edge.material, luminosity: determineLight(hit)},
@@ -87,16 +87,19 @@ export class Renderer3d {
      * Grouping by edge allows us to draw a wall in 1 go completely instead of per column. 
      */
     private constructZBuffer = (rays: raycaster.CastedRay[]): ZBuffer => {
-        const zbuffer: ZBuffer = [];
+        const zbuffer: ZBuffer = [];        
         const indexes = rays.map(r => r.hits.length);
         const max = Math.max(...indexes);
         for (let i = 0; i < max; i++) {
-
+            let previousEdge: Guid = null;
+            let currentWallGroup = Guid.create();
             const groupedByEdge = rays.reduce(
                 (acc, r, rayIndex) => {
                     if (i > indexes[rayIndex]-1) { return acc; }
-                    const wall = this.createWall(r.hits[i], rayIndex);                    
-                    return acc.set(wall.edgeId, [...acc.get(wall.edgeId)||[], wall]);                    
+                    const wall = this.createWall(r.hits[i], rayIndex); 
+                    if (wall.edgeId !== (previousEdge || wall.edgeId)) { currentWallGroup = Guid.create(); };
+                    previousEdge = wall.edgeId;
+                    return acc.set(currentWallGroup, [...acc.get(currentWallGroup)||[], wall]);                    
                 }, new Map<Guid, WallProps[]>());
 
             zbuffer.push(groupedByEdge);
@@ -150,10 +153,8 @@ export class Renderer3d {
         }  
         
         // apply fading    
-        if (this.convergenceShade != null) {
-            // TODO: long walls are not faded correctly=> apply gradient based on distance
-             const fadeFactor = Math.min(this.horizonDistance, start.distance/this.horizonDistance);            
-             drawTrapezoid(this.context, getTrapezoid(start, end), `rgba(${this.convergenceShade},${this.convergenceShade},${this.convergenceShade},${fadeFactor}`);
+        if (this.convergenceShade != null) {             
+            this.applyFading(wallProps);
         }   
         
         this.drawStats(wallProps);        
@@ -176,7 +177,22 @@ export class Renderer3d {
         }              
         // apply luminosity to texture
         drawTrapezoid(this.context, getTrapezoid(start, end), `rgba(0,0,0,${1-start.material.luminosity}`);
-    }    
+    }   
+    
+    private applyFading = (wallProps: WallProps[]) => {
+        const start = wallProps[wallProps.length-1];
+        const end = wallProps[0];
+        const trapezoid = getTrapezoid(start, end);
+        var gradient = this.context.createLinearGradient(trapezoid[0][0], 0, trapezoid[3][0], 0);
+        wallProps.reverse().filter((w, i) => i % 20 === 0)             
+        .forEach((w, i, a) => {
+           const fadeFactor = Math.min(this.horizonDistance, w.distance)/this.horizonDistance;
+           const fadeColor = `rgba(${this.convergenceShade},${this.convergenceShade},${this.convergenceShade},${fadeFactor})`;
+           gradient.addColorStop(i/a.length, fadeColor);
+        })
+        
+        drawTrapezoid(this.context, getTrapezoid(start, end), gradient);
+    }
 
     private drawStats = (wallProps: WallProps[]) => {
         const start = wallProps[wallProps.length-1];
@@ -184,6 +200,7 @@ export class Renderer3d {
         if (isSelectedEdge(start.edgeId, this.world.selection)) {
                        
             const texts = [
+                `edgeId: ${JSON.stringify(start.edgeId)}`,
                 `distance: ${start.distance.toFixed(2)}`,
                 `lumen: ${start.material.luminosity.toFixed(2)}`,
                 `length: ${start.length.toFixed(2)}`
