@@ -1,3 +1,4 @@
+import { Guid } from "guid-typescript";
 import { distanceTo } from "../math/lineSegment";
 import { Vector } from "../math/vector";
 import { EdgeCollision, VertexCollision } from "./collision";
@@ -14,14 +15,14 @@ export const isPolygon = (_: SelectableElement): _ is SelectedPolygon => _.kind 
 
 export type SelectableElement = SelectedVertex | SelectedEdge | SelectedPolygon;
 
-export const isSelectedPolygon = (p: IPolygon, selection: SelectableElement[]): boolean => {
-    return selection.some(_=>_.kind === 'polygon' && _.polygon.id === p.id);
+export const isSelectedPolygon = (id: Guid, selection: SelectableElement[]): boolean => {
+    return selection.some(_=>_.kind === 'polygon' && _.polygon.id === id);
 }
-export const isSelectedEdge = (edge: IEdge, selection: SelectableElement[]): boolean => {
-    return selection.some(_=>_.kind === 'edge' && _.edge.id === edge.id);
+export const isSelectedEdge = (id: Guid, selection: SelectableElement[]): boolean => {
+    return selection.some(_=> _.kind === 'edge' && _.edge.id === id);
 }
-export const isSelectedVertex = (vertex: IVertex, selection: SelectableElement[]): boolean => {
-    return selection.some(_=>_.kind === 'vertex' && _.vertex.id === vertex.id);
+export const isSelectedVertex = (id: Guid, selection: SelectableElement[]): boolean => {
+    return selection.some(_=>_.kind === 'vertex' && _.vertex.id === id);
 }
 
 export const isCloseToSelected = (v: Vector, element: SelectableElement) => {

@@ -7,6 +7,7 @@ import { Guid } from 'guid-typescript';
 import { RayHit } from './geometry/collision';
 import { distance, Vector } from './math/vector';
 import { Color, IMaterial } from './geometry/properties';
+import { isEdge, isSelectedEdge } from './geometry/selectable';
 
 type WallProps = {
     edgeId: Guid,
@@ -32,6 +33,7 @@ export class Renderer3d {
 
     constructor(private world: World, private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');
+        this.context.font = '12px sans-serif';
         this.width = canvas.width;
         this.height = canvas.height;
         
@@ -149,9 +151,12 @@ export class Renderer3d {
         
         // apply fading    
         if (this.convergenceShade != null) {
+            // TODO: long walls are not faded correctly=> apply gradient based on distance
              const fadeFactor = Math.min(this.horizonDistance, start.distance/this.horizonDistance);            
              drawTrapezoid(this.context, getTrapezoid(start, end), `rgba(${this.convergenceShade},${this.convergenceShade},${this.convergenceShade},${fadeFactor}`);
-        }                    
+        }   
+        
+        this.drawStats(wallProps);        
     };
 
     private drawTexture = (wallProps: WallProps[]) => {
@@ -171,6 +176,27 @@ export class Renderer3d {
         }              
         // apply luminosity to texture
         drawTrapezoid(this.context, getTrapezoid(start, end), `rgba(0,0,0,${1-start.material.luminosity}`);
+    }    
+
+    private drawStats = (wallProps: WallProps[]) => {
+        const start = wallProps[wallProps.length-1];
+        const end = wallProps[0];
+        if (isSelectedEdge(start.edgeId, this.world.selection)) {
+                       
+            const texts = [
+                `distance: ${start.distance.toFixed(2)}`,
+                `lumen: ${start.material.luminosity.toFixed(2)}`,
+                `length: ${start.length.toFixed(2)}`
+            ];
+            const widest = texts.map(_ => this.context.measureText(_)).reduce((acc, m) => Math.max(acc, m.width), 0);
+                        
+            const center = [start.colRange[0] + (end.colRange[1]-start.colRange[0])/2 - widest/2,
+                            start.rowRange[0] + (start.rowRange[1]-start.rowRange[0])/2];
+
+            this.context.fillStyle = 'rgb(0,0,0)';                        
+            texts.forEach((t, i) => this.context.fillText(t, center[0], (i-(texts.length/2))*10+center[1]));
+            
+        }
     }    
 }
 
