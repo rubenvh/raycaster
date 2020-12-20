@@ -6,8 +6,8 @@ import { drawRect, drawTrapezoid } from './drawing/drawing';
 import { Guid } from 'guid-typescript';
 import { RayHit } from './geometry/collision';
 import { distance, Vector } from './math/vector';
-import { Color, IMaterial } from './geometry/properties';
-import { isEdge, isSelectedEdge } from './geometry/selectable';
+import { IMaterial } from './geometry/properties';
+import { isSelectedEdge } from './geometry/selectable';
 
 type WallProps = {
     edgeId: Guid,
@@ -29,7 +29,7 @@ export class Renderer3d {
     private textureContext: CanvasRenderingContext2D;
     private convergenceShade = 0;
     private resolution = 640;
-    private horizonDistance = 500;
+    private horizonDistance = 300;
 
     constructor(private world: World, private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');

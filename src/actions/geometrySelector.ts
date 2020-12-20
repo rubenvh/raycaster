@@ -16,8 +16,7 @@ export class GeometrySelector implements IActionHandler {
         private context: CanvasRenderingContext2D,
         private spaceTranslator: ISpaceTranslator, private world: World, private blockingHandlers: IActionHandler[] = []) {}
 
-    register(g: GlobalEventHandlers): IActionHandler {
-        // g.addEventListener('contextmenu', this.selectElement, false);    
+    register(g: GlobalEventHandlers): IActionHandler {        
         g.addEventListener('mousedown', this.selectOrDrag);
         g.addEventListener('mousemove', this.drag);
         g.addEventListener('mouseup', this.dragStop);    
@@ -32,13 +31,6 @@ export class GeometrySelector implements IActionHandler {
 
     isActive = (): boolean => this.isDragging;
     
-    // private selectElement = (event: MouseEvent) => {
-    //     const location = this.spaceTranslator.toWorldSpace(event);                
-    //     const collision = detectCollisionAt(location, this.world.geometry);
-    //     let s = selectedElement(collision, event.shiftKey);
-    //     this.performSelection(event, [s]);
-    // };
-
     private trySelectElement = (location: Vector, event: MouseEvent): boolean => {
         
         const collision = detectCollisionAt(location, this.world.geometry);

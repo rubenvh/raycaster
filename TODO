@@ -3,6 +3,8 @@
 - support for splitting a polygon into 2 (when selecting 2 vertices => introduce new edge in 2 sets)
 - support for transforming a polygon when edge is selected: remove edge and make polygon form solid (trace it)
 - change fading strategy on key press (null, dark or mist)
+- right-click geometry to show menu
+- undo/redo service
 - display selected item's JSON (or intersection when multiple items are selected)
 - modify selected item's JSON and save it (or intersection when multiple items are selected)
 - load textures in a virtual canvas

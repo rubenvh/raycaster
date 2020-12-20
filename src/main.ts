@@ -1,4 +1,5 @@
-import {app, BrowserWindow} from 'electron'
+import {app, BrowserWindow, Menu} from 'electron'
+import { menu } from './menu/mainmenu';
 
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
@@ -6,8 +7,9 @@ let mainWindow: Electron.BrowserWindow = null
 
 function createWindow () {
   // Create the browser window.
-  mainWindow = new BrowserWindow({width: 1500, height: 820, show: false,  webPreferences: {
-    nodeIntegration: true
+  mainWindow = new BrowserWindow({width: 2000, height: 1000, show: false,  webPreferences: {
+    nodeIntegration: true,
+    enableRemoteModule: true
   } });
 
   // and load the index.html of the app.
@@ -25,6 +27,8 @@ function createWindow () {
     // when you should delete the corresponding element.
     mainWindow = null
   })
+
+  Menu.setApplicationMenu(menu);
 }
 
 // This method will be called when Electron has finished
