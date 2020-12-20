@@ -2,6 +2,7 @@ import { CastedRay } from './raycaster';
 import { ICamera } from "./camera";
 import { IGeometry } from './geometry/geometry';
 import { SelectableElement } from './geometry/selectable';
+import { ITextureSource } from './textures/model';
 
 export type World = {
     camera: ICamera,    
@@ -10,7 +11,7 @@ export type World = {
     rays: CastedRay[]   
 }
 export type State = {
-    level: World,
+    world: World,
     textures: ITextureSource[],
     
 }

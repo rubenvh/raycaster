@@ -1,3 +1,4 @@
+import { TextureLibrary } from './textures/textureLibrary';
 
 // This file is required by the index.html file and will
 // be executed in the renderer process for that window.
@@ -7,6 +8,7 @@ import { createCanvasHandlers, createGlobalActionHandlers } from './actions/acti
 import { Renderer3d } from './renderer3d';
 import { Renderer2d } from "./renderer2d";
 import { WorldLoader } from "./storage/stateLoader";
+import { State } from './stateModel';
 
 const ui = {    
     rotateButton: document.getElementById('rotate'),
@@ -19,9 +21,14 @@ const ui = {
 };
 
 let worldLoader = new WorldLoader();
-let handlers = [...createGlobalActionHandlers(worldLoader.world), ...createCanvasHandlers(ui.view_2d.canvas, worldLoader.world)];
-let renderer3d = new Renderer3d(worldLoader.world, ui.view_3d.canvas);
-let renderer2d = new Renderer2d(worldLoader.world, ui.view_2d.canvas);
+let textureLib = new TextureLibrary();
+let state: State = {
+    world: worldLoader.world,
+    textures: textureLib.textures,
+}
+let handlers = [...createGlobalActionHandlers(state.world), ...createCanvasHandlers(ui.view_2d.canvas, state.world)];
+let renderer3d = new Renderer3d(state.world, ui.view_3d.canvas, textureLib);
+let renderer2d = new Renderer2d(state.world, ui.view_2d.canvas);
 
 const times: number[] = [];
 let fps: number;

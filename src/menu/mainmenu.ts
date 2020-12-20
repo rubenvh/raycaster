@@ -1,4 +1,4 @@
-import { openFile, saveFile } from './../storage/dialogs';
+import { importTexture, openFile, saveFile } from './../storage/dialogs';
 import { dialog, Menu } from "electron"
 
 const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
@@ -35,7 +35,7 @@ const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
       {
         label: 'Import',
         //accelerator: 'CommandOrControl+Shift+N',
-        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('importTexture'); }}
+        click: (item, focusedWindow) => { if (focusedWindow) { importTexture(dialog, focusedWindow); }}
       },
       {
         label: 'Library',

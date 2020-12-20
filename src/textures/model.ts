@@ -1,10 +1,10 @@
-interface ITextureSource {
+export interface ITextureSource {
     path: string;
     textureWidth: number;
     textureHeight: number;    
 }
 
-interface ITextureReference {
+export interface ITextureReference {
     id: string,
     index: number,
 }

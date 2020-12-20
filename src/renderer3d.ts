@@ -1,3 +1,4 @@
+import { TextureLibrary } from './textures/textureLibrary';
 import { makeRays } from './camera';
 import { slope } from './math/lineSegment';
 import * as raycaster from './raycaster';
@@ -9,7 +10,7 @@ import { distance, Vector } from './math/vector';
 import { IMaterial } from './geometry/properties';
 import { isSelectedEdge } from './geometry/selectable';
 
-type WallProps = {
+export type WallProps = {
     edgeId: Guid,
     height: number, 
     material: IMaterial,
@@ -24,28 +25,16 @@ type ZBuffer = Map<Guid,WallProps[]>[];
 export class Renderer3d {
     private context: CanvasRenderingContext2D;
     private width: number;
-    private height: number;
-    private textures: HTMLCanvasElement;
-    private textureContext: CanvasRenderingContext2D;
+    private height: number;    
     private convergenceShade = 0;
     private resolution = 640;
     private horizonDistance = 300;
 
-    constructor(private world: World, private canvas: HTMLCanvasElement) {
+    constructor(private world: World, private canvas: HTMLCanvasElement, private textureLibrary: TextureLibrary) {
         this.context = canvas.getContext('2d');
         this.context.font = '12px sans-serif';
         this.width = canvas.width;
         this.height = canvas.height;
-        
-        // load some test textures from the web
-        const imgUrl = 'https://filecache.garrysmods.org/2373/2/1024x768.jpg';
-        this.textures = document.createElement('canvas') as HTMLCanvasElement;
-
-        this.textureContext = this.textures.getContext('2d');
-        this.textures.width = 1024; this.textures.height= 768;
-        const img = new Image();
-        img.onload = () => this.textureContext.drawImage(img, 0, 0);
-        img.src = imgUrl;
     }
         
     private createWall = (hit: RayHit, rayIndex: number): WallProps => {
@@ -163,18 +152,9 @@ export class Renderer3d {
     private drawTexture = (wallProps: WallProps[]) => {
         const start = wallProps[wallProps.length-1];
         const end = wallProps[0];
-        const tileFactor = 20 // => w.length for stretching
-        const twidth = 192;
-        const theight = 192;
-        const textureIndex = 1;            
-        for(let windex=wallProps.length-1; windex >= 0;windex--) {
-            const w = wallProps[windex];
-            const wx = distance(w.origin, w.intersection);
-            const [x1, x2] = wallProps[windex].colRange;
-            const [y1, y2] = wallProps[windex].rowRange;                
-            const tx = Math.floor((twidth * wx / tileFactor) % (twidth - 1));
-            this.context.drawImage(this.textures, tx+textureIndex*twidth, 0, 1, theight, x1, y1, x2-x1, y2-y1);                
-        }              
+
+        // draw texture
+        this.textureLibrary.drawTexture(this.context, wallProps);        
         // apply luminosity to texture
         drawTrapezoid(this.context, getTrapezoid(start, end), `rgba(0,0,0,${1-start.material.luminosity}`);
     }   

@@ -21,6 +21,7 @@
   "dependencies": {
     "electron": "^10.1.5",
     "guid-typescript": "^1.0.9",
+    "image-size": "^0.9.3",
     "mathjs": "^8.0.0",
     "ramda": "^0.27.1",
     "ts-node": "^9.0.0"
@@ -29,6 +30,7 @@
     "@babel/core": "^7.12.3",
     "@babel/preset-env": "^7.12.1",
     "@babel/preset-typescript": "^7.12.1",
+    "@types/image-size": "^0.8.0",
     "@types/jest": "^26.0.15",
     "@types/mathjs": "^6.0.7",
     "babel-jest": "^26.6.3",
