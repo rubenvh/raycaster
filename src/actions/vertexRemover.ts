@@ -1,6 +1,6 @@
 import { IPolygon } from './../geometry/polygon';
 import { isPolygon } from './../geometry/selectable';
-import { World } from '../world';
+import { World } from '../stateModel';
 import { IActionHandler, Flag, bindCallbackToKey } from './actions';
 import { removeVertex } from '../geometry/geometry';
 import { isEdge, isVertex, SelectedVertex } from '../geometry/selectable';

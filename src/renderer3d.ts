@@ -1,7 +1,7 @@
 import { makeRays } from './camera';
 import { slope } from './math/lineSegment';
 import * as raycaster from './raycaster';
-import { World } from './world';
+import { World } from './stateModel';
 import { drawRect, drawTrapezoid } from './drawing/drawing';
 import { Guid } from 'guid-typescript';
 import { RayHit } from './geometry/collision';

@@ -1,5 +1,5 @@
 import { adaptAngle, adaptDepth, ICamera, move, rotate, strafe } from "../camera";
-import { World } from "../world";
+import { World } from "../stateModel";
 import { bindFlagToKey, Flag, IActionHandler, makeFlag } from "./actions";
 
 const CAMERA_ACTIONS = ["turnleft","turnright","right","left","up","down",

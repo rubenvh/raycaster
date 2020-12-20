@@ -1,7 +1,7 @@
 import { isSelectedVertex } from './../geometry/selectable';
 import { ISpaceTranslator } from "./geometrySelector";
 import { Vector, subtract, add, snap } from "../math/vector";
-import { World } from "../world";
+import { World } from "../stateModel";
 import { IActionHandler } from "./actions";
 import { IVertex } from "../geometry/vertex";
 import { Guid } from "guid-typescript";

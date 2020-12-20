@@ -3,13 +3,10 @@
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
 
-import { World } from "./world";
-import { createGeometry } from "./geometry/geometry";
-import { makeCamera } from "./camera";
 import { createCanvasHandlers, createGlobalActionHandlers } from './actions/actionHandlerFactory';
 import { Renderer3d } from './renderer3d';
 import { Renderer2d } from "./renderer2d";
-import { StateLoader } from "./storage/stateLoader";
+import { WorldLoader } from "./storage/stateLoader";
 
 const ui = {    
     rotateButton: document.getElementById('rotate'),
@@ -21,12 +18,10 @@ const ui = {
     }    
 };
 
-let stateLoader = new StateLoader();
-let world: World = stateLoader.state;
-
-let handlers = [...createGlobalActionHandlers(world), ...createCanvasHandlers(ui.view_2d.canvas, world)];
-let renderer3d = new Renderer3d(world, ui.view_3d.canvas);
-let renderer2d = new Renderer2d(world, ui.view_2d.canvas);
+let worldLoader = new WorldLoader();
+let handlers = [...createGlobalActionHandlers(worldLoader.world), ...createCanvasHandlers(ui.view_2d.canvas, worldLoader.world)];
+let renderer3d = new Renderer3d(worldLoader.world, ui.view_3d.canvas);
+let renderer2d = new Renderer2d(worldLoader.world, ui.view_2d.canvas);
 
 const times: number[] = [];
 let fps: number;

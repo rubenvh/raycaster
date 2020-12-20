@@ -1,12 +1,12 @@
 import { saveFile } from './dialogs';
 import { createGeometry, loadGeometry } from './../geometry/geometry';
 import { ipcRenderer, remote } from "electron";
-import { World } from "../world";
+import { World } from "../stateModel";
 import * as fs from "fs";
 import { makeCamera } from "../camera";
 
-export class StateLoader {
-    public state: World;
+export class WorldLoader {
+    public world: World;
 
     private loadedFile: string;
     constructor() {
@@ -14,7 +14,7 @@ export class StateLoader {
         ipcRenderer.on('saveFileAs', (_, arg) => this.saveFile(arg.filePath));
         ipcRenderer.on('saveFile', (_, arg) => this.save());
         ipcRenderer.on('newFile', (_, arg) => this.clear());
-        this.state = this.initWorld();
+        this.world = this.initWorld();
 
         const loadedFile = localStorage.getItem('loadedFile');
         if (loadedFile) {
@@ -49,8 +49,8 @@ export class StateLoader {
 
     private saveFile = (path: string) => {    
         const data = JSON.stringify({
-            camera: this.state.camera, 
-            geometry: this.state.geometry });
+            camera: this.world.camera, 
+            geometry: this.world.geometry });
         fs.writeFile(path, data, {}, () => {
             localStorage.setItem('loadedFile', path);
             this.loadedFile = path;           
@@ -58,9 +58,9 @@ export class StateLoader {
     }
 
     private loadWorld = (w: any) => {
-        if (w.camera) this.state.camera = w.camera;
-        if (w.geometry) this.state.geometry = loadGeometry(w.geometry);
-        this.state.rays.length = this.state.selection.length = 0;
+        if (w.camera) this.world.camera = w.camera;
+        if (w.geometry) this.world.geometry = loadGeometry(w.geometry);
+        this.world.rays.length = this.world.selection.length = 0;
     }
 
     private initWorld = (): World => {

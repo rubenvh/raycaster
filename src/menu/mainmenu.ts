@@ -2,64 +2,80 @@ import { openFile, saveFile } from './../storage/dialogs';
 import { dialog, Menu } from "electron"
 
 const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
-    {
-        label: 'File',
-        role: 'fileMenu',        
-        submenu: [
-          {
-            label: 'New',
-            accelerator: 'CommandOrControl+Shift+N',
-            click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('newFile'); }},
-        },
-        {
-            label: 'Open',
-            accelerator: 'CommandOrControl+Shift+O',
-            click: (item, focusedWindow) => { if (focusedWindow) { openFile(dialog, focusedWindow); }},
-        },
-        {
-          label: 'Save',
-          accelerator: 'CommandOrControl+S',
-          click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('saveFile');}},
+  {
+    label: 'World',
+    role: 'fileMenu',
+    submenu: [
+      {
+        label: 'New',
+        accelerator: 'CommandOrControl+Shift+N',
+        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('newFile'); }}
       },
-        {
-          label: 'Save as',
-          accelerator: 'CommandOrControl+Shift+S',
-          click: (item, focusedWindow) => { if (focusedWindow) { saveFile(dialog, focusedWindow); }},
+      {
+        label: 'Open',
+        accelerator: 'CommandOrControl+Shift+O',
+        click: (item, focusedWindow) => { if (focusedWindow) { openFile(dialog, focusedWindow); }}
+      },
+      {
+        label: 'Save',
+        accelerator: 'CommandOrControl+S',
+        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('saveFile');}},
+      },
+      {
+        label: 'Save as',
+        accelerator: 'CommandOrControl+Shift+S',
+        click: (item, focusedWindow) => { if (focusedWindow) { saveFile(dialog, focusedWindow); }},
       }
-        ]
+    ]
+  },
+  {
+    label: 'Textures',
+    role: 'appMenu',
+    submenu: [
+      {
+        label: 'Import',
+        //accelerator: 'CommandOrControl+Shift+N',
+        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('importTexture'); }}
       },
-    {
-      label: 'Edit',
-      submenu: [
-        {
-          role: 'undo'
-        },
-        {
-          role: 'redo'
-        },
-        {
-          type: 'separator'
-        },
-        {
-          role: 'cut'
-        },
-        {
-          role: 'copy'
-        },
-        {
-          role: 'paste'
-        },
-        {
-          role: 'pasteAndMatchStyle'
-        },
-        {
-          role: 'delete'
-        },
-        {
-          role: 'selectAll'
-        }
-      ]
-    },
+      {
+        label: 'Library',
+        //accelerator: 'CommandOrControl+Shift+O',
+        //click: (item, focusedWindow) => { if (focusedWindow) { openFile(dialog, focusedWindow); }}
+      },
+    ]
+  },
+  // {
+  //   label: 'Edit',
+  //   submenu: [
+  //       {
+  //         role: 'undo'
+  //       },
+  //       {
+  //         role: 'redo'
+  //       },
+  //       {
+  //         type: 'separator'
+  //       },
+  //       {
+  //         role: 'cut'
+  //       },
+  //       {
+  //         role: 'copy'
+  //       },
+  //       {
+  //         role: 'paste'
+  //       },
+  //       {
+  //         role: 'pasteAndMatchStyle'
+  //       },
+  //       {
+  //         role: 'delete'
+  //       },
+  //       {
+  //         role: 'selectAll'
+  //       }
+  //     ]
+  //   },
     {
       label: 'View',
       submenu: [

@@ -1,15 +1,18 @@
 import { CastedRay } from './raycaster';
 import { ICamera } from "./camera";
-import { IGeometry, loadGeometry } from './geometry/geometry';
+import { IGeometry } from './geometry/geometry';
 import { SelectableElement } from './geometry/selectable';
-
 
 export type World = {
     camera: ICamera,    
-    geometry: IGeometry,
+    geometry: IGeometry,     
     selection: SelectableElement[],
-    rays: CastedRay[]
+    rays: CastedRay[]   
+}
+export type State = {
+    level: World,
+    textures: ITextureSource[],
+    
 }
 
-export const loadWorld = (world : World): World => ({...world, geometry: loadGeometry(world.geometry)});
 

@@ -1,5 +1,5 @@
 import { Guid } from 'guid-typescript';
-import { World } from "../world";
+import { World } from "../stateModel";
 import { bindCallbackToKey, IActionHandler } from "./actions";
 import { IEdge } from '../geometry/edge';
 import { isEdge, isPolygon } from "../geometry/selectable";

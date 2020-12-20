@@ -1,7 +1,7 @@
 import { drawSegment, drawVector } from './../drawing/drawing';
 import { snap, Vector } from '../math/vector';
 import { areClose } from '../geometry/vertex';
-import { World } from '../world';
+import { World } from '../stateModel';
 import { bindCallbackToKey, Flag, IActionHandler } from './actions';
 import { ISpaceTranslator } from './geometrySelector';
 import { addPolygon } from '../geometry/geometry';

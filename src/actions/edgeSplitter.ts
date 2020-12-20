@@ -1,5 +1,5 @@
 import { splitEdge } from './../geometry/geometry';
-import { World } from './../world';
+import { World } from '../stateModel';
 import { ISpaceTranslator } from "./geometrySelector";
 import { projectOn } from "../math/lineSegment";
 import { bindFlagToKey, deactivate, Flag, IActionHandler, isActive } from "./actions";

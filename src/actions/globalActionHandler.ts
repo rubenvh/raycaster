@@ -1,4 +1,4 @@
-import { World } from "../world";
+import { World } from "../stateModel";
 import { bindFlagToKey, Flag, IActionHandler, isActive, makeFlag } from "./actions";
 
 const GLOBAL_ACTIONS = ["save_world"] as const;

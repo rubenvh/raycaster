@@ -1,7 +1,7 @@
 import { EdgeModifier } from './edgeModifier';
 import { CameraActionsHandler } from './cameraActionsHandler';
 import { spaceTranslator, GeometrySelector } from './geometrySelector';
-import { World } from '../world';
+import { World } from '../stateModel';
 import { IActionHandler } from './actions';
 import { EdgeSplitter } from './edgeSplitter';
 import { GeometryMover } from './geometryMover';
