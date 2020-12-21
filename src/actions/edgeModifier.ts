@@ -1,12 +1,14 @@
+import { ITextureReference } from './../textures/model';
 import { Guid } from 'guid-typescript';
 import { World } from "../stateModel";
 import { bindCallbackToKey, IActionHandler } from "./actions";
 import { IEdge } from '../geometry/edge';
 import { isEdge, isPolygon } from "../geometry/selectable";
+import { TextureLibrary } from '../textures/textureLibrary';
 
 export class EdgeModifier implements IActionHandler {
     
-    constructor(private world: World) {}
+    constructor(private world: World, private texLib: TextureLibrary) {}
 
     private get selectedEdges(): IEdge[] { 
         return Array.from(new Set<IEdge>(this.world.selection
@@ -19,7 +21,9 @@ export class EdgeModifier implements IActionHandler {
         bindCallbackToKey(window, 'geo_change_immateriality', this.toggleImmateriality);
         bindCallbackToKey(window, 'geo_change_translucency_down', this.decreaseTranslucency);
         bindCallbackToKey(window, 'geo_change_translucency_up', this.increaseTranslucency);
-        bindCallbackToKey(window, 'geo_texture_down', this.toggleTexture);
+        bindCallbackToKey(window, 'geo_texture_toggle', this.toggleTexture);
+        bindCallbackToKey(window, 'geo_texture_down', this.previousTexture);
+        bindCallbackToKey(window, 'geo_texture_up', this.nextTexture);
         return this;
     }
 
@@ -31,7 +35,17 @@ export class EdgeModifier implements IActionHandler {
     };   
     private toggleTexture = () => {        
         this.selectedEdges.forEach(_=>_.material.texture = !_.material.texture ? Guid.create() : null)
-    };    
+    };        
+    private previousTexture = () => this.changeTexture(this.texLib.previous);
+    private nextTexture = () => this.changeTexture(this.texLib.next);
+    private changeTexture = (dir: (ITextureReference)=>ITextureReference) => {
+        this.selectedEdges.filter(s => s.material.texture).forEach(_=> {
+            if ('index' in _.material.texture) _.material.texture = dir(_.material.texture);
+            else {
+                _.material.texture = ({index: 0, id: this.texLib.textures[0].path});
+            }
+        });
+    }
     private increaseTranslucency = () => {
         this.selectedEdges.forEach(_=>_.material.color[3] = Math.max(0, _.material.color[3] - 0.1));
     };  

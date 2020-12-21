@@ -26,7 +26,7 @@ let state: State = {
     world: worldLoader.world,
     textures: textureLib.textures,
 }
-let handlers = [...createGlobalActionHandlers(state.world), ...createCanvasHandlers(ui.view_2d.canvas, state.world)];
+let handlers = [...createGlobalActionHandlers(state.world), ...createCanvasHandlers(ui.view_2d.canvas, state.world, textureLib)];
 let renderer3d = new Renderer3d(state.world, ui.view_3d.canvas, textureLib);
 let renderer2d = new Renderer2d(state.world, ui.view_2d.canvas);
 

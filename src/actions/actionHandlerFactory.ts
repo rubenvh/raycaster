@@ -8,6 +8,7 @@ import { GeometryMover } from './geometryMover';
 import { GlobalActionsHandler } from './globalActionHandler';
 import { VertexRemover } from './vertexRemover';
 import { PolygonCreator } from './polygonCreator';
+import { TextureLibrary } from '../textures/textureLibrary';
 
 export function createGlobalActionHandlers(world: World): IActionHandler[] {
     return [
@@ -18,7 +19,7 @@ export function createGlobalActionHandlers(world: World): IActionHandler[] {
 
 }
 
-export function createCanvasHandlers(canvas: HTMLCanvasElement, world: World): IActionHandler[] {
+export function createCanvasHandlers(canvas: HTMLCanvasElement, world: World, texLib: TextureLibrary): IActionHandler[] {
     const t = spaceTranslator(canvas);
 
     const splitter = new EdgeSplitter(canvas.getContext('2d'), t, world);
@@ -29,7 +30,7 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, world: World): I
             new GeometrySelector(canvas.getContext('2d'), t, world, [splitter]),
             new VertexRemover(world),
             new PolygonCreator(canvas.getContext('2d'), t, world),
-            new EdgeModifier(world),
+            new EdgeModifier(world, texLib),
         ]
         .map(_ => _.register(canvas));
 }

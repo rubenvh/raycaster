@@ -1,4 +1,5 @@
 import { TextureLibrary } from './textures/textureLibrary';
+import { Texture } from "./textures/texture";
 import { makeRays } from './camera';
 import { slope } from './math/lineSegment';
 import * as raycaster from './raycaster';
@@ -134,11 +135,11 @@ export class Renderer3d {
         if (start.height <= 0) return;
         if (start.material.color[3] === 0) return;
 
-        if (!start.material?.texture) {
-            // no texture: just draw color trapezoid
+        const texture = this.textureLibrary.getTexture(start.material);
+        if (!texture) {
             drawTrapezoid(this.context, getTrapezoid(start, end), getColor(start.material));
         } else {            
-            this.drawTexture(wallProps);
+            this.drawTexture(texture, wallProps);
         }  
         
         // apply fading    
@@ -149,12 +150,12 @@ export class Renderer3d {
         this.drawStats(wallProps);        
     };
 
-    private drawTexture = (wallProps: WallProps[]) => {
+    private drawTexture = (texture: Texture, wallProps: WallProps[]) => {
         const start = wallProps[wallProps.length-1];
         const end = wallProps[0];
 
         // draw texture
-        this.textureLibrary.drawTexture(this.context, wallProps);        
+        texture.drawTexture(this.context, wallProps);        
         // apply luminosity to texture
         drawTrapezoid(this.context, getTrapezoid(start, end), `rgba(0,0,0,${1-start.material.luminosity}`);
     }   

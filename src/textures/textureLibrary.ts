@@ -1,44 +1,10 @@
-import { WallProps } from './../renderer3d';
+import { IMaterial } from './../geometry/properties';
 import { ipcRenderer } from "electron";
-import { ITextureSource } from "./model";
-import sizeOf from 'image-size';
+import { ITextureReference, ITextureSource } from "./model";
 import * as fs from "fs";
-import { distance } from '../geometry/vertex';
-class Texture {
-    private canvas: HTMLCanvasElement;
-    private context: CanvasRenderingContext2D;
-    
-    constructor(private source: ITextureSource) {
+import { Texture } from './texture';
+import { Guid } from 'guid-typescript';
 
-        var imageBuffer = fs.readFileSync(source.path);        
-        var base64 = Buffer.from(imageBuffer).toString('base64');
-        var dimensions = sizeOf(source.path);
-        this.canvas = document.createElement('canvas') as HTMLCanvasElement;
-        this.canvas.width = dimensions.width; 
-        this.canvas.height= dimensions.height;
-        this.context = this.canvas.getContext('2d');
-        var image = new Image();
-        image.onload = () => {
-            this.context.drawImage(image, 0, 0);
-        };        
-        image.src = `data:image/png;base64,${base64}`;
-    }
-
-    public drawTexture = (target: CanvasRenderingContext2D, wallProps: WallProps[]) => {
-        const tileFactor = 20 // => w.length for stretching
-        const twidth = this.source.textureWidth;
-        const theight = this.source.textureHeight;
-        const textureIndex = 0;    
-        for(let windex=wallProps.length-1; windex >= 0;windex--) {
-            const w = wallProps[windex];
-            const wx = distance(w.origin, w.intersection);
-            const [x1, x2] = wallProps[windex].colRange;
-            const [y1, y2] = wallProps[windex].rowRange;                
-            const tx = Math.floor((twidth * wx / tileFactor) % (twidth - 1));
-            target.drawImage(this.canvas, tx+textureIndex*twidth, 0, 1, theight, x1, y1, x2-x1, y2-y1);                
-        }     
-    }
-}
 export class TextureLibrary {
     private _sources: ITextureSource[];
     private _textures: Texture[];
@@ -68,8 +34,34 @@ export class TextureLibrary {
         });  
     };
 
-    public drawTexture = (target: CanvasRenderingContext2D, wallProps: WallProps[]) => {
-        // TODO: wallProps[0].material.texture
-        this._textures[0].drawTexture(target, wallProps);
+    public previous = (ref: ITextureReference): ITextureReference => {
+        const t = this._textures.findIndex(_ => _.id === ref.id);
+        if (ref.index <= 0) {
+            const texture = (this._textures[t+1] || this._textures[0]);
+            return ({id: texture.id, index: texture.parts-1});
+        } else {
+            return ({...ref, index: ref.index-1});
+        }
+    }
+
+    public next = (ref: ITextureReference): ITextureReference => {
+        const t = this._textures.findIndex(_ => _.id === ref.id);
+        if (ref.index >= this._textures[t].parts-1) {
+            const texture = (this._textures[t+1] || this._textures[0]);
+            return ({id: texture.id, index: 0});
+        } else {
+            return ({...ref, index: ref.index+1});
+        }
+    }
+    
+    public getTexture = (material: IMaterial): Texture => {        
+        if (!material?.texture) { return null; }
+        if ('id' in material.texture) {
+            const id = material.texture.id;
+            return this._textures.find(_ => _.id === id);
+        } else {
+            return this._textures[0];
+            
+        }
     }
 }
