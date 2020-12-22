@@ -3,6 +3,7 @@
 - display stats in statusbar
 - support for splitting a polygon into 2 (when selecting 2 vertices => introduce new edge in 2 sets)
 - support for transforming a polygon when edge is selected: remove edge and make polygon form solid (trace it)
+- clone selected polygons
 - change fading strategy on key press (null, dark or mist)
 - right-click geometry to show menu
 - undo/redo service

@@ -27,12 +27,13 @@ export class Renderer3d {
     private context: CanvasRenderingContext2D;
     private width: number;
     private height: number;    
-    private convergenceShade = 0;
+    private convergenceShade = 50;
     private resolution = 640;
     private horizonDistance = 300;
 
     constructor(private world: World, private canvas: HTMLCanvasElement, private textureLibrary: TextureLibrary) {
         this.context = canvas.getContext('2d');
+        this.context.imageSmoothingEnabled = false;        
         this.context.font = '12px sans-serif';
         this.width = canvas.width;
         this.height = canvas.height;
@@ -111,7 +112,7 @@ export class Renderer3d {
         }  
     };
 
-    private convertDistanceToWallHeight = (d: number) => 10 * this.height / d;
+    private convertDistanceToWallHeight = (d: number) => Math.round(10 * this.height / d);
     private mapToColumn = (column: number) => Math.floor(this.width - column * this.width / this.resolution);
 
     private drawSky = () => this.drawBackground('rgb(200,200,200)', 0, this.canvas.height/2);
@@ -139,7 +140,7 @@ export class Renderer3d {
         if (!texture) {
             drawTrapezoid(this.context, getTrapezoid(start, end), getColor(start.material));
         } else {            
-            this.drawTexture(texture, wallProps);
+            this.drawTexture(texture, wallProps);            
         }  
         
         // apply fading    
@@ -165,14 +166,13 @@ export class Renderer3d {
         const end = wallProps[0];
         const trapezoid = getTrapezoid(start, end);
         var gradient = this.context.createLinearGradient(trapezoid[0][0], 0, trapezoid[3][0], 0);
-        wallProps.reverse().filter((w, i) => i % 20 === 0)             
+        wallProps.reverse()
         .forEach((w, i, a) => {
-           const fadeFactor = Math.min(this.horizonDistance, w.distance)/this.horizonDistance;
-           const fadeColor = `rgba(${this.convergenceShade},${this.convergenceShade},${this.convergenceShade},${fadeFactor})`;
+           const fadeFactor = Math.min(this.horizonDistance, w.distance)/(this.horizonDistance+10);
+           const fadeColor = `rgba(${this.convergenceShade},${this.convergenceShade},${this.convergenceShade},${fadeFactor.toFixed(2)})`;
            gradient.addColorStop(i/a.length, fadeColor);
         })
-        
-        drawTrapezoid(this.context, getTrapezoid(start, end), gradient);
+        drawTrapezoid(this.context, trapezoid, gradient);
     }
 
     private drawStats = (wallProps: WallProps[]) => {
@@ -198,11 +198,12 @@ export class Renderer3d {
     }    
 }
 
-const getTrapezoid = (start: WallProps, end: WallProps): [Vector, Vector, Vector, Vector] => ([
-    [start.colRange[1], start.rowRange[0]],
-    [start.colRange[1], start.rowRange[1]],
-    [end.colRange[0], end.rowRange[1]],
-    [end.colRange[0], end.rowRange[0]]]);
+const getTrapezoid = (start: WallProps, end: WallProps): [Vector, Vector, Vector, Vector] => ([    
+    [start.colRange[1], start.rowRange[0]-0.5],
+    [start.colRange[1], start.rowRange[1]+0.5],
+    [end.colRange[0], end.rowRange[1]+0.5],
+    [end.colRange[0], end.rowRange[0]-0.5]]);
+
 
 
 

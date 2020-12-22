@@ -56,10 +56,12 @@ export class Texture {
         for (let windex = wallProps.length - 1; windex >= 0; windex--) {
             const w = wallProps[windex];
             const wx = distance(w.origin, w.intersection);
-            const [x1, x2] = wallProps[windex].colRange;
-            const [y1, y2] = wallProps[windex].rowRange;
+            const [x2, x1] = w.colRange;
+            const [y1, y2] = w.rowRange;
+            const targetWidth = x2-x1;
+            const targetHeight = y2-y1;
             const tx = Math.floor((twidth * wx / tileFactor) % (twidth - 1));
-            target.drawImage(this.canvas, tx + col * twidth, row * theight, 1, theight, x1, y1, x2 - x1, y2 - y1);
+            target.drawImage(this.canvas, tx + col * twidth, row * theight, 1, theight, x1, y1, targetWidth, targetHeight);            
         }
     };
 }
