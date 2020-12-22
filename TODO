@@ -1,15 +1,15 @@
 - add linter
 - fix ts code map (for debugging in dev tools)
 - display stats in statusbar
-- support for splitting a polygon into 2 (when selecting 2 vertices => introduce new edge in 2 sets)
 - support for transforming a polygon when edge is selected: remove edge and make polygon form solid (trace it)
-- clone selected polygons
+- rotate selected polygons
+- support for splitting a polygon into 2 (when selecting 2 vertices => introduce new edge in 2 sets)
 - change fading strategy on key press (null, dark or mist)
-- right-click geometry to show menu
-- undo/redo service
 - toggle texture key (ctrl-T) should open popup with scrollable popup of all textures
-- display selected item's JSON (or intersection when multiple items are selected)
+- undo/redo service
+- display selected item's properties in UI (polygon, edge or vertex) (or intersection when multiple items are selected?)
 - modify selected item's JSON and save it (or intersection when multiple items are selected)
+- right-click geometry to show menu
 - reduce intersection tests by testing bounding box first
 - highlight edges that are being tested for intersection
 - implement BSP or quadtree structure to further reduce intersection tests
@@ -18,3 +18,4 @@
 - implement mirror walls
 - implement doors
 - add circles to geometry to represent sprites ? (no we need direction, ellipse ?)
+- override dynamic lightning strategy by explicitly setting luminosity and fading parameters
