@@ -1,3 +1,5 @@
+import { clonePolygons } from './../geometry/geometry';
+import { isPolygon } from './../geometry/selectable';
 import { drawSegment, drawVector } from './../drawing/drawing';
 import { snap, Vector } from '../math/vector';
 import { areClose } from '../geometry/vertex';
@@ -19,6 +21,7 @@ export class PolygonCreator implements IActionHandler {
 
     register(g: GlobalEventHandlers): IActionHandler {
         bindCallbackToKey(window, 'geo_add', this.startCreation);                
+        bindCallbackToKey(window, 'geo_polygon_clone', this.clonePolygon);   
         g.addEventListener('mousemove', this.prepareNextVertex);
         g.addEventListener('mouseup', this.decideNextVertex);
         g.addEventListener('contextmenu', this.cancel, false); 
@@ -69,4 +72,15 @@ export class PolygonCreator implements IActionHandler {
         
         return true;
     };
+
+    private clonePolygon = () => {        
+        let oldPolygonSelection = this.world.selection.filter(isPolygon);
+        let newPolygons = [];
+        [this.world.geometry, newPolygons] = clonePolygons(
+            oldPolygonSelection.map(x => x.polygon), [10,10], this.world.geometry);
+        this.world.selection = [
+            ...this.world.selection.filter(s => !isPolygon(s) || !oldPolygonSelection.includes(s)),
+            ...newPolygons.map(p => ({kind: 'polygon', polygon: p} as const))
+        ];
+    }
 }

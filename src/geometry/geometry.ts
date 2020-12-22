@@ -2,8 +2,8 @@
 import { Guid } from 'guid-typescript';
 import * as vector from '../math/vector';
 import * as collision from './collision';
-import { IEdge } from './edge';
-import { IEntity } from './entity';
+import { cloneEdge, IEdge } from './edge';
+import { IEntity, giveIdentity } from './entity';
 import { BoundingBox, createPolygon, IPolygon, IStoredPolygon, loadPolygon, contains, containsVertex, containsEdge } from './polygon';
 import { SelectableElement, SelectedEdge, SelectedPolygon, SelectedVertex } from './selectable';
 import { IVertex, makeVertex } from './vertex';
@@ -108,6 +108,10 @@ export const selectRegion = (region: BoundingBox, geometry: IGeometry): Selectab
     ];
 }
 
-// export const saveGeometry = (geometry: Geometry): IGeometry => {
-//     return geometry;
-// }
+export const clonePolygons = (poligons: IPolygon[], delta: vector.Vector, geometry: IGeometry): [IGeometry, IPolygon[]] => {
+    const newPoligons = poligons.map(p => 
+        loadPolygon(giveIdentity<IStoredPolygon>({edges: p.edges.map(e => cloneEdge(e, delta))})));
+    return [
+        {...geometry, polygons: [...geometry.polygons, ...newPoligons]},
+        newPoligons];
+}

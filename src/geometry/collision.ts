@@ -15,7 +15,7 @@ export type IRay = {line: ILine, angle: number};
 
 export const hasIntersect = (ray: IRay, box: BoundingBox) => {
     const [x1, y1, x2, y2] = [box[0][0], box[0][1], box[1][0], box[1][1]];
-    // TODO: improve ray/AABB intersection tests (we don't need the actual intersection, existance is enough)
+    // TODO: improve ray/AABB intersection tests (we don't need the actual intersection, existence is enough)
     return intersectRay(ray.line, [[x1, y1], [x2, y1]])
         || intersectRay(ray.line, [[x2, y1], [x2, y2]])
         || intersectRay(ray.line, [[x2, y2], [x1, y2]])

@@ -1,6 +1,6 @@
 export const ALL_ACTIONS = ["turnleft","turnright","right","left","up","down",
                             "camera_angle_up","camera_angle_down","camera_depth_up","camera_depth_down",
-                            'geo_add','geo_remove','geo_change_immateriality','geo_change_translucency_down', 'geo_change_translucency_up', 'geo_texture_toggle', 'geo_texture_down','geo_texture_up',
+                            'geo_add','geo_remove','geo_polygon_clone', 'geo_change_immateriality','geo_change_translucency_down', 'geo_change_translucency_up', 'geo_texture_toggle', 'geo_texture_down','geo_texture_up',
                             'save_world'] as const;
 export type Action = typeof ALL_ACTIONS[number]  ;
 export type Flag = {value: boolean, blockKeyDown?: boolean};
@@ -22,6 +22,7 @@ const Keys: KeyMap = {
     'camera_angle_up': {key: 107 },                     // +
     'camera_angle_down': {key: 109 },                   // -
     'geo_add': {key: 65, ctrl: true },                  // A
+    'geo_polygon_clone': {key: 68, ctrl: true},         // D
     'geo_remove': {key: 88, ctrl: true },               // X
     'geo_change_immateriality': {key: 73, ctrl: true},  // I
     'geo_change_translucency_down': {key: 219, ctrl: true},// [

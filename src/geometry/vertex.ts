@@ -1,5 +1,5 @@
 import * as vector from '../math/vector';
-import { IEntity } from './entity';
+import { IEntity, giveIdentity } from './entity';
 
 export type IVertex = IEntity & { vector: vector.Vector };
 
@@ -12,6 +12,8 @@ export const areClose = (vertex: IVertex|vector.Vector, v: IVertex|vector.Vector
     let d = distance(vertex, v);
     return d <= epsilon; 
 }
+export const cloneVertex = (v: IVertex, delta: vector.Vector): IVertex => 
+    giveIdentity<IVertex>({vector: vector.add(delta, [vector.getX(v.vector), vector.getY(v.vector)])});
 
 
 
