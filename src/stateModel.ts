@@ -8,7 +8,8 @@ export type World = {
     camera: ICamera,    
     geometry: IGeometry,     
     selection: SelectableElement[],
-    rays: CastedRay[]   
+    rays: CastedRay[],
+    config?: {fadeOn?: number}
 }
 export type State = {
     world: World,

@@ -26,11 +26,10 @@ type ZBuffer = Map<Guid,WallProps[]>[];
 export class Renderer3d {
     private context: CanvasRenderingContext2D;
     private width: number;
-    private height: number;    
-    private convergenceShade = 50;
+    private height: number;        
     private resolution = 640;
     private horizonDistance = 300;
-
+    
     constructor(private world: World, private canvas: HTMLCanvasElement, private textureLibrary: TextureLibrary) {
         this.context = canvas.getContext('2d');
         this.context.imageSmoothingEnabled = false;        
@@ -119,9 +118,10 @@ export class Renderer3d {
     private drawFloor = () => this.drawBackground('rgb(50,80,80)', this.canvas.height/2, this.canvas.height);
     private drawBackground = (color: string, startRow: number, endRow: number) => {        
         let c: string|CanvasGradient = color;
-        if (this.convergenceShade != null) {
+        const shade = this.world.config?.fadeOn;
+        if (shade != null) {
             var gradient = this.context.createLinearGradient(0, startRow, 0, endRow);        
-            const convergence = `rgb(${this.convergenceShade},${this.convergenceShade},${this.convergenceShade})`;
+            const convergence = `rgb(${shade},${shade},${shade})`;
             gradient.addColorStop(0, startRow === 0 ? color : convergence);
             gradient.addColorStop(1, startRow === 0? convergence : color);
             c = gradient
@@ -144,7 +144,7 @@ export class Renderer3d {
         }  
         
         // apply fading    
-        if (this.convergenceShade != null) {             
+        if (this.world.config?.fadeOn != null) {
             this.applyFading(wallProps);
         }   
         
@@ -165,11 +165,12 @@ export class Renderer3d {
         const start = wallProps[wallProps.length-1];
         const end = wallProps[0];
         const trapezoid = getTrapezoid(start, end);
+        const shade = this.world.config?.fadeOn;
         var gradient = this.context.createLinearGradient(trapezoid[0][0], 0, trapezoid[3][0], 0);
         wallProps.reverse()
         .forEach((w, i, a) => {
            const fadeFactor = Math.min(this.horizonDistance, w.distance)/(this.horizonDistance+10);
-           const fadeColor = `rgba(${this.convergenceShade},${this.convergenceShade},${this.convergenceShade},${fadeFactor.toFixed(2)})`;
+           const fadeColor = `rgba(${shade},${shade},${shade},${fadeFactor.toFixed(2)})`;
            gradient.addColorStop(i/a.length, fadeColor);
         })
         drawTrapezoid(this.context, trapezoid, gradient);

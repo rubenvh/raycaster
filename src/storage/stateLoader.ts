@@ -50,7 +50,8 @@ export class WorldLoader {
     private saveFile = (path: string) => {    
         const data = JSON.stringify({
             camera: this.world.camera, 
-            geometry: this.world.geometry });
+            geometry: this.world.geometry,
+            config: this.world.config });
         fs.writeFile(path, data, {}, () => {
             localStorage.setItem('loadedFile', path);
             this.loadedFile = path;           
@@ -58,8 +59,9 @@ export class WorldLoader {
     }
 
     private loadWorld = (w: any) => {
-        if (w.camera) this.world.camera = w.camera;
-        if (w.geometry) this.world.geometry = loadGeometry(w.geometry);
+        this.world.camera = w.camera || this.initWorld().camera;
+        this.world.geometry = loadGeometry(w.geometry || []);
+        this.world.config = w.config || {fadeOn: null};
         this.world.rays.length = this.world.selection.length = 0;
     }
 
@@ -67,6 +69,7 @@ export class WorldLoader {
         return {
             camera: makeCamera({position: [50,50], direction: [0,10], plane: [15, 0]}),
             geometry: createGeometry([]),
+            config: {fadeOn: null},
             selection: [],
             rays: []
         };
