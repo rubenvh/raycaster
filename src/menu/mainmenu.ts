@@ -44,6 +44,69 @@ const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
       },
     ]
   },
+  {
+    label: 'Geometry',
+    role: 'appMenu',
+    submenu: [
+      {
+        label: 'Create polygon',
+        accelerator: 'Control+A',
+        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_polygon_create'); }}
+      },    
+      {
+        label: 'Clone polygon',
+        accelerator: 'Control+D',
+        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_polygon_clone'); }}
+      },      
+      {
+        type: 'separator'
+      },
+      {
+        label: 'Split edge',
+        accelerator: 'Control+S',
+        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_edge_split'); }}
+      },   
+      {
+        label: 'Toggle immaterial',
+        accelerator: 'Control+I',
+        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_edge_immaterial'); }}
+      },
+      {
+        label: 'Toggle texture',
+        accelerator: 'Control+T',
+        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_edge_texture'); }}
+      },
+      {
+        label: 'Next texture',
+        accelerator: 'Control+PageUp',
+        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_edge_texture_scroll', -1); }}
+      },
+      {
+        label: 'Previous texture',
+        accelerator: 'Control+PageDown',
+        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_edge_texture_scroll', 1); }}
+      },
+      {
+        label: 'Increase translucency',
+        accelerator: 'Control+]',
+        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_edge_translucency', -1); }}
+      },
+      {
+        label: 'Decrease translucency',
+        accelerator: 'Control+[',
+        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_edge_translucency', 1); }}
+      },
+      {
+        type: 'separator'
+      },
+      {
+        label: 'Remove',
+        //accelerator: 'CommandOrControl+Shift+O',
+        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_remove'); }}
+      },
+
+    ]
+  },
   // {
   //   label: 'Edit',
   //   submenu: [

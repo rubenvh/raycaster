@@ -8,6 +8,7 @@ import { bindCallbackToKey, Flag, IActionHandler } from './actions';
 import { ISpaceTranslator } from './geometrySelector';
 import { addPolygon } from '../geometry/geometry';
 import { createPolygon } from '../geometry/polygon';
+import { ipcRenderer } from 'electron';
 export class PolygonCreator implements IActionHandler {
     private isCreating: boolean;
     private emergingPolygon: Vector[] = [];
@@ -20,8 +21,8 @@ export class PolygonCreator implements IActionHandler {
     
 
     register(g: GlobalEventHandlers): IActionHandler {
-        bindCallbackToKey(window, 'geo_add', this.startCreation);                
-        bindCallbackToKey(window, 'geo_polygon_clone', this.clonePolygon);   
+        ipcRenderer.on('geometry_polygon_clone', this.clonePolygon);
+        ipcRenderer.on('geometry_polygon_create', this.startCreation);        
         g.addEventListener('mousemove', this.prepareNextVertex);
         g.addEventListener('mouseup', this.decideNextVertex);
         g.addEventListener('contextmenu', this.cancel, false); 
@@ -53,7 +54,7 @@ export class PolygonCreator implements IActionHandler {
         this.emergingPolygon = [];
     }
     private prepareNextVertex = (event: MouseEvent): boolean => {
-        if (event.button)
+        if (event.button !== 0) { return false; }
         if (!this.isCreating) { return false; }
         const v = this.spaceTranslator.toWorldSpace(event);
         this.nextVertex = event.ctrlKey ? snap(v) : v;

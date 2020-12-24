@@ -5,8 +5,10 @@
 - rotate selected polygons
 - support for splitting a polygon into 2 (when selecting 2 vertices => introduce new edge in 2 sets)
 - change fading strategy on key press (null, dark or mist)
-- toggle texture key (ctrl-T) should open popup with scrollable popup of all textures
 - undo/redo service
+- toggle texture key (ctrl-T) should open popup with scrollable popup of all textures
+- override dynamic lightning strategy by explicitly setting luminosity and fading parameters on edges
+- luminosity on edge as a function of time to implement flickering 
 - display selected item's properties in UI (polygon, edge or vertex) (or intersection when multiple items are selected?)
 - modify selected item's JSON and save it (or intersection when multiple items are selected)
 - right-click geometry to show menu
@@ -17,5 +19,6 @@
 - implement zooming in 2d view (+ impact on distance threshold for selection)
 - implement mirror walls
 - implement doors
+- slower fps slows down movement => normalize this
 - add circles to geometry to represent sprites ? (no we need direction, ellipse ?)
-- override dynamic lightning strategy by explicitly setting luminosity and fading parameters
+

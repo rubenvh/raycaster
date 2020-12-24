@@ -2,14 +2,15 @@ import { splitEdge } from './../geometry/geometry';
 import { World } from '../stateModel';
 import { ISpaceTranslator } from "./geometrySelector";
 import { projectOn } from "../math/lineSegment";
-import { bindFlagToKey, deactivate, Flag, IActionHandler, isActive } from "./actions";
+import { IActionHandler } from "./actions";
 import { Vector } from '../math/vector';
 import { drawVector } from '../drawing/drawing';
 import { segmentFrom } from '../geometry/edge';
 import { isEdge, SelectedEdge } from '../geometry/selectable';
+import { ipcRenderer } from 'electron';
 export class EdgeSplitter implements IActionHandler {
 
-    active: Flag = { value: false, blockKeyDown: false };
+    private isSplitting: boolean;
     private candidate: Vector;
     constructor(
         private context: CanvasRenderingContext2D,
@@ -25,18 +26,25 @@ export class EdgeSplitter implements IActionHandler {
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
-        bindFlagToKey(window, 'geo_add', this.active);
+        ipcRenderer.on('geometry_edge_split', this.startSplitting);        
         g.addEventListener('mousemove', this.selectCut);
         g.addEventListener('mouseup', this.cutEdge);
+        g.addEventListener('contextmenu', this.cancel, false); 
         return this;
     }
 
     handle(): void {
         if (this.isActive() && this.candidate) drawVector(this.context, this.candidate, 'rgb(255,0,0)');
     }
-    
-    isActive = () => isActive(this.active) && this.selectedGeometry.length === 1 && isEdge(this.selectedGeometry[0]);
-    
+        
+    public isActive = () => this.isSplitting;
+    private startSplitting = () => this.isSplitting = this.canActivate();
+    private canActivate = () => this.selectedGeometry.length === 1 && isEdge(this.selectedGeometry[0]);
+    private cancel = () => {
+        this.isSplitting = false;
+        this.candidate = null;
+    }
+
     private selectCut = (event: MouseEvent): boolean => {
         if (!this.isActive()) { return false; }        
         this.candidate = this.calculateCut(event);
@@ -44,6 +52,7 @@ export class EdgeSplitter implements IActionHandler {
     };    
 
     private cutEdge = (event: MouseEvent): boolean => {
+        if (event.button !== 0) { return false; }
         if (!this.isActive()) { return false; }
         event.stopImmediatePropagation();
 
@@ -51,13 +60,12 @@ export class EdgeSplitter implements IActionHandler {
         this.world.geometry = splitEdge(c, this.selectedEdge.edge, this.selectedEdge.polygon, this.world.geometry);
 
         // stop cutting (even if keys are still pressed)
-        deactivate(this.active);
-        this.candidate = null;
+        this.cancel();
         return true;
     };
 
     private calculateCut = (event: MouseEvent): Vector => {
         const target = this.spaceTranslator.toWorldSpace(event);
         return projectOn(target, segmentFrom(this.selectedEdge.edge));
-    }
+    }    
 }

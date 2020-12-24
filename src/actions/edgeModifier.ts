@@ -1,10 +1,11 @@
 import { ITextureReference } from './../textures/model';
 import { Guid } from 'guid-typescript';
 import { World } from "../stateModel";
-import { bindCallbackToKey, IActionHandler } from "./actions";
+import { IActionHandler } from "./actions";
 import { IEdge } from '../geometry/edge';
 import { isEdge, isPolygon } from "../geometry/selectable";
 import { TextureLibrary } from '../textures/textureLibrary';
+import { ipcRenderer } from 'electron';
 
 export class EdgeModifier implements IActionHandler {
     
@@ -18,12 +19,10 @@ export class EdgeModifier implements IActionHandler {
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
-        bindCallbackToKey(window, 'geo_change_immateriality', this.toggleImmateriality);
-        bindCallbackToKey(window, 'geo_change_translucency_down', this.decreaseTranslucency);
-        bindCallbackToKey(window, 'geo_change_translucency_up', this.increaseTranslucency);
-        bindCallbackToKey(window, 'geo_texture_toggle', this.toggleTexture);
-        bindCallbackToKey(window, 'geo_texture_down', this.previousTexture);
-        bindCallbackToKey(window, 'geo_texture_up', this.nextTexture);
+        ipcRenderer.on('geometry_edge_immaterial', this.toggleImmateriality);
+        ipcRenderer.on('geometry_edge_texture', this.toggleTexture);
+        ipcRenderer.on('geometry_edge_texture_scroll', (_, dir) => dir<0 ? this.previousTexture() : this.nextTexture());
+        ipcRenderer.on('geometry_edge_translucency', (_, dir) => dir<0 ? this.increaseTranslucency() : this.decreaseTranslucency());
         return this;
     }
 
