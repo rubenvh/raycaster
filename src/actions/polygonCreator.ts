@@ -9,6 +9,7 @@ import { ISpaceTranslator } from './geometrySelector';
 import { addPolygon } from '../geometry/geometry';
 import { createPolygon } from '../geometry/polygon';
 import { ipcRenderer } from 'electron';
+import undoService from './undoService';
 export class PolygonCreator implements IActionHandler {
     private isCreating: boolean;
     private emergingPolygon: Vector[] = [];
@@ -68,6 +69,7 @@ export class PolygonCreator implements IActionHandler {
 
         if (this.emergingPolygon.length > 2 && areClose(this.emergingPolygon[0], this.emergingPolygon[this.emergingPolygon.length-1], 5)) {            
             this.world.geometry = addPolygon(createPolygon(this.emergingPolygon), this.world.geometry);
+            undoService.push(this.world.geometry);
             this.cancel();
         }
         
@@ -83,5 +85,6 @@ export class PolygonCreator implements IActionHandler {
             ...this.world.selection.filter(s => !isPolygon(s) || !oldPolygonSelection.includes(s)),
             ...newPolygons.map(p => ({kind: 'polygon', polygon: p} as const))
         ];
+        undoService.push(this.world.geometry);
     }
 }

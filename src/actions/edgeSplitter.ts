@@ -8,6 +8,8 @@ import { drawVector } from '../drawing/drawing';
 import { segmentFrom } from '../geometry/edge';
 import { isEdge, SelectedEdge } from '../geometry/selectable';
 import { ipcRenderer } from 'electron';
+import undoService from '../actions/undoService';
+
 export class EdgeSplitter implements IActionHandler {
 
     private isSplitting: boolean;
@@ -56,8 +58,9 @@ export class EdgeSplitter implements IActionHandler {
         if (!this.isActive()) { return false; }
         event.stopImmediatePropagation();
 
-        const c = this.calculateCut(event);
+        const c = this.calculateCut(event);        
         this.world.geometry = splitEdge(c, this.selectedEdge.edge, this.selectedEdge.polygon, this.world.geometry);
+        undoService.push(this.world.geometry);
 
         // stop cutting (even if keys are still pressed)
         this.cancel();

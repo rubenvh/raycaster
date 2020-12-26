@@ -107,38 +107,42 @@ const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
 
     ]
   },
-  // {
-  //   label: 'Edit',
-  //   submenu: [
-  //       {
-  //         role: 'undo'
-  //       },
-  //       {
-  //         role: 'redo'
-  //       },
-  //       {
-  //         type: 'separator'
-  //       },
-  //       {
-  //         role: 'cut'
-  //       },
-  //       {
-  //         role: 'copy'
-  //       },
-  //       {
-  //         role: 'paste'
-  //       },
-  //       {
-  //         role: 'pasteAndMatchStyle'
-  //       },
-  //       {
-  //         role: 'delete'
-  //       },
-  //       {
-  //         role: 'selectAll'
-  //       }
-  //     ]
-  //   },
+  {
+    label: 'Edit',
+    submenu: [
+        {
+          label: 'Undo',
+          accelerator: 'Control+Z',
+          click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('undo'); }}
+        },
+        {
+          label: 'Redo',
+          accelerator: 'Control+Y',
+          click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('redo'); }}
+        },
+        // {
+        //   type: 'separator'
+        // },
+        // {
+        //   role: 'cut'
+        // },
+        // {
+        //   role: 'copy'
+        // },
+        // {
+        //   role: 'paste'
+        // },
+        // {
+        //   role: 'pasteAndMatchStyle'
+        // },
+        // {
+        //   role: 'delete'
+        // },
+        // {
+        //   role: 'selectAll'
+        // }
+      ]
+    },
     {
       label: 'View',
       submenu: [

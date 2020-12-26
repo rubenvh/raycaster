@@ -7,6 +7,7 @@ import { isEdge, isPolygon } from "../geometry/selectable";
 import { TextureLibrary } from '../textures/textureLibrary';
 import { ipcRenderer } from 'electron';
 
+
 export class EdgeModifier implements IActionHandler {
     
     constructor(private world: World, private texLib: TextureLibrary) {}

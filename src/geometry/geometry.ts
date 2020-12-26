@@ -2,7 +2,7 @@
 import { Guid } from 'guid-typescript';
 import * as vector from '../math/vector';
 import * as collision from './collision';
-import { cloneEdge, IEdge } from './edge';
+import { IEdge, cloneEdge, duplicateEdge } from './edge';
 import { IEntity, giveIdentity } from './entity';
 import { BoundingBox, createPolygon, IPolygon, IStoredPolygon, loadPolygon, contains, containsVertex, containsEdge } from './polygon';
 import { SelectableElement, SelectedEdge, SelectedPolygon, SelectedVertex } from './selectable';
@@ -75,17 +75,17 @@ export const moveVertices = (isSnapping: boolean, delta: vector.Vector, map: Map
 
 export const removeVertex = (vertex: IVertex, poligon: IPolygon, geometry: IGeometry) => {    
     return adaptPolygons([poligon.id], geometry, (selectedPolygon) => {
-        const {edges} = selectedPolygon.edges.reduce((acc, e)=> {                
-            if (e.end === vertex && acc.lastEnd) { // first vertex in polygon was removed and we arrive at the last edge
+        const {edges} = selectedPolygon.edges.map(e => cloneEdge(e)).reduce((acc, e)=> {                
+            if (e.end.id === vertex.id && acc.lastEnd) { // first vertex in polygon was removed and we arrive at the last edge
                 e.end = acc.lastEnd;
                 acc.edges.push(e);
             }
-            else if (e.end === vertex) {  // edge end vertex is removed => store for next iteration to reassign end vertex 
+            else if (e.end.id === vertex.id) {  // edge end vertex is removed => store for next iteration to reassign end vertex 
                 acc.previous = e;
                 acc.edges.push(e);            
-            } else if (acc.previous && e.start === vertex) { // ignore this edge and reassign previous end 
+            } else if (acc.previous && e.start.id === vertex.id) { // ignore this edge and reassign previous end 
                 acc.previous.end = e.end;            
-            } else if (e.start === vertex) { // removing the start of the first edge, keep end until last edge
+            } else if (e.start.id === vertex.id) { // removing the start of the first edge, keep end until last edge
                 acc.lastEnd = e.end;
             } else {
                 acc.edges.push(e);
@@ -110,7 +110,7 @@ export const selectRegion = (region: BoundingBox, geometry: IGeometry): Selectab
 
 export const clonePolygons = (poligons: IPolygon[], delta: vector.Vector, geometry: IGeometry): [IGeometry, IPolygon[]] => {
     const newPoligons = poligons.map(p => 
-        loadPolygon(giveIdentity<IStoredPolygon>({edges: p.edges.map(e => cloneEdge(e, delta))})));
+        loadPolygon(giveIdentity<IStoredPolygon>({edges: p.edges.map(e => duplicateEdge(e, delta))})));
     return [
         {...geometry, polygons: [...geometry.polygons, ...newPoligons]},
         newPoligons];

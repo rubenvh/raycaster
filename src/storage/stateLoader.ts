@@ -1,12 +1,13 @@
 import { saveFile } from './dialogs';
 import { createGeometry, loadGeometry } from './../geometry/geometry';
 import { ipcRenderer, remote } from "electron";
-import { World } from "../stateModel";
+import { globalState, World } from "../stateModel";
 import * as fs from "fs";
 import { makeCamera } from "../camera";
+import undoService from '../actions/undoService';
 
 export class WorldLoader {
-    public world: World;
+    private world: World = globalState.world;
 
     private loadedFile: string;
     constructor() {
@@ -14,7 +15,7 @@ export class WorldLoader {
         ipcRenderer.on('saveFileAs', (_, arg) => this.saveFile(arg.filePath));
         ipcRenderer.on('saveFile', (_, arg) => this.save());
         ipcRenderer.on('newFile', (_, arg) => this.clear());
-        this.world = this.initWorld();
+        this.loadWorld(WorldLoader.initWorld());
 
         const loadedFile = localStorage.getItem('loadedFile');
         if (loadedFile) {
@@ -27,7 +28,7 @@ export class WorldLoader {
     private clear = () => {
         localStorage.removeItem('loadedFile');
         this.loadedFile = null;        
-        this.loadWorld(this.initWorld());
+        this.loadWorld(WorldLoader.initWorld());
     };
 
     private save = () => {
@@ -59,13 +60,15 @@ export class WorldLoader {
     }
 
     private loadWorld = (w: any) => {
-        this.world.camera = w.camera || this.initWorld().camera;
+        this.world.camera = w.camera || WorldLoader.initWorld().camera;
         this.world.geometry = loadGeometry(w.geometry || []);
         this.world.config = w.config || {fadeOn: null};
         this.world.rays.length = this.world.selection.length = 0;
+
+        undoService.initialize(this.world.geometry);
     }
 
-    private initWorld = (): World => {
+    public static initWorld = (): World => {
         return {
             camera: makeCamera({position: [50,50], direction: [0,10], plane: [15, 0]}),
             geometry: createGeometry([]),

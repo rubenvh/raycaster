@@ -3,6 +3,7 @@ import { ICamera } from "./camera";
 import { IGeometry } from './geometry/geometry';
 import { SelectableElement } from './geometry/selectable';
 import { ITextureSource } from './textures/model';
+import { WorldLoader } from './storage/stateLoader';
 
 export type World = {
     camera: ICamera,    
@@ -13,8 +14,11 @@ export type World = {
 }
 export type State = {
     world: World,
-    textures: ITextureSource[],
-    
+    textures: ITextureSource[],    
+}
+export const globalState: State = {
+    world: WorldLoader.initWorld(),
+    textures: []
 }
 
 

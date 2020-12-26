@@ -65,3 +65,5 @@ export class TextureLibrary {
         }
     }
 }
+
+export const textureLib = new TextureLibrary();

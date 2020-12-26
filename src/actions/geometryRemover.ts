@@ -5,6 +5,7 @@ import { removeVertex } from '../geometry/geometry';
 import { isEdge, isVertex } from '../geometry/selectable';
 import { IVertex } from '../geometry/vertex';
 import { ipcRenderer } from 'electron';
+import undoService from './undoService';
 
 export class GeometryRemover implements IActionHandler {
         
@@ -34,11 +35,12 @@ export class GeometryRemover implements IActionHandler {
             });
 
             this.world.selection = [];    
+            undoService.push(this.world.geometry); 
         }
         
     }
 
     private removeVertex = (v: IVertex, p: IPolygon) => {
-        this.world.geometry = removeVertex(v, p, this.world.geometry);        
+        this.world.geometry = removeVertex(v, p, this.world.geometry);               
     }
 }

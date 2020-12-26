@@ -12,8 +12,13 @@ export const areClose = (vertex: IVertex|vector.Vector, v: IVertex|vector.Vector
     let d = distance(vertex, v);
     return d <= epsilon; 
 }
-export const cloneVertex = (v: IVertex, delta: vector.Vector): IVertex => 
-    giveIdentity<IVertex>({vector: vector.add(delta, [vector.getX(v.vector), vector.getY(v.vector)])});
+export const duplicateVertex = (v: IVertex, delta?: vector.Vector): IVertex => {
+    const clone: vector.Vector = [vector.getX(v.vector), vector.getY(v.vector)];
+    return giveIdentity<IVertex>({vector: (delta) ? vector.add(delta, clone) : clone});
+}
+export const cloneVertex = (v: IVertex): IVertex => ({vector: [vector.getX(v.vector), vector.getY(v.vector)], id: v.id});
+
+    
 
 
 
