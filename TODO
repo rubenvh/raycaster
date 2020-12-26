@@ -2,8 +2,8 @@
 * undo/redo service
 - display stats in statusbar
 - support for transforming a polygon when edge is selected: remove edge and make polygon form solid (trace it)
-- rotate selected polygons
 - support for splitting a polygon into 2 (when selecting 2 vertices => introduce new edge in 2 sets)
+- rotate selected polygons
 - change fading strategy on key press (null, dark or mist)
 - toggle texture key (ctrl-T) should open popup with scrollable popup of all textures
 - override dynamic lightning strategy by explicitly setting luminosity and fading parameters on edges
