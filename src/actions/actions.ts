@@ -1,6 +1,5 @@
 export const ALL_ACTIONS = ["turnleft","turnright","right","left","up","down",
-                            "camera_angle_up","camera_angle_down","camera_depth_up","camera_depth_down",
-                            'geo_remove', 'save_world'] as const;
+                            "camera_angle_up","camera_angle_down","camera_depth_up","camera_depth_down" ] as const;
 export type Action = typeof ALL_ACTIONS[number]  ;
 export type Flag = {value: boolean, blockKeyDown?: boolean};
 export const makeFlag = (): Flag => ({value: false});
@@ -20,8 +19,6 @@ const Keys: KeyMap = {
     'up': {key: 87 },                                   // W
     'camera_angle_up': {key: 107 },                     // +
     'camera_angle_down': {key: 109 },                   // -    
-    'geo_remove': {key: 88, ctrl: true },               // X    
-    'save_world': {key: 83, ctrl: true },               // S
     'camera_depth_up': {key: 107, ctrl: true },         // +
     'camera_depth_down': {key: 109, ctrl: true },       // -
 }

@@ -101,7 +101,7 @@ const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
       },
       {
         label: 'Remove',
-        //accelerator: 'CommandOrControl+Shift+O',
+        accelerator: 'Control+X',
         click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_remove'); }}
       },
 

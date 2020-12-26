@@ -6,7 +6,7 @@ import { IActionHandler } from './actions';
 import { EdgeSplitter } from './edgeSplitter';
 import { GeometryMover } from './geometryMover';
 import { GlobalActionsHandler } from './globalActionHandler';
-import { VertexRemover } from './vertexRemover';
+import { GeometryRemover } from './geometryRemover';
 import { PolygonCreator } from './polygonCreator';
 import { TextureLibrary } from '../textures/textureLibrary';
 
@@ -28,7 +28,7 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, world: World, te
             splitter,
             new GeometryMover(t, world, [splitter]),
             new GeometrySelector(canvas.getContext('2d'), t, world, [splitter]),
-            new VertexRemover(world),
+            new GeometryRemover(world),
             new PolygonCreator(canvas.getContext('2d'), t, world),
             new EdgeModifier(world, texLib),
         ]
