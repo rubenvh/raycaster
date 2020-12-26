@@ -42,7 +42,7 @@ const adaptPolygons = (ids: Guid[], geometry: IGeometry, edgeTransformer: (polig
 
 export const splitEdge = (cut: vector.Vector, edge: IEdge, poligon: IPolygon, geometry: IGeometry) => {
     return adaptPolygons([poligon.id], geometry, (selectedPolygon) => {
-        return selectedPolygon.edges.reduce((acc, e) => {
+        return selectedPolygon.edges.map(cloneEdge).reduce((acc, e) => {
             if (e.id === edge.id) {
                 const newEnd = e.end;
                 e.end = makeVertex(cut);
