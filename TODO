@@ -1,11 +1,10 @@
 - add linter
-- fix ts code map (for debugging in dev tools)
+* undo/redo service
 - display stats in statusbar
 - support for transforming a polygon when edge is selected: remove edge and make polygon form solid (trace it)
 - rotate selected polygons
 - support for splitting a polygon into 2 (when selecting 2 vertices => introduce new edge in 2 sets)
 - change fading strategy on key press (null, dark or mist)
-- undo/redo service
 - toggle texture key (ctrl-T) should open popup with scrollable popup of all textures
 - override dynamic lightning strategy by explicitly setting luminosity and fading parameters on edges
 - luminosity on edge as a function of time to implement flickering 
@@ -22,3 +21,5 @@
 - slower fps slows down movement => normalize this
 - add circles to geometry to represent sprites ? (no we need direction, ellipse ?)
 
+gave up (deemed unimportant) :)
+- fix ts code map (for debugging in dev tools)
