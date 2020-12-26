@@ -1,10 +1,10 @@
-import { clonePolygons } from './../geometry/geometry';
+import { duplicatePolygons } from './../geometry/geometry';
 import { isPolygon } from './../geometry/selectable';
 import { drawSegment, drawVector } from './../drawing/drawing';
 import { snap, Vector } from '../math/vector';
 import { areClose } from '../geometry/vertex';
 import { World } from '../stateModel';
-import { bindCallbackToKey, Flag, IActionHandler } from './actions';
+import { IActionHandler } from './actions';
 import { ISpaceTranslator } from './geometrySelector';
 import { addPolygon } from '../geometry/geometry';
 import { createPolygon } from '../geometry/polygon';
@@ -22,7 +22,7 @@ export class PolygonCreator implements IActionHandler {
     
 
     register(g: GlobalEventHandlers): IActionHandler {
-        ipcRenderer.on('geometry_polygon_clone', this.clonePolygon);
+        ipcRenderer.on('geometry_polygon_clone', this.duplicatePolygon);
         ipcRenderer.on('geometry_polygon_create', this.startCreation);        
         g.addEventListener('mousemove', this.prepareNextVertex);
         g.addEventListener('mouseup', this.decideNextVertex);
@@ -76,10 +76,10 @@ export class PolygonCreator implements IActionHandler {
         return true;
     };
 
-    private clonePolygon = () => {        
+    private duplicatePolygon = () => {        
         let oldPolygonSelection = this.world.selection.filter(isPolygon);
         let newPolygons = [];
-        [this.world.geometry, newPolygons] = clonePolygons(
+        [this.world.geometry, newPolygons] = duplicatePolygons(
             oldPolygonSelection.map(x => x.polygon), [10,10], this.world.geometry);
         this.world.selection = [
             ...this.world.selection.filter(s => !isPolygon(s) || !oldPolygonSelection.includes(s)),

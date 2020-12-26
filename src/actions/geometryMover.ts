@@ -7,6 +7,7 @@ import { IVertex } from "../geometry/vertex";
 import { Guid } from "guid-typescript";
 import { moveVertices } from "../geometry/geometry";
 import { isCloseToSelected, isEdge, isVertex } from "../geometry/selectable";
+import undoService from './undoService';
 
 export class GeometryMover implements IActionHandler {
     private isDragging: boolean;
@@ -40,6 +41,7 @@ export class GeometryMover implements IActionHandler {
         if (this.isDragging) {
             this.isDragging = false;
             this.move(event);
+            undoService.push(this.world.geometry);
             return true;
         }
         return false;

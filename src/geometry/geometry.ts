@@ -6,7 +6,7 @@ import { IEdge, cloneEdge, duplicateEdge } from './edge';
 import { IEntity, giveIdentity } from './entity';
 import { BoundingBox, createPolygon, IPolygon, IStoredPolygon, loadPolygon, contains, containsVertex, containsEdge } from './polygon';
 import { SelectableElement, SelectedEdge, SelectedPolygon, SelectedVertex } from './selectable';
-import { IVertex, makeVertex } from './vertex';
+import { cloneVertex, IVertex, makeVertex } from './vertex';
 
 
 export type IStoredGeometry = IEntity & { polygons: IStoredPolygon[]};
@@ -59,13 +59,12 @@ export const moveVertices = (isSnapping: boolean, delta: vector.Vector, map: Map
     return adaptPolygons(Array.from(map.keys()), geometry, p => {
         const vertices = [...map.get(p.id)];
         const moveVertex = (v: IVertex) => {
-            const index = vertices.indexOf(v);
+            const index = vertices.findIndex(_ => _.id === v.id);
             if (index >= 0) { 
-                vertices.splice(index, 1);
                 vector.copyIn(v.vector, doSnap(vector.add(v.vector, delta)));
             }
         };
-        return p.edges.reduce((acc, e) => {
+        return p.edges.map(cloneEdge).reduce((acc, e) => {
             moveVertex(e.start);
             moveVertex(e.end);            
             return acc.concat(e);
@@ -75,7 +74,7 @@ export const moveVertices = (isSnapping: boolean, delta: vector.Vector, map: Map
 
 export const removeVertex = (vertex: IVertex, poligon: IPolygon, geometry: IGeometry) => {    
     return adaptPolygons([poligon.id], geometry, (selectedPolygon) => {
-        const {edges} = selectedPolygon.edges.map(e => cloneEdge(e)).reduce((acc, e)=> {                
+        const {edges} = selectedPolygon.edges.map(cloneEdge).reduce((acc, e)=> {                
             if (e.end.id === vertex.id && acc.lastEnd) { // first vertex in polygon was removed and we arrive at the last edge
                 e.end = acc.lastEnd;
                 acc.edges.push(e);
@@ -108,7 +107,7 @@ export const selectRegion = (region: BoundingBox, geometry: IGeometry): Selectab
     ];
 }
 
-export const clonePolygons = (poligons: IPolygon[], delta: vector.Vector, geometry: IGeometry): [IGeometry, IPolygon[]] => {
+export const duplicatePolygons = (poligons: IPolygon[], delta: vector.Vector, geometry: IGeometry): [IGeometry, IPolygon[]] => {
     const newPoligons = poligons.map(p => 
         loadPolygon(giveIdentity<IStoredPolygon>({edges: p.edges.map(e => duplicateEdge(e, delta))})));
     return [
