@@ -59,6 +59,11 @@ const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
         click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_polygon_clone'); }}
       },      
       {
+        label: 'Expand polygon',
+        accelerator: 'Control+E',
+        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_polygon_expand'); }}
+      },  
+      {
         type: 'separator'
       },
       {

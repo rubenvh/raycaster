@@ -1,10 +1,11 @@
+import { cloneMaterial } from './properties';
 
 import { Guid } from 'guid-typescript';
 import * as vector from '../math/vector';
 import * as collision from './collision';
-import { IEdge, cloneEdge, duplicateEdge } from './edge';
+import { IEdge, cloneEdge, duplicateEdge, makeEdge } from './edge';
 import { IEntity, giveIdentity } from './entity';
-import { BoundingBox, createPolygon, IPolygon, IStoredPolygon, loadPolygon, contains, containsVertex, containsEdge } from './polygon';
+import { BoundingBox, createPolygon, IPolygon, IStoredPolygon, loadPolygon, contains, containsVertex, containsEdge, centerOf } from './polygon';
 import { SelectableElement, SelectedEdge, SelectedPolygon, SelectedVertex } from './selectable';
 import { cloneVertex, IVertex, makeVertex } from './vertex';
 
@@ -120,3 +121,26 @@ export const transformEdges = (edges: IEdge[], poligonId: Guid, transformer: (_:
         .map(cloneEdge)
         .reduce((acc, e) => acc.concat(edges.some(_ => e.id === _.id) ? transformer(e) : e), []));
 };
+
+export const expandPolygon = (edge: IEdge, poligonId: Guid, delta: vector.Vector, geometry: IGeometry): [IPolygon, IGeometry] => {
+    const result = adaptPolygons([poligonId], geometry, p => {
+        const center = centerOf(p.boundingBox);
+
+        // TODO: calculate delta for each vertex based on incoming delta and center of polygon
+        return p.edges.map(cloneEdge).reduce((acc, e, i, edges) => {
+            if (e.id !== edge.id) return acc.concat(e);
+
+            // walk reversely through edge list, creating new edges further away from center
+
+            const expandedEdges = edges.slice(0, i).reverse().concat(edges.slice(i+1).reverse())
+            .reduce((acc, _, ix) => {
+                const start = acc[ix].end;
+                return acc.concat({...makeEdge(start.vector, vector.add(delta, _.start.vector)), material: cloneMaterial(_.material)});
+            }, [{...makeEdge(e.start.vector, vector.add(delta, e.start.vector)), material: cloneMaterial(e.material)}] as IEdge[]);
+
+            return acc.concat(...expandedEdges.concat({...makeEdge(expandedEdges[expandedEdges.length-1].end.vector, e.end.vector), material: cloneMaterial(e.material)}));
+        }, []);
+    });
+
+    return [result.polygons.find(p => p.id === poligonId), result];    
+}

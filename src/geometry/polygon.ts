@@ -1,3 +1,4 @@
+import { midpoint } from "../math/lineSegment";
 import { maximumComponents, minimumComponents, Vector } from "../math/vector";
 import { IEdge } from "./edge";
 import { giveIdentity, IEntity } from "./entity";
@@ -70,12 +71,15 @@ export const createPolygon = (vectors: Vector[]): IPolygon => {
 
 export const normalize = (box: BoundingBox): BoundingBox => {
     return [minimumComponents(box[0], box[1]), maximumComponents(box[0], box[1])];
-}
+};
+
 export const contains = (region: BoundingBox, box: BoundingBox) => {
     const [a1, a2] = normalize(region);
     const [b1, b2] = normalize(box);
     return a1[0] <= b1[0] && a1[1] <= b1[1]
         && a2[0] >= b2[0] && a2[1] >= b2[1];    
-}
+};
+
 export const containsEdge = (edge: IEdge, box: BoundingBox) => contains(box, [edge.start.vector, edge.end.vector]);
 export const containsVertex = (vertex: IVertex, box: BoundingBox) => contains(box, [vertex.vector, vertex.vector]);
+export const centerOf = (box: BoundingBox) => midpoint(box);
