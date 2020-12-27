@@ -70,7 +70,7 @@ export const moveVertices = (isSnapping: boolean, delta: vector.Vector, map: Map
             return acc.concat(e);
         }, [])
     });
-}
+};
 
 export const removeVertex = (vertex: IVertex, poligon: IPolygon, geometry: IGeometry) => {    
     return adaptPolygons([poligon.id], geometry, (selectedPolygon) => {
@@ -94,7 +94,7 @@ export const removeVertex = (vertex: IVertex, poligon: IPolygon, geometry: IGeom
             {edges: [], previous: null as IEdge, lastEnd: null as IVertex})
         return edges;
     });
-}
+};
 
 export const selectRegion = (region: BoundingBox, geometry: IGeometry): SelectableElement[] => {
     const ps = geometry.polygons.filter(p => contains(region, p.boundingBox));
@@ -105,7 +105,7 @@ export const selectRegion = (region: BoundingBox, geometry: IGeometry): Selectab
     return [...ps.map(p => ({kind: 'polygon', polygon: p} as SelectedPolygon)),
             ...es, ...vs,
     ];
-}
+};
 
 export const duplicatePolygons = (poligons: IPolygon[], delta: vector.Vector, geometry: IGeometry): [IGeometry, IPolygon[]] => {
     const newPoligons = poligons.map(p => 
@@ -113,4 +113,10 @@ export const duplicatePolygons = (poligons: IPolygon[], delta: vector.Vector, ge
     return [
         {...geometry, polygons: [...geometry.polygons, ...newPoligons]},
         newPoligons];
-}
+};
+
+export const transformEdges = (edges: IEdge[], poligonId: Guid, transformer: (_: IEdge) => IEdge, geometry: IGeometry): IGeometry => {
+    return adaptPolygons([poligonId], geometry, p => p.edges
+        .map(cloneEdge)
+        .reduce((acc, e) => acc.concat(edges.some(_ => e.id === _.id) ? transformer(e) : e), []));
+};

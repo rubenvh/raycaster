@@ -1,3 +1,4 @@
+import { IGeometry, transformEdges } from './../geometry/geometry';
 import { ITextureReference } from './../textures/model';
 import { Guid } from 'guid-typescript';
 import { World } from "../stateModel";
@@ -6,17 +7,20 @@ import { IEdge } from '../geometry/edge';
 import { isEdge, isPolygon } from "../geometry/selectable";
 import { TextureLibrary } from '../textures/textureLibrary';
 import { ipcRenderer } from 'electron';
+import undoService from './undoService';
 
 
 export class EdgeModifier implements IActionHandler {
     
     constructor(private world: World, private texLib: TextureLibrary) {}
-
-    private get selectedEdges(): IEdge[] { 
-        return Array.from(new Set<IEdge>(this.world.selection
-            .filter(isEdge).map(_=>_.edge)
-            .concat(...this.world.selection
-                .filter(isPolygon).map(_=>_.polygon.edges))));
+   
+    private get selectedEdges(): Map<Guid, IEdge[]> {
+        return this.world.selection.reduce((acc, s) => 
+            acc.set(s.polygon.id, Array.from(new Set<IEdge>([...(acc.get(s.polygon.id)||[]).concat(
+            isEdge(s)
+            ? s.edge
+            : isPolygon(s) ? s.polygon.edges 
+            : [])]))), new Map());
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
@@ -30,27 +34,22 @@ export class EdgeModifier implements IActionHandler {
     handle(): void {}
     isActive = (): boolean => true;
     
-    private toggleImmateriality = () => {        
-        this.selectedEdges.forEach(_=>_.immaterial = !_.immaterial );        
-    };   
-    private toggleTexture = () => {        
-        this.selectedEdges.forEach(_=>_.material.texture = !_.material.texture ? Guid.create() : null)
-    };        
+    private adaptEdges = (transformer: (_: IEdge) => void) => {
+        this.world.geometry = Array.from(this.selectedEdges.entries()).reduce((_, [poligonId, edges]) => transformEdges(edges, poligonId, _ => {
+            transformer(_);
+            return _;
+        }, this.world.geometry), {} as IGeometry);
+        undoService.push(this.world.geometry);
+    }
+    private toggleImmateriality = () => this.adaptEdges(_ => _.immaterial = !_.immaterial);
+    private toggleTexture = () => this.adaptEdges(_ => _.material.texture = !_.material.texture ? {id: this.texLib.textures[0].path, index: 0} : null);        
     private previousTexture = () => this.changeTexture(this.texLib.previous);
     private nextTexture = () => this.changeTexture(this.texLib.next);
     private changeTexture = (dir: (ITextureReference)=>ITextureReference) => {
-        this.selectedEdges.filter(s => s.material.texture).forEach(_=> {
-            if ('index' in _.material.texture) _.material.texture = dir(_.material.texture);
-            else {
-                _.material.texture = ({index: 0, id: this.texLib.textures[0].path});
-            }
-        });
-    }
-    private increaseTranslucency = () => {
-        this.selectedEdges.forEach(_=>_.material.color[3] = Math.max(0, _.material.color[3] - 0.1));
-    };  
-    private decreaseTranslucency = () => {
-        this.selectedEdges.forEach(_=>_.material.color[3] = Math.min(1, _.material.color[3] + 0.1));
-    };  
-    
+        this.adaptEdges(_ => {
+            if (!_.material?.texture) { return; }
+            _.material.texture = dir(_.material.texture);
+        });};
+    private increaseTranslucency = () => this.adaptEdges(_ => _.material.color[3] = Math.max(0, _.material.color[3] - 0.1));
+    private decreaseTranslucency = () => this.adaptEdges(_ => _.material.color[3] = Math.min(1, _.material.color[3] + 0.1));    
 }

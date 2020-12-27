@@ -56,13 +56,8 @@ export class TextureLibrary {
     
     public getTexture = (material: IMaterial): Texture => {        
         if (!material?.texture) { return null; }
-        if ('id' in material.texture) {
-            const id = material.texture.id;
-            return this._textures.find(_ => _.id === id);
-        } else {
-            return this._textures[0];
-            
-        }
+        const id = material.texture.id;
+        return this._textures.find(_ => _.id === id);
     }
 }
 

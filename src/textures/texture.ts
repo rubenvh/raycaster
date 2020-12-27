@@ -47,7 +47,7 @@ export class Texture {
 
     public drawTexture = (target: CanvasRenderingContext2D, wallProps: WallProps[]) => {
         const tref = wallProps[0].material?.texture;
-        const [col, row] = this.getPosition(('index' in tref) ? tref.index : 0);
+        const [col, row] = this.getPosition(tref != null ? tref.index : 0);
         
         const tileFactor = 20; // => w.length for stretching
         const twidth = this.source.textureWidth;
