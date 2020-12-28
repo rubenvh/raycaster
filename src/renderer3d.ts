@@ -56,19 +56,27 @@ export class Renderer3d {
         });
     };
 
-    public render = () => {                   
-        // draw floor + sky
-        this.drawSky();        
-        this.drawFloor();
-
+    public render = () => {                           
         // initiate raycasting
+        const startCasting = performance.now();
         this.world.rays = raycaster.castRays(makeRays(this.resolution, this.world.camera), this.world.geometry, raycaster.passTroughTranslucentEdges);
-        
         // construct a z-index buffer: 
-        const zbuffer = this.constructZBuffer(this.world.rays);
-        
+        const zbuffer = this.constructZBuffer(this.world.rays);        
+
+        // draw floor + sky
+        const startDrawing = performance.now();
+        this.drawSky();        
+        this.drawFloor();        
         // draw the z-buffer => farthest to closest 
         this.drawZBuffer(zbuffer);
+
+        const endDrawing = performance.now();
+
+        const total = endDrawing - startCasting;
+        const drawing = ((endDrawing - startDrawing) / total).toFixed(2);
+        const casting = ((startDrawing - startCasting) / total).toFixed(2);
+        this.context.fillStyle = "rgb(255,255,255)";
+        this.context.fillText(`C=${casting}, D=${drawing}`, 10, this.canvas.height - 20);
     };
 
     /**

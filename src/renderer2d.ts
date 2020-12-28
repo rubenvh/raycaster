@@ -39,7 +39,7 @@ export class Renderer2d {
             avgIntersectionsPerRay /= this.world.rays.length;
             if (this.world.rays[0].stats) {
                 this.context.fillStyle = "rgb(255,255,255)";
-                this.context.fillText(`FPS=${fps}, I=${edgePercentage}, #=${avgIntersectionsPerRay}`, 10, this.canvas.height - 20);
+                this.context.fillText(`FPS=${fps}, I=${edgePercentage.toFixed(2)}, #=${avgIntersectionsPerRay.toFixed(2)}`, 10, this.canvas.height - 20);
             }
         }
 
