@@ -1,7 +1,5 @@
 - add linter
 - display stats in statusbar
-* support for transforming a polygon when edge is selected: remove edge and make polygon form solid (trace it)
-- support for splitting a polygon into 2 (when selecting 2 vertices => introduce new edge in 2 sets)
 - rotate selected polygons
 - change fading strategy on key press (null, dark or mist)
 - toggle texture key (ctrl-T) should open popup with scrollable popup of all textures
@@ -17,6 +15,7 @@
 - implement zooming in 2d view (+ impact on distance threshold for selection?)
 - implement mirror walls
 - implement doors
+- expand polygon: AS IS: push out walls from center => TO BE would be nice to stay parallel to existing edges
 - slower fps slows down movement => normalize this
 - implement sprites
 - implement BSP or quadtree structure to further reduce intersection tests

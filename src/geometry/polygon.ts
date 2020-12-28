@@ -1,6 +1,6 @@
 import { midpoint } from "../math/lineSegment";
 import { maximumComponents, minimumComponents, Vector } from "../math/vector";
-import { IEdge } from "./edge";
+import { createEdges, IEdge } from "./edge";
 import { giveIdentity, IEntity } from "./entity";
 import { Color } from "./properties";
 import { areClose, areEqual, IVertex, makeVertex } from "./vertex";
@@ -43,29 +43,7 @@ export const loadPolygon = (polygon: IStoredPolygon): IPolygon => {
 }
 
 export const createPolygon = (vectors: Vector[]): IPolygon => {
-        
-    // transform all vectors into vertices
-    const vertices = vectors.map(makeVertex).map(giveIdentity);
-    const startingVertex = vertices[0];
-    
-    // we are closing the polygon at the end, so remove the last vertex if it's close to the starting vertex
-    if (areClose(startingVertex, vertices[vertices.length-1])) vertices.pop();       
-    
-    // put start at the end and reduce over the vertices to create a collection of edges
-    const edges = vertices.slice(1).concat([startingVertex])
-        .reduce((acc, v) => {            
-            return ({ 
-                                edges: [...acc.edges, ({
-                                    start: acc.previous, 
-                                    end: v,
-                                    material: {color: [20, 20, 255, 1] as Color},
-                                    immaterial: false
-                                })],
-                                previous: v,
-                            });}, 
-            {previous: startingVertex, edges: [] as IEdge[]})
-        .edges;
-    
+    const edges = createEdges(vectors);    
     return loadPolygon({edges});
 };
 

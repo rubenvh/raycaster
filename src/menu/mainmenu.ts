@@ -64,6 +64,11 @@ const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
         click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_polygon_expand'); }}
       },  
       {
+        label: 'Split polygon',
+        accelerator: 'Control+Shift+S',
+        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_polygon_split'); }}
+      },  
+      {
         type: 'separator'
       },
       {

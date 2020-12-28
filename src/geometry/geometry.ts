@@ -1,13 +1,14 @@
+import { distanceTo } from './../math/lineSegment';
 import { cloneMaterial } from './properties';
 
 import { Guid } from 'guid-typescript';
 import * as vector from '../math/vector';
 import * as collision from './collision';
-import { IEdge, cloneEdge, duplicateEdge, makeEdge } from './edge';
+import { IEdge, cloneEdge, duplicateEdge, makeEdge, segmentFrom, createEdges } from './edge';
 import { IEntity, giveIdentity } from './entity';
 import { BoundingBox, createPolygon, IPolygon, IStoredPolygon, loadPolygon, contains, containsVertex, containsEdge, centerOf } from './polygon';
 import { SelectableElement, SelectedEdge, SelectedPolygon, SelectedVertex } from './selectable';
-import { cloneVertex, IVertex, makeVertex } from './vertex';
+import { areEqual, cloneVertex, IVertex, makeVertex } from './vertex';
 
 
 export type IStoredGeometry = IEntity & { polygons: IStoredPolygon[]};
@@ -26,18 +27,22 @@ export const detectCollisions = (ray: collision.IRay, geometry: IGeometry): coll
     return collision.detectCollisions(ray, geometry.polygons);
 }
 
-const adaptPolygons = (ids: Guid[], geometry: IGeometry, edgeTransformer: (poligon: IPolygon)=>IEdge[]) => {
+const forkPolygons = (ids: Guid[], geometry: IGeometry, polygonSplitter: (poligon: IPolygon)=>IEdge[][]) : IGeometry => {
     
-    let [unchanged, adapted] = geometry.polygons.reduce((acc, p) => {
+    let [unchanged, adapted]: [IPolygon[], IPolygon[]] = geometry.polygons.reduce((acc, p) => {
         acc[+ids.includes(p.id)].push(p);
         return acc;
     }, [[],[]]);
 
-    let adaptedPolygons = adapted.map(p => ({p, edges: edgeTransformer(p)}))
-        .filter(_ => _.edges.length >= 2)
-        .map(_ => loadPolygon({id: _.p.id, edges: _.edges}));
+    let adaptedPolygons = adapted
+        .map(p => ({p, edgeSets: polygonSplitter(p)}))        
+        .reduce((acc, _, i) => acc.concat(..._.edgeSets.map(s => loadPolygon({id: i === 0 ? _.p.id : Guid.create(), edges: s}))), [] as IPolygon[]);
 
     return ({...geometry, polygons: [...unchanged, ...adaptedPolygons]});
+};
+
+const adaptPolygons = (ids: Guid[], geometry: IGeometry, edgeTransformer: (poligon: IPolygon)=>IEdge[]) => {    
+    return forkPolygons(ids, geometry, (p)=>[edgeTransformer(p)]);    
 };
 
 
@@ -122,25 +127,61 @@ export const transformEdges = (edges: IEdge[], poligonId: Guid, transformer: (_:
         .reduce((acc, e) => acc.concat(edges.some(_ => e.id === _.id) ? transformer(e) : e), []));
 };
 
-export const expandPolygon = (edge: IEdge, poligonId: Guid, delta: vector.Vector, geometry: IGeometry): [IPolygon, IGeometry] => {
+export const expandPolygon = (edge: IEdge, poligonId: Guid, target: vector.Vector, geometry: IGeometry): [IPolygon, IGeometry] => {
     const result = adaptPolygons([poligonId], geometry, p => {
-        const center = centerOf(p.boundingBox);
+        const center = centerOf(p.boundingBox);        
+        const centerToTarget = vector.distance(center, target);
+        const centerToEdge = vector.distance(center, edge.start.vector);
+        const delta = vector.subtract(edge.start.vector, target);
 
-        // TODO: calculate delta for each vertex based on incoming delta and center of polygon
+        const calcVector = (vertex: IVertex): vector.Vector => {
+            const v = vector.scale(vector.norm(delta), vector.normalize(vector.subtract(vertex.vector, center)));            
+            return centerToTarget < centerToEdge 
+            ? vector.subtract(vertex.vector, v) 
+            : vector.add(vertex.vector, v);
+        }        
+        const createEdge = (start: vector.Vector, end: vector.Vector, edge: IEdge): IEdge => ({
+            ...makeEdge(start, end), material: cloneMaterial(edge.material),
+        });
         return p.edges.map(cloneEdge).reduce((acc, e, i, edges) => {
             if (e.id !== edge.id) return acc.concat(e);
 
             // walk reversely through edge list, creating new edges further away from center
-
             const expandedEdges = edges.slice(0, i).reverse().concat(edges.slice(i+1).reverse())
-            .reduce((acc, _, ix) => {
-                const start = acc[ix].end;
-                return acc.concat({...makeEdge(start.vector, vector.add(delta, _.start.vector)), material: cloneMaterial(_.material)});
-            }, [{...makeEdge(e.start.vector, vector.add(delta, e.start.vector)), material: cloneMaterial(e.material)}] as IEdge[]);
+            .reduce(
+                (acc, _, ix) => acc.concat(createEdge(acc[ix].end.vector, calcVector(_.start), _)), 
+                [createEdge(e.start.vector, calcVector(e.start), e)]);
 
-            return acc.concat(...expandedEdges.concat({...makeEdge(expandedEdges[expandedEdges.length-1].end.vector, e.end.vector), material: cloneMaterial(e.material)}));
+            return acc.concat(...expandedEdges.concat(createEdge(expandedEdges[expandedEdges.length-1].end.vector, e.end.vector, e)));
         }, []);
     });
 
     return [result.polygons.find(p => p.id === poligonId), result];    
+}
+
+export const splitPolygon = (v1: IVertex, v2: IVertex, poligonId: Guid, geometry: IGeometry): IGeometry => {
+    const result = forkPolygons([poligonId], geometry, p => {   
+        // find indices of splitting vertices
+        let i = p.vertices.findIndex(v => areEqual(v, v1));
+        let j = p.vertices.findIndex(v => areEqual(v, v2));
+
+        // make sure they are in small to large order
+        if (i > j) {
+            const temp = i;
+            i = j;
+            j = temp;
+        }
+
+        // utility function to create edges (copying material) for a list of vertices
+        const create = (vs: IVertex[]): IEdge[] => createEdges(vs.map(v => v.vector))
+            .map(e => ({newEdge: e, basedOn: p.edges.find(_ => areEqual(_.start, e.start)) }))
+            .map(_ => ({..._.newEdge, immaterial: _.basedOn.immaterial, material: cloneMaterial(_.basedOn.material) }));
+        
+        // create 2 new polygons and return them
+        const p1 = create(p.vertices.slice(0, i+1).concat(p.vertices.slice(j)));
+        const p2 = create(p.vertices.slice(i, j+1));
+        return [p1, p2];
+    });
+
+    return result;   
 }

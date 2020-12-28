@@ -10,6 +10,7 @@ import { GeometryRemover } from './geometryRemover';
 import { PolygonCreator } from './polygonCreator';
 import { TextureLibrary } from '../textures/textureLibrary';
 import { PolygonExpander } from './polygonExpander';
+import { PolygonSplitter } from './polygonSplitter';
 
 export function createGlobalActionHandlers(world: World): IActionHandler[] {
     return [
@@ -32,7 +33,7 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, world: World, te
             new GeometrySelector(canvas.getContext('2d'), t, world, [splitter, expander]),
             new GeometryRemover(world),
             new PolygonCreator(canvas.getContext('2d'), t, world),
-            
+            new PolygonSplitter(world),
             new EdgeModifier(world, texLib),
         ]
         .map(_ => _.register(canvas));

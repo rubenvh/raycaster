@@ -1,8 +1,8 @@
 import { ILineSegment } from "../math/lineSegment";
 import { Vector } from "../math/vector";
 import { giveIdentity, IEntity } from "./entity";
-import { cloneMaterial, IMaterial } from "./properties";
-import { cloneVertex, duplicateVertex, IVertex, makeVertex } from "./vertex";
+import { cloneMaterial, Color, IMaterial } from "./properties";
+import { areClose, cloneVertex, duplicateVertex, IVertex, makeVertex } from "./vertex";
 
 export type IEdge = IEntity & { start: IVertex, end: IVertex, material?: IMaterial, immaterial?: boolean};
 
@@ -24,3 +24,26 @@ export const cloneEdge = (e: IEdge): IEdge => ({
     material: cloneMaterial(e.material),
 });
 
+export const createEdges = (vectors: Vector[]): IEdge[] =>  {
+    // transform all vectors into vertices
+    const vertices = vectors.map(makeVertex).map(giveIdentity);
+    const startingVertex = vertices[0];
+    
+    // we are closing the polygon at the end, so remove the last vertex if it's close to the starting vertex
+    if (areClose(startingVertex, vertices[vertices.length-1])) vertices.pop();       
+    
+    // put start at the end and reduce over the vertices to create a collection of edges
+    return vertices.slice(1).concat([startingVertex])
+        .reduce((acc, v) => {            
+            return ({ 
+                                edges: [...acc.edges, ({
+                                    start: acc.previous, 
+                                    end: v,
+                                    material: {color: [20, 20, 255, 1] as Color},
+                                    immaterial: false
+                                })],
+                                previous: v,
+                            });}, 
+            {previous: startingVertex, edges: [] as IEdge[]})
+        .edges;
+}
