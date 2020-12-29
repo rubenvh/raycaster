@@ -44,7 +44,7 @@ export const detectCollisions = (ray: IRay, polygons: IPolygon[]): RayCollisions
     let totalEdges = 0;
 
     // TODO: replace this naive implementation with something more efficient:
-    // 1) bounding box tests
+    // 1) bounding box tests 
     // 2) BSP
     // ...
     for (const polygon of polygons){

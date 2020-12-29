@@ -1,7 +1,5 @@
 - add linter
 - display stats in statusbar
-- rotate selected polygons
-- change fading strategy on key press (null, dark or mist)
 - toggle texture key (ctrl-T) should open popup with scrollable popup of all textures
 - override dynamic lightning strategy by explicitly setting luminosity and fading parameters on edges
 - luminosity on edge as a function of time to implement flickering 

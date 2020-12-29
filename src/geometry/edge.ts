@@ -2,7 +2,7 @@ import { ILineSegment } from "../math/lineSegment";
 import { Vector } from "../math/vector";
 import { giveIdentity, IEntity } from "./entity";
 import { cloneMaterial, Color, IMaterial } from "./properties";
-import { areClose, areEqual, cloneVertex, duplicateVertex, IVertex, makeVertex } from "./vertex";
+import { areClose, cloneVertex, duplicateVertex, IVertex, makeVertex } from "./vertex";
 
 export type IEdge = IEntity & { start: IVertex, end: IVertex, material?: IMaterial, immaterial?: boolean};
 

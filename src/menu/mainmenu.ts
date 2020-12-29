@@ -119,6 +119,11 @@ const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
         accelerator: 'Control+X',
         click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_remove'); }}
       },
+      {
+        label: 'Adapt fading strategy',
+        accelerator: 'Control+Shift+F',
+        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_config_fadeOut'); }}
+      },
 
     ]
   },
