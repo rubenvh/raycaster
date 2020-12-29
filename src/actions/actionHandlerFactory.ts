@@ -11,6 +11,7 @@ import { PolygonCreator } from './polygonCreator';
 import { TextureLibrary } from '../textures/textureLibrary';
 import { PolygonExpander } from './polygonExpander';
 import { PolygonSplitter } from './polygonSplitter';
+import { PolygonRotator } from './polygonRotator';
 
 export function createGlobalActionHandlers(world: World): IActionHandler[] {
     return [
@@ -24,13 +25,15 @@ export function createGlobalActionHandlers(world: World): IActionHandler[] {
 export function createCanvasHandlers(canvas: HTMLCanvasElement, world: World, texLib: TextureLibrary): IActionHandler[] {
     const t = spaceTranslator(canvas);
 
-    const splitter = new EdgeSplitter(canvas.getContext('2d'), t, world);
-    const expander = new PolygonExpander(canvas.getContext('2d'), t, world);
+    const blockingHandlers = [
+        new EdgeSplitter(canvas.getContext('2d'), t, world),
+        new PolygonExpander(canvas.getContext('2d'), t, world),
+        new PolygonRotator(canvas.getContext('2d'), t, world)
+    ];
     return [
-            splitter,
-            expander,
-            new GeometryMover(t, world, [splitter, expander]),
-            new GeometrySelector(canvas.getContext('2d'), t, world, [splitter, expander]),
+            ...blockingHandlers,
+            new GeometryMover(t, world, blockingHandlers),
+            new GeometrySelector(canvas.getContext('2d'), t, world, blockingHandlers),
             new GeometryRemover(world),
             new PolygonCreator(canvas.getContext('2d'), t, world),
             new PolygonSplitter(world),

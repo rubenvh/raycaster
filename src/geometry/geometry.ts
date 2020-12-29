@@ -1,15 +1,14 @@
-import { distanceTo } from './../math/lineSegment';
-import { cloneMaterial } from './properties';
+
 
 import { Guid } from 'guid-typescript';
 import * as vector from '../math/vector';
 import * as collision from './collision';
-import { IEdge, cloneEdge, duplicateEdge, makeEdge, segmentFrom, createEdges } from './edge';
+import { IEdge, cloneEdge, duplicateEdge, makeEdge, createEdges } from './edge';
 import { IEntity, giveIdentity } from './entity';
-import { BoundingBox, createPolygon, IPolygon, IStoredPolygon, loadPolygon, contains, containsVertex, containsEdge, centerOf } from './polygon';
+import { BoundingBox, createPolygon, IPolygon, IStoredPolygon, loadPolygon, contains, containsVertex, containsEdge, centerOf, merge } from './polygon';
 import { SelectableElement, SelectedEdge, SelectedPolygon, SelectedVertex } from './selectable';
-import { areEqual, cloneVertex, IVertex, makeVertex } from './vertex';
-
+import { areEqual, IVertex, makeVertex } from './vertex';
+import { cloneMaterial } from './properties';
 
 export type IStoredGeometry = IEntity & { polygons: IStoredPolygon[]};
 export type IGeometry = { polygons: IPolygon[]};
@@ -36,7 +35,7 @@ const forkPolygons = (ids: Guid[], geometry: IGeometry, polygonSplitter: (poligo
 
     let adaptedPolygons = adapted
         .map(p => ({p, edgeSets: polygonSplitter(p)}))        
-        .reduce((acc, _, i) => acc.concat(..._.edgeSets.map(s => loadPolygon({id: i === 0 ? _.p.id : Guid.create(), edges: s}))), [] as IPolygon[]);
+        .reduce((acc, _, i) => acc.concat(..._.edgeSets.map(s => loadPolygon({id: acc.some(p => p.id === _.p.id) ? Guid.create(): _.p.id, edges: s}))), [] as IPolygon[]);
 
     return ({...geometry, polygons: [...unchanged, ...adaptedPolygons]});
 };
@@ -159,6 +158,24 @@ export const expandPolygon = (edge: IEdge, poligonId: Guid, target: vector.Vecto
     return [result.polygons.find(p => p.id === poligonId), result];    
 }
 
+export const rotatePolygon = (polygonIds: Guid[], target: vector.Vector, geometry: IGeometry): IGeometry => {
+    const polygons = geometry.polygons.filter(x => polygonIds.includes(x.id));
+    const mergedBoundedBox = polygons.slice(1).reduce((acc, p) => merge(acc, p.boundingBox), polygons[0].boundingBox);
+    const center = centerOf(mergedBoundedBox);     
+    const reference = polygons[0].edges[0].start.vector;
+    return adaptPolygons(polygonIds, geometry, p => {        
+        const centerToTarget = vector.subtract(target, center);
+        const centerToReference = vector.subtract(reference, center);
+        const angle = -1 * vector.angleBetween(centerToTarget, centerToReference);
+        const edges = createEdges(p.vertices
+                .map(v => vector.subtract(v.vector, center))
+                .map(u => vector.add(center, vector.rotate(angle, u))));
+        return edges
+            .map((e, i) => ({newEdge: e, basedOn: p.edges[i] }))
+            .map(_ => ({..._.newEdge, immaterial: _.basedOn?.immaterial ?? false, material: _.basedOn && cloneMaterial(_.basedOn.material) || _.newEdge.material }));;
+    });
+}
+
 export const splitPolygon = (v1: IVertex, v2: IVertex, poligonId: Guid, geometry: IGeometry): IGeometry => {
     const result = forkPolygons([poligonId], geometry, p => {   
         // find indices of splitting vertices
@@ -175,7 +192,7 @@ export const splitPolygon = (v1: IVertex, v2: IVertex, poligonId: Guid, geometry
         // utility function to create edges (copying material) for a list of vertices
         const create = (vs: IVertex[]): IEdge[] => createEdges(vs.map(v => v.vector))
             .map(e => ({newEdge: e, basedOn: p.edges.find(_ => areEqual(_.start, e.start)) }))
-            .map(_ => ({..._.newEdge, immaterial: _.basedOn.immaterial, material: cloneMaterial(_.basedOn.material) }));
+            .map(_ => ({..._.newEdge, immaterial: _.basedOn?.immaterial ?? false, material: _.basedOn && cloneMaterial(_.basedOn.material) || _.newEdge.material }));
         
         // create 2 new polygons and return them
         const p1 = create(p.vertices.slice(0, i+1).concat(p.vertices.slice(j)));

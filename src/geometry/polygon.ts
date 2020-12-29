@@ -2,8 +2,7 @@ import { midpoint } from "../math/lineSegment";
 import { maximumComponents, minimumComponents, Vector } from "../math/vector";
 import { createEdges, IEdge } from "./edge";
 import { giveIdentity, IEntity } from "./entity";
-import { Color } from "./properties";
-import { areClose, areEqual, IVertex, makeVertex } from "./vertex";
+import { areClose, areEqual, IVertex } from "./vertex";
 
 export type IStoredPolygon = IEntity & { edges: IEdge[]};
 export type IPolygon = IStoredPolygon & { vertices: IVertex[], boundingBox: BoundingBox, edgeCount: number };
@@ -50,7 +49,10 @@ export const createPolygon = (vectors: Vector[]): IPolygon => {
 export const normalize = (box: BoundingBox): BoundingBox => {
     return [minimumComponents(box[0], box[1]), maximumComponents(box[0], box[1])];
 };
-
+export const merge = (b1: BoundingBox, b2: BoundingBox): BoundingBox => {
+    const [b1n, b2n] = [normalize(b1), normalize(b2)];
+    return [minimumComponents(b1n[0], b2n[0]), maximumComponents(b1n[1], b2n[1])];
+}
 export const contains = (region: BoundingBox, box: BoundingBox) => {
     const [a1, a2] = normalize(region);
     const [b1, b2] = normalize(box);
