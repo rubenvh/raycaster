@@ -75,11 +75,11 @@ export class Renderer3d {
         const endDrawing = performance.now();
 
         const total = endDrawing - startCasting;
-        const drawing = ((endDrawing - startDrawing) / total).toFixed(2);
-        const casting = ((startZBuffering - startCasting) / total).toFixed(2);
-        const zBuffering = ((startDrawing - startZBuffering ) / total).toFixed(2);
+        const drawing = endDrawing - startDrawing;
+        const casting = startZBuffering - startCasting;
+        const zBuffering = startDrawing - startZBuffering;
         this.context.fillStyle = "rgb(255,255,255)";
-        this.context.fillText(`C=${casting}, Z=${zBuffering}, D=${drawing}`, 10, this.canvas.height - 20);
+        this.context.fillText(`C=${casting.toFixed(2)}ms (${(casting/total*100).toFixed(2)}%), Z=${zBuffering.toFixed(2)}ms (${(zBuffering/total*100).toFixed(2)}%), D=${drawing.toFixed(2)}ms (${(drawing/total*100).toFixed(2)}%)`, 10, this.canvas.height - 20);
     };
 
     /**
