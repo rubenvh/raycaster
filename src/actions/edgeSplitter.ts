@@ -5,7 +5,6 @@ import { projectOn } from "../math/lineSegment";
 import { IActionHandler } from "./actions";
 import { Vector } from '../math/vector';
 import { drawVector } from '../drawing/drawing';
-import { segmentFrom } from '../geometry/edge';
 import { isEdge, SelectedEdge } from '../geometry/selectable';
 import { ipcRenderer } from 'electron';
 import undoService from '../actions/undoService';
@@ -69,6 +68,6 @@ export class EdgeSplitter implements IActionHandler {
 
     private calculateCut = (event: MouseEvent): Vector => {
         const target = this.spaceTranslator.toWorldSpace(event);
-        return projectOn(target, segmentFrom(this.selectedEdge.edge));
+        return projectOn(target, this.selectedEdge.edge.segment);
     }    
 }

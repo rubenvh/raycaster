@@ -3,7 +3,6 @@ import { ILine, ILineSegment, lineAngle } from "./math/lineSegment";
 import { castRays, passThroughImmaterialEdges } from './raycaster';
 import { IGeometry } from './geometry/geometry';
 import { IRay } from './geometry/collision';
-import { segmentFrom } from './geometry/edge';
 
 export type ICameraData = { position: vector.Vector, direction: vector.Vector, plane?: vector.Vector};
 export type ICamera = ICameraData & { screen: ILineSegment};
@@ -64,7 +63,7 @@ const constrainedMove = (direction: 1|-1, cam: ICamera,
     }
 
     // calculate angle with collided edge
-    const s = segmentFrom(hit.edge);
+    const s = hit.edge.segment;
     const collisionAngle = Math.abs(lineAngle(s, hit.ray.line))-Math.PI/2;
 
     // if angle is small enough, stop movement by returning original camera

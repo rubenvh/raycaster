@@ -1,5 +1,4 @@
 import { expandPolygon, IGeometry } from './../geometry/geometry';
-import { segmentFrom } from './../geometry/edge';
 import { IPolygon } from './../geometry/polygon';
 import { ipcRenderer } from "electron";
 import { isEdge, SelectedEdge } from "../geometry/selectable";
@@ -33,7 +32,7 @@ export class PolygonExpander implements IActionHandler {
 
     handle(): void {
         if (this.isActive() && this.candidate) {
-            this.candidate.edges.forEach(e => drawSegment(this.context, segmentFrom(e), 'rgba(255, 150, 10, 0.7)'));
+            this.candidate.edges.forEach(e => drawSegment(this.context, e.segment, 'rgba(255, 150, 10, 0.7)'));
             this.candidate.vertices.forEach(v => drawVector(this.context, v.vector, 'rgba(255, 150, 10, 0.7)'));
         }
     }     

@@ -5,7 +5,7 @@ import { cloneMaterial, Color, IMaterial } from "./properties";
 import { areClose, cloneVertex, distance, duplicateVertex, IVertex, makeVertex } from "./vertex";
 
 type EdgeBase = IEntity & { start: IVertex, end: IVertex, material?: IMaterial, immaterial?: boolean};
-export type IEdge = EdgeBase & { length: number, slope: number, luminosity: number};
+export type IEdge = EdgeBase & { length: number, slope: number, luminosity: number, segment: ILineSegment};
 export type IStoredEdge = EdgeBase;
 export const storeEdge = (e: IEdge): IStoredEdge => ({
     id: e.id,
@@ -16,8 +16,8 @@ export const storeEdge = (e: IEdge): IStoredEdge => ({
 })
 
 export const loadEdge = (e: IStoredEdge): IEdge => {
-    const line: ILineSegment = [e.start.vector, e.end.vector];
-    const m: number = slope(line);
+    const segment: ILineSegment = [e.start.vector, e.end.vector];
+    const m: number = slope(segment);
     return ({
         id: e.id,
         start: e.start,
@@ -26,6 +26,7 @@ export const loadEdge = (e: IStoredEdge): IEdge => {
         immaterial: e.immaterial, 
         length: distance(e.start, e.end),
         slope: m,
+        segment,
         luminosity: determineLuminosity(m)});
 };
 
@@ -33,7 +34,6 @@ export const makeEdge = (v: Vector, u: Vector): IEdge => loadEdge({
     start: makeVertex(v), 
     end: makeVertex(u),    
     });
-export const segmentFrom = (e: IEdge): ILineSegment => [e.start.vector, e.end.vector];
 
 export const duplicateEdge = (e: IEdge, delta: Vector): IEdge => giveIdentity<IEdge>({
         start: duplicateVertex(e.start, delta),
@@ -42,6 +42,7 @@ export const duplicateEdge = (e: IEdge, delta: Vector): IEdge => giveIdentity<IE
         material: cloneMaterial(e.material),
         length: e.length,
         slope: e.slope,
+        segment: e.segment,
         luminosity: e.luminosity,
 });
 

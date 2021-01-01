@@ -2,7 +2,7 @@ import { Guid } from "guid-typescript";
 import { distanceTo } from "../math/lineSegment";
 import { Vector } from "../math/vector";
 import { EdgeCollision, VertexCollision } from "./collision";
-import { IEdge, segmentFrom } from "./edge";
+import { IEdge } from "./edge";
 import { IPolygon } from "./polygon";
 import { distance, IVertex } from "./vertex";
 
@@ -30,8 +30,8 @@ export const isCloseToSelected = (v: Vector, element: SelectableElement) => {
     return isVertex(element)
         ? distance(v, element.vertex) < epsilon
         : isEdge(element)
-        ? distanceTo(v, segmentFrom(element.edge)) < epsilon
-        : element.polygon.edges.map(e => distanceTo(v, segmentFrom(e)) < epsilon).some(x => x);
+        ? distanceTo(v, element.edge.segment) < epsilon
+        : element.polygon.edges.map(e => distanceTo(v, e.segment) < epsilon).some(x => x);
 }
 
 export const selectedElement = (collision : VertexCollision|EdgeCollision, selectPolygon: boolean): SelectableElement => {

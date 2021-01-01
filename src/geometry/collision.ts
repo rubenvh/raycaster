@@ -1,6 +1,6 @@
 import { distanceToMidPoint, ILine, intersectRay } from "../math/lineSegment";
 import { Vector } from "../math/vector";
-import { IEdge, segmentFrom } from "./edge";
+import { IEdge } from "./edge";
 import { BoundingBox, IPolygon } from "./polygon";
 import { distance, IVertex } from "./vertex";
 
@@ -26,7 +26,7 @@ export const detectCollisionAt = (vector: Vector, polygons: IPolygon[]): VertexC
     const distanceComparer = (x: {distance:number}, y: {distance:number}) => x.distance - y.distance;
         return polygons.reduce((acc, p) => {            
             let edges: Collision[] = p.edges
-                .map(e => ({polygon: p, kind: "edge", edge: e, distance: distanceToMidPoint(vector, segmentFrom(e))} as const));
+                .map(e => ({polygon: p, kind: "edge", edge: e, distance: distanceToMidPoint(vector, e.segment)} as const));
             let vertices: Collision[] = p.vertices
             .map(v => ({ polygon: p, kind: "vertex", vertex: v, distance: distance(v, vector)} as const));
 
@@ -52,7 +52,7 @@ export const detectCollisions = (ray: IRay, polygons: IPolygon[]): RayCollisions
         if (!hasIntersect(ray, polygon.boundingBox)) continue;
         for (const edge of polygon.edges) {            
             intersectionCalculations += 1;
-            const intersection = intersectRay(ray.line, segmentFrom(edge));
+            const intersection = intersectRay(ray.line, edge.segment);
             if (intersection) {
                 result.hits.push({polygon, ray, edge, intersection,
                     distance: distance(intersection, ray.line[0]) * Math.cos(ray.angle)
