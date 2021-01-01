@@ -3,18 +3,18 @@
 import { Guid } from 'guid-typescript';
 import * as vector from '../math/vector';
 import * as collision from './collision';
-import { IEdge, cloneEdge, duplicateEdge, makeEdge, createEdges } from './edge';
+import { IEdge, cloneEdge, duplicateEdge, makeEdge, createEdges, loadEdge } from './edge';
 import { IEntity, giveIdentity } from './entity';
-import { BoundingBox, createPolygon, IPolygon, IStoredPolygon, loadPolygon, contains, containsVertex, containsEdge, centerOf, merge } from './polygon';
+import { BoundingBox, createPolygon, IPolygon, IStoredPolygon, loadPolygon, contains, containsVertex, containsEdge, centerOf, merge, storePolygon } from './polygon';
 import { SelectableElement, SelectedEdge, SelectedPolygon, SelectedVertex } from './selectable';
 import { areEqual, IVertex, makeVertex } from './vertex';
 import { cloneMaterial } from './properties';
 
 export type IStoredGeometry = IEntity & { polygons: IStoredPolygon[]};
-export type IGeometry = { polygons: IPolygon[]};
+export type IGeometry = IEntity & { polygons: IPolygon[]};
 
-
-export const loadGeometry = (geometry : IStoredGeometry): IGeometry => ({polygons: geometry.polygons.map(loadPolygon)});
+export const storeGeometry = (g: IGeometry): IStoredGeometry => ({id: g.id, polygons: g.polygons.map(storePolygon)});
+export const loadGeometry = (g : IStoredGeometry): IGeometry => ({id: g.id, polygons: g.polygons.map(loadPolygon)});
 export const createGeometry = (polygonCollection: vector.Vector[][]): IGeometry => ({polygons: polygonCollection.map(createPolygon)});
 export const addPolygon = (p: IPolygon, geometry: IGeometry): IGeometry => ({polygons: [...geometry.polygons, p]});
 
@@ -51,7 +51,7 @@ export const splitEdge = (cut: vector.Vector, edge: IEdge, poligon: IPolygon, ge
             if (e.id === edge.id) {
                 const newEnd = e.end;
                 e.end = makeVertex(cut);
-                const newEdge: IEdge = {start: e.end, end: newEnd, immaterial: e.immaterial, material: {color: [...e.material.color]}};
+                const newEdge: IEdge = loadEdge({start: e.end, end: newEnd, immaterial: e.immaterial, material: {color: [...e.material.color]}});
                 return acc.concat(e, newEdge);
             }
             return acc.concat(e);

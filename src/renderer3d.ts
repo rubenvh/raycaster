@@ -14,6 +14,7 @@ import { isSelectedEdge } from './geometry/selectable';
 export type WallProps = {
     edgeId: Guid,
     height: number, 
+    edgeLuminosity: number,
     material: IMaterial,
     intersection: Vector,
     origin: Vector,
@@ -27,7 +28,7 @@ export class Renderer3d {
     private context: CanvasRenderingContext2D;
     private width: number;
     private height: number;        
-    private resolution = 640;
+    private resolution = 1280;
     private horizonDistance = 300;
     
     constructor(private world: World, private canvas: HTMLCanvasElement, private textureLibrary: TextureLibrary) {
@@ -45,14 +46,14 @@ export class Renderer3d {
         const edgeId = hit.edge && hit.edge.id || Guid.parse(Guid.EMPTY);
 
         return ({edgeId, height, 
-            material: hit.edge && {...hit.edge.material, luminosity: determineLight(hit)},
+            edgeLuminosity: hit.edge?.luminosity || 0,
+            material: hit.edge?.material,
             rowRange: [startRow, endRow],
             colRange: [this.mapToColumn(rayIndex), this.mapToColumn(rayIndex+1)],
             intersection: hit.intersection,
             origin: hit.edge?.start.vector,
             distance: hit.distance,
-            length: hit.edge && distance(hit.edge.start.vector, hit.edge.end.vector),
-            
+            length: hit.edge?.length,            
         });
     };
 
@@ -61,6 +62,7 @@ export class Renderer3d {
         const startCasting = performance.now();
         this.world.rays = raycaster.castRays(makeRays(this.resolution, this.world.camera), this.world.geometry, raycaster.passTroughTranslucentEdges);
         // construct a z-index buffer: 
+        const startZBuffering = performance.now();
         const zbuffer = this.constructZBuffer(this.world.rays);        
 
         // draw floor + sky
@@ -74,9 +76,10 @@ export class Renderer3d {
 
         const total = endDrawing - startCasting;
         const drawing = ((endDrawing - startDrawing) / total).toFixed(2);
-        const casting = ((startDrawing - startCasting) / total).toFixed(2);
+        const casting = ((startZBuffering - startCasting) / total).toFixed(2);
+        const zBuffering = ((startDrawing - startZBuffering ) / total).toFixed(2);
         this.context.fillStyle = "rgb(255,255,255)";
-        this.context.fillText(`C=${casting}, D=${drawing}`, 10, this.canvas.height - 20);
+        this.context.fillText(`C=${casting}, Z=${zBuffering}, D=${drawing}`, 10, this.canvas.height - 20);
     };
 
     /**
@@ -146,7 +149,7 @@ export class Renderer3d {
 
         const texture = this.textureLibrary.getTexture(start.material);
         if (!texture) {
-            drawTrapezoid(this.context, getTrapezoid(start, end), getColor(start.material));
+            drawTrapezoid(this.context, getTrapezoid(start, end), getColor(start.material, this.getLumen(start)));
         } else {            
             this.drawTexture(texture, wallProps);            
         }  
@@ -166,7 +169,7 @@ export class Renderer3d {
         // draw texture
         texture.drawTexture(this.context, wallProps);        
         // apply luminosity to texture
-        drawTrapezoid(this.context, getTrapezoid(start, end), `rgba(0,0,0,${1-start.material.luminosity}`);
+        drawTrapezoid(this.context, getTrapezoid(start, end), `rgba(0,0,0,${1-this.getLumen(start)}`);
     }   
     
     private applyFading = (wallProps: WallProps[]) => {
@@ -174,13 +177,14 @@ export class Renderer3d {
         const end = wallProps[0];
         const trapezoid = getTrapezoid(start, end);
         const shade = this.world.config?.fadeOn;
-        var gradient = this.context.createLinearGradient(trapezoid[0][0], 0, trapezoid[3][0], 0);
-        wallProps.reverse()
-        .forEach((w, i, a) => {
-           const fadeFactor = Math.min(this.horizonDistance, w.distance)/(this.horizonDistance+10);
-           const fadeColor = `rgba(${shade},${shade},${shade},${fadeFactor.toFixed(2)})`;
-           gradient.addColorStop(i/a.length, fadeColor);
-        })
+        var gradient = this.context.createLinearGradient(trapezoid[0][0], 0, trapezoid[3][0], 0);        
+        const addGradient = (step: number, w: WallProps) => {            
+            const fadeFactor = Math.min(this.horizonDistance, w.distance)/(this.horizonDistance+10);
+            const fadeColor = `rgba(${shade},${shade},${shade},${fadeFactor.toFixed(2)})`;
+            gradient.addColorStop(step, fadeColor);            
+        }
+        addGradient(0, start);
+        addGradient(1, end);
         drawTrapezoid(this.context, trapezoid, gradient);
     }
 
@@ -192,7 +196,7 @@ export class Renderer3d {
             const texts = [
                 `edgeId: ${JSON.stringify(start.edgeId)}`,
                 `distance: ${start.distance.toFixed(2)}`,
-                `lumen: ${start.material.luminosity.toFixed(2)}`,
+                `lumen: ${this.getLumen(start).toFixed(2)}`,
                 `length: ${start.length.toFixed(2)}`
             ];
             const widest = texts.map(_ => this.context.measureText(_)).reduce((acc, m) => Math.max(acc, m.width), 0);
@@ -201,10 +205,11 @@ export class Renderer3d {
                             start.rowRange[0] + (start.rowRange[1]-start.rowRange[0])/2];
 
             this.context.fillStyle = 'rgb(0,0,0)';                        
-            texts.forEach((t, i) => this.context.fillText(t, center[0], (i-(texts.length/2))*10+center[1]));
-            
+            texts.forEach((t, i) => this.context.fillText(t, center[0], (i-(texts.length/2))*10+center[1]));            
         }
     }    
+
+    private getLumen = (wall: WallProps) => wall.material.luminosity || wall.edgeLuminosity;
 }
 
 const getTrapezoid = (start: WallProps, end: WallProps): [Vector, Vector, Vector, Vector] => ([    
@@ -213,23 +218,10 @@ const getTrapezoid = (start: WallProps, end: WallProps): [Vector, Vector, Vector
     [end.colRange[0], end.rowRange[1]+0.5],
     [end.colRange[0], end.rowRange[0]-0.5]]);
 
-
-
-
-const getColor = (material: IMaterial): string => {    
+const getColor = (material: IMaterial, lumen: number): string => {        
     if (material?.color) {        
         const color = material.color;
-        return `rgba(${color[0] * material.luminosity},${color[1] * material.luminosity},${color[2] * material.luminosity},${color[3]})`;
+        return `rgba(${color[0] * lumen},${color[1] * lumen},${color[2] * lumen},${color[3]})`;
     }
-    return `rgb(0,0,${material.luminosity*155 + 100})`;
-};
-
-export const determineLight = (hit: RayHit) => {        
-    let percentage = 0.4;
-    if (hit?.edge) {
-        let m = Math.abs(slope([hit.edge.start.vector, hit.edge.end.vector]));            
-        if (!isFinite(m)) return 1;        
-        percentage += (m / (1 + m)) * (1 - percentage);
-    }
-    return percentage;
+    return `rgb(0,0,${lumen*155 + 100})`;
 };

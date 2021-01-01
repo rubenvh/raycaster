@@ -1,5 +1,5 @@
 import { saveFile } from './dialogs';
-import { createGeometry, loadGeometry } from './../geometry/geometry';
+import { createGeometry, loadGeometry, storeGeometry } from './../geometry/geometry';
 import { ipcRenderer, remote } from "electron";
 import { globalState, World } from "../stateModel";
 import * as fs from "fs";
@@ -51,7 +51,7 @@ export class WorldLoader {
     private saveFile = (path: string) => {    
         const data = JSON.stringify({
             camera: this.world.camera, 
-            geometry: this.world.geometry,
+            geometry: storeGeometry(this.world.geometry),
             config: this.world.config });
         fs.writeFile(path, data, {}, () => {
             localStorage.setItem('loadedFile', path);

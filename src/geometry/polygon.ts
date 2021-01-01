@@ -1,13 +1,17 @@
 import { midpoint } from "../math/lineSegment";
 import { maximumComponents, minimumComponents, Vector } from "../math/vector";
-import { createEdges, IEdge } from "./edge";
+import { createEdges, IEdge, IStoredEdge, loadEdge, storeEdge } from "./edge";
 import { giveIdentity, IEntity } from "./entity";
 import { areClose, areEqual, IVertex } from "./vertex";
 
-export type IStoredPolygon = IEntity & { edges: IEdge[]};
-export type IPolygon = IStoredPolygon & { vertices: IVertex[], boundingBox: BoundingBox, edgeCount: number };
+export type IStoredPolygon = IEntity & { edges: IStoredEdge[]};
+export type IPolygon = IEntity & { edges: IEdge[], vertices: IVertex[], boundingBox: BoundingBox, edgeCount: number };
 export type BoundingBox = [Vector, Vector];
 
+export const storePolygon = (p: IPolygon): IStoredPolygon => ({
+    id: p.id,
+    edges: p.edges.map(storeEdge),
+});
 export const loadPolygon = (polygon: IStoredPolygon): IPolygon => {
     let [min, max]: BoundingBox = [[Infinity, Infinity], [-Infinity, -Infinity]];
     const result = {
@@ -26,7 +30,7 @@ export const loadPolygon = (polygon: IStoredPolygon): IPolygon => {
                 e.end = giveIdentity(e.end);
             }
             
-            let edge = giveIdentity(e);            
+            let edge = giveIdentity(loadEdge(e));            
             return ({ 
                 first: acc.first || edge, 
                 previous: edge, 

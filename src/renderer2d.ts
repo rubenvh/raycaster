@@ -9,7 +9,7 @@ import { World } from './stateModel';
 export class Renderer2d {
     private context: CanvasRenderingContext2D;
     private background: HTMLCanvasElement;
-
+    
     constructor(private world: World, private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');
         this.background = document.createElement('canvas') as HTMLCanvasElement;
