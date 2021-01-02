@@ -2,10 +2,10 @@ import * as vector from './math/vector';
 import { ILine, ILineSegment, lineAngle } from "./math/lineSegment";
 import { castRays, passThroughImmaterialEdges } from './raycaster';
 import { IGeometry } from './geometry/geometry';
-import { IRay } from './geometry/collision';
+import { IRay, makeRay } from './geometry/collision';
 
 export type ICameraData = { position: vector.Vector, direction: vector.Vector, plane?: vector.Vector};
-export type ICamera = ICameraData & { screen: ILineSegment};
+export type ICamera = ICameraData & { screen: ILineSegment, midline: ILineSegment};
 
 
 const makeScreen = (data: ICameraData): ILineSegment => {
@@ -14,7 +14,8 @@ const makeScreen = (data: ICameraData): ILineSegment => {
     return [vector.subtract(mid, plane), vector.add(mid, plane)];
 };
 export const makeCamera = (data: ICameraData): ICamera => ({...data,    
-    screen: makeScreen(data)});
+    screen: makeScreen(data),
+    midline: [data.position, vector.add(data.position, data.direction)]});
 
 export const adaptAngle = (direction: 0|1|-1, camera: ICamera): ICamera => {
     let delta = vector.scale(direction*0.05, camera.plane); // TODO: magic constant
@@ -77,26 +78,25 @@ const constrainedMove = (direction: 1|-1, cam: ICamera,
     // TODO: recursion => prevent call stack errors
     return constrainedMove(direction, cam,                 
         (_r, c)=> changeLocation(target, c), // move function: change location to calculated target
-        (_d, c) => ({angle: 0, line: [c.position, vector.add(c.position, target)]}),// ray creation function: cast ray from camera position to new target
+        (_d, c) => makeRay(c.position, target),// ray creation function: cast ray from camera position to new target
         geometry);     
 }
 
 export const makeRays = (resolution: number, camera: ICamera): IRay[] => {    
-    const result = [];
-    const m: ILineSegment = [camera.position, vector.add(camera.position, camera.direction)];
+    const result = [];    
     for(let x: number = 0; x < resolution; x++)
     {
         let factor = 2 * x / resolution - 1;
         let rayDir = vector.add(camera.direction, vector.scale(factor, camera.plane));
         let rayLine = [camera.position, vector.add(camera.position, rayDir)] as ILine;
-        result.push({ line: rayLine, angle: lineAngle(m, rayLine) });
+        result.push(makeRay(camera.position, rayDir, lineAngle(camera.midline, rayLine)));
     }
     return result;    
 };
 
 const makeDirectionRay = (direction: 1|-1, camera: ICamera): IRay => direction === 1 
-    ? ({line: [camera.position, vector.add(camera.position, camera.direction)], angle: 0}) 
-    : ({line: [camera.position, vector.subtract(camera.position, camera.direction)], angle: 0});
+    ? makeRay(camera.position, camera.direction)
+    : makeRay(camera.position, vector.scale(-1, camera.direction));
 const makeStrafeRay = (direction: 1|-1, camera: ICamera): IRay => direction === 1 
-    ? ({line: [camera.position, vector.subtract(camera.position, camera.plane)], angle: 0})
-    : ({line: [camera.position, vector.add(camera.position, camera.plane)], angle: 0});
+    ? makeRay(camera.position, vector.scale(-1, camera.plane))
+    : makeRay(camera.position, camera.plane);

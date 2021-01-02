@@ -55,21 +55,6 @@ export const lineIntersect = (a: ILine, b: ILine): Vector => {
     return [(B2 * C1 - B1 * C2) / denominator, (A1 * C2 - A2 * C1) / denominator];
 };
 
-export const intersectRay = (halfLine: ILine, s: ILineSegment): Vector => {
-  let a = s[0];
-  let b = s[1];
-  let o = halfLine[0];  
-  let v1 = subtract(o, a);
-  let v2 = subtract(b, a);
-  let rd = normalize(subtract(halfLine[1], o));     
-  let v3: Vector = [-rd[1], rd[0]];
-  let t1 = cross(v2, v1)/dot(v2, v3);
-  let t2 = dot(v1, v3)/dot(v2, v3);
-  
-  if (t1 >=  0 && t2 >= 0 && t2 <= 1) return add(o, scale(t1, rd));
-  return null;
-}
-
 export const distanceTo = (p: Vector, s: ILineSegment): number => {
   let v = s[0], w = s[1];
   let l2 = normSqr(subtract(v, w));

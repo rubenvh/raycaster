@@ -60,7 +60,7 @@ export class WorldLoader {
     }
 
     private loadWorld = (w: any) => {
-        this.world.camera = w.camera || WorldLoader.initWorld().camera;
+        this.world.camera = w.camera ? makeCamera(w.camera) : WorldLoader.initWorld().camera;
         this.world.geometry = loadGeometry(w.geometry || []);
         this.world.config = w.config || {fadeOn: null};
         this.world.rays.length = this.world.selection.length = 0;
