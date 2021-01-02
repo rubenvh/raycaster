@@ -1,4 +1,6 @@
 - add linter
+- refactor IRay => origin + direction vector (to improve bounding box collision tests)
+* reduce intersection tests by testing bounding box first (detect intersection only, intersection point not needed)
 - display stats in statusbar
 - toggle texture key (ctrl-T) should open popup with scrollable popup of all textures
 - override dynamic lightning strategy by explicitly setting luminosity and fading parameters on edges
@@ -7,7 +9,6 @@
 - display selected item's properties in UI (polygon, edge or vertex) (or intersection when multiple items are selected?)
 - modify selected item's JSON and save it (or intersection when multiple items are selected)
 - disable menu items when not appropriate
-* reduce intersection tests by testing bounding box first (detect intersection only, intersection point not needed)
 - highlight edges that are being tested for intersection
 - implement scrolling in 2d view
 - implement zooming in 2d view (+ impact on distance threshold for selection?)

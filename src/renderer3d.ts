@@ -195,8 +195,9 @@ export class Renderer3d {
                        
             const texts = [
                 `edgeId: ${JSON.stringify(start.edgeId)}`,
-                `distance: ${start.distance.toFixed(2)}`,
+                `distance: ${start.distance.toFixed(2)}`,                
                 `lumen: ${this.getLumen(start).toFixed(2)}`,
+                `translucency: ${start.material.color[3].toFixed(2)}`,
                 `length: ${start.length.toFixed(2)}`
             ];
             const widest = texts.map(_ => this.context.measureText(_)).reduce((acc, m) => Math.max(acc, m.width), 0);
