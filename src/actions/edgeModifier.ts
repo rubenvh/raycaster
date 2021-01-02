@@ -18,9 +18,9 @@ export class EdgeModifier implements IActionHandler {
         return this.world.selection.reduce((acc, s) => 
             acc.set(s.polygon.id, Array.from(new Set<IEdge>([...(acc.get(s.polygon.id)||[]).concat(
             isEdge(s)
-            ? s.edge
-            : isPolygon(s) ? s.polygon.edges 
-            : [])]))), new Map());
+                ? [s.edge]
+                : isPolygon(s) ? s.polygon.edges 
+                : [])]))), new Map());
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
@@ -35,10 +35,10 @@ export class EdgeModifier implements IActionHandler {
     isActive = (): boolean => true;
     
     private adaptEdges = (transformer: (_: IEdge) => void) => {
-        this.world.geometry = Array.from(this.selectedEdges.entries()).reduce((_, [poligonId, edges]) => transformEdges(edges, poligonId, _ => {
+        this.world.geometry = Array.from(this.selectedEdges.entries()).reduce((geo, [poligonId, edges]) => transformEdges(edges, poligonId, _ => {
             transformer(_);
             return _;
-        }, this.world.geometry), {} as IGeometry);
+        }, geo), this.world.geometry);
         undoService.push(this.world.geometry);
     }
     private toggleImmateriality = () => this.adaptEdges(_ => _.immaterial = !_.immaterial);
