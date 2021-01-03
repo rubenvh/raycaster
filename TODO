@@ -1,6 +1,4 @@
 - add linter
-- refactor IRay => origin + direction vector (to improve bounding box collision tests)
-* reduce intersection tests by testing bounding box first (detect intersection only, intersection point not needed)
 - display stats in statusbar
 - toggle texture key (ctrl-T) should open popup with scrollable popup of all textures
 - override dynamic lightning strategy by explicitly setting luminosity and fading parameters on edges

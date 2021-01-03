@@ -12,24 +12,44 @@ export type EdgeCollision = BaseCollision & {edge: IEdge, kind: "edge" };
 export type RayHit = {polygon: IPolygon, edge: IEdge, intersection: Vector, ray: IRay, distance: number};
 export type IntersectionStats = {percentage: number, amount: number };
 export type RayCollisions = {hits: RayHit[], stats: IntersectionStats};
-export type IRay = {position: Vector, direction: Vector, dn: Vector, dperp: Vector, line: ILine, angle: number, }; 
+export type IRay = {position: Vector, direction: Vector, dn: Vector, dperp: Vector, line: ILine, ood: Vector, angle: number, }; 
 
 export const makeRay = (p: Vector, d: Vector, angle: number = 0): IRay => {
     const line: ILine = [p, add(p, d)];
     const dn = normalize(d);    
     return ({ position: p, direction: d, 
         dn, 
-        dperp: [-dn[1], dn[0]],       
+        dperp: [-dn[1], dn[0]],     
+        ood: [1/d[0], 1/d[1]],
         line, 
         angle});
 }
-export const hasIntersect = (ray: IRay, box: BoundingBox) => {
-    const [x1, y1, x2, y2] = [box[0][0], box[0][1], box[1][0], box[1][1]];
-    // TODO: improve ray/AABB intersection tests (we don't need the actual intersection, existence is enough)
-    return intersectRay(ray, [[x1, y1], [x2, y1]])
-        || intersectRay(ray, [[x2, y1], [x2, y2]])
-        || intersectRay(ray, [[x2, y2], [x1, y2]])
-        || intersectRay(ray, [[x1, y2], [x1, y1]]);
+export const hasIntersect = (ray: IRay, box: BoundingBox): boolean => {
+    const p = ray.position,
+          d = ray.direction,
+          a = box;
+    let tmin = 0.0;
+    let tmax = Number.MAX_VALUE;
+    for (let i = 0; i < 2; i++) {
+        if (Math.abs(d[i]) < Number.EPSILON) {
+            if (p[i] < a[0][i] || p[i] > a[1][i]) return false;
+        } else {
+            const ood = ray.ood[i];
+            let t1 = (a[0][i] - p[i]) * ood;
+            let t2 = (a[1][i] - p[i]) * ood;
+            if (t1 > t2) { 
+                const temp = t1;
+                t1 = t2;
+                t2 = temp;
+            }
+            tmin = Math.max(tmin, t1);
+            tmax = Math.min(tmax, t2);
+            if (tmin > tmax) return false;
+        }
+    }
+    // intersection = q
+    // const q = add(p, scale(tmin, d));
+    return true;
 }
 
 export const detectCollisionAt = (vector: Vector, polygons: IPolygon[]): VertexCollision|EdgeCollision => {
@@ -59,7 +79,7 @@ export const detectCollisions = (ray: IRay, polygons: IPolygon[]): RayCollisions
     // ...
     for (const polygon of polygons){
         totalEdges += polygon.edgeCount;
-        if (!hasIntersect(ray, polygon.boundingBox)) continue;
+        if (polygon.edgeCount > 4 && !hasIntersect(ray, polygon.boundingBox)) continue;
         for (const edge of polygon.edges) {            
             intersectionCalculations += 1;
             const intersection = intersectRay(ray, edge.segment);
