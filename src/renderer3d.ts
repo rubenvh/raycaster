@@ -50,7 +50,7 @@ export class Renderer3d {
             material: hit.edge?.material,
             rowRange: [startRow, endRow],
             colRange: [this.mapToColumn(rayIndex), this.mapToColumn(rayIndex+1)],
-            intersection: hit.intersection,
+            intersection: hit.intersection?.point,
             origin: hit.edge?.start.vector,
             distance: hit.distance,
             length: hit.edge?.length,            

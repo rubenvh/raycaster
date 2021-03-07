@@ -9,7 +9,9 @@ export type Collision = VertexCollision | EdgeCollision;
 type BaseCollision = {polygon: IPolygon, distance: number, kind: string};
 export type VertexCollision = BaseCollision & { vertex: IVertex, kind: "vertex"};
 export type EdgeCollision = BaseCollision & {edge: IEdge, kind: "edge" };
-export type RayHit = {polygon: IPolygon, edge: IEdge, intersection: Vector, ray: IRay, distance: number};
+export type IntersectionFace = "interior" | "exterior";
+export type Intersection = {point: Vector, face: IntersectionFace};
+export type RayHit = {polygon: IPolygon, edge: IEdge, intersection: Intersection, ray: IRay, distance: number};
 export type IntersectionStats = {percentage: number, amount: number };
 export type RayCollisions = {hits: RayHit[], stats: IntersectionStats};
 export type IRay = {position: Vector, direction: Vector, dn: Vector, dperp: Vector, line: ILine, ood: Vector, angle: number, }; 
@@ -82,10 +84,10 @@ export const detectCollisions = (ray: IRay, polygons: IPolygon[]): RayCollisions
         if (polygon.edgeCount > 4 && !hasIntersect(ray, polygon.boundingBox)) continue;
         for (const edge of polygon.edges) {            
             intersectionCalculations += 1;
-            const intersection = intersectRay(ray, edge.segment);
+            const intersection = intersectRay(ray, edge.segment);                                    
             if (intersection) {
                 result.hits.push({polygon, ray, edge, intersection,
-                    distance: distance(intersection, ray.line[0]) * Math.cos(ray.angle)
+                    distance: distance(intersection.point, ray.line[0]) * Math.cos(ray.angle)
                 })
             }
         }
@@ -95,13 +97,19 @@ export const detectCollisions = (ray: IRay, polygons: IPolygon[]): RayCollisions
     return result;
 }
 
-export const intersectRay = (ray: IRay, s: ILineSegment): Vector => {
+export const intersectRay = (ray: IRay, s: ILineSegment): Intersection => {
     let a = s[0];
     let b = s[1];    
     let v1 = subtract(ray.position, a);
     let v2 = subtract(b, a);    
-    let t1 = cross(v2, v1)/dot(v2, ray.dperp);
-    let t2 = dot(v1, ray.dperp)/dot(v2, ray.dperp);    
-    if (t1 >=  0 && t2 >= 0 && t2 <= 1) return add(ray.position, scale(t1, ray.dn));
+    let c = cross(v2, v1);    
+    let d_v2 = dot(v2, ray.dperp);
+    let d_v1 = dot(v1, ray.dperp);
+    let t1 = c / d_v2;
+    let t2 = d_v1 / d_v2;
+    if (t1 >=  0 && t2 >= 0 && t2 <= 1) return ({
+        point: add(ray.position, scale(t1, ray.dn)),
+        face: c < 0 ? 'interior' : 'exterior' // TODO: enum
+    });
     return null;
   }

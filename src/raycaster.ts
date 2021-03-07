@@ -13,6 +13,7 @@ export const passThroughImmaterialEdges: (hits: RayHit[])=>RayHit[] = hits => hi
 export const passTroughTranslucentEdges: (hits: RayHit[])=>RayHit[] = hits => {
     // return all translucent edges && the first solid edge closest to the camera
     let i = 0;
+    // TODO: pass hits[i++] instead of edge: this should be determined by edge material at intersected face (interior material vs exterior material)
     while (i < hits.length && isTranslucentEdge(hits[i++].edge));            
     return hits.slice(0, i);
 };

@@ -1,36 +1,47 @@
-import { ILineSegment, distanceTo, projectOn, ILine } from './lineSegment';
+import { IntersectionFace } from './../geometry/collision';
+import { ILineSegment, distanceTo, projectOn } from './lineSegment';
 import { Vector } from '../math/vector';
 import { intersectRay, IRay, makeRay } from '../geometry/collision';
 
 describe('line segment tests', () => {
     describe('ray intersection tests', () => {  
         let ray: IRay;
-        const test = (s: ILineSegment, expected: Vector)=> {
+        const test = (s: ILineSegment, expected: Vector, face?: IntersectionFace)=> {
             let actual = intersectRay(ray, s);            
-            expect(actual).toEqual(expected);
+            if (expected) expect(actual?.point).toEqual(expected);
+            else expect(actual).toBeNull();
+            if (face) expect(actual?.face).toEqual(face);
         };
 
         describe('horizontal up ray', () => {
             beforeEach(() => {
                 ray = makeRay([3,2],[0,3]);
             });
-            it('test1', () => test([[1,6],[5,6]], [3,6]));
-            it('test2', () => test([[3,3],[5,6]], [3,3]));
-            it('test3', () => test([[2,4],[4,6]], [3,5]));
-            it('test4', () => test([[4,4],[8,5]], null));
-            it('test5', () => test([[-3,3],[1,4]], null));
-            it('test5', () => test([[1,1],[5,1]], null));
+            it('test1',  () => test([[1,6],[5,6]], [3,6], 'interior'));
+            it('test1b', () => test([[5,6],[1,6]], [3,6], 'exterior'));
+            it('test2',  () => test([[3,3],[5,6]], [3,3], 'interior'));
+            it('test2b', () => test([[5,6],[3,3]], [3,3], 'exterior'));
+            it('test3',  () => test([[2,4],[4,6]], [3,5], 'interior'));
+            it('test3b', () => test([[4,6],[2,4]], [3,5], 'exterior'));
+            it('test4',  () => test([[4,4],[8,5]], null));
+            it('test5',  () => test([[-3,3],[1,4]], null));
+            it('test5',  () => test([[1,1],[5,1]], null));
         });      
         describe('horizontal down ray', () => {
             beforeEach(() => {
                 ray = makeRay([3,5],[0,-3]);
             });
-            it('test1', () => test([[1,6],[5,6]], null));
-            it('test2', () => test([[1,1],[5,1]], [3,1]));
-            // it('test3', () => test([[2,4],[4,6]], [3,5]));
-            // it('test4', () => test([[4,4],[8,5]], null));
-            // it('test5', () => test([[-3,3],[1,4]], null));
-        });      
+            it('test1',  () => test([[1,6],[5,6]], null));
+            it('test2',  () => test([[1,1],[5,1]], [3,1], 'exterior'));
+            it('test2b', () => test([[5,1],[1,1]], [3,1], 'interior'));
+        });   
+        describe('tests', () => {
+            beforeEach(() => {
+                ray = makeRay([0,0], [1,1]);                
+            })
+            it('test1', () => test([[0,2],[2,0]], [1,1], 'interior'));
+            it('test1', () => test([[2,0],[0,2]], [1,1], 'exterior'));
+        });
         
     });
 
