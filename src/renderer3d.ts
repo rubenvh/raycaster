@@ -47,6 +47,7 @@ export class Renderer3d {
 
         return ({edgeId, height, 
             edgeLuminosity: hit.edge?.luminosity || 0,
+            // TODO: material should be selected based on intersected face: hit.intersection.face
             material: hit.edge?.material,
             rowRange: [startRow, endRow],
             colRange: [this.mapToColumn(rayIndex), this.mapToColumn(rayIndex+1)],
@@ -83,9 +84,10 @@ export class Renderer3d {
     };
 
     /**
-     * This function loops the rays iteratively and constructs wall properties for all the closest ray hits and groups them by edge.
-     * It then continues with the 2nd closest and so on until we reach the farthest ray hits.
-     * Grouping by edge allows us to draw a wall in 1 go completely instead of per column. 
+     * This function loops the rays iteratively and constructs wall properties for all the closest ray
+     * hits and groups them by edge. It then continues with the 2nd closest and so on until we reach 
+     * the farthest ray hits. Grouping by edge allows us to draw a wall in 1 go completely instead 
+     * of per column. 
      */
     private constructZBuffer = (rays: raycaster.CastedRay[]): ZBuffer => {
         const zbuffer: ZBuffer = [];        

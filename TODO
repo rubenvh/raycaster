@@ -17,5 +17,6 @@
 - implement sprites
 - implement BSP or quadtree structure to further reduce intersection tests
 - collision detection for moving camera should include distance (only detect collisions with geometry close to camera position)
+
 gave up (deemed unimportant) :)
 - fix ts code map (for debugging in dev tools)

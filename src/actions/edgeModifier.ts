@@ -47,6 +47,7 @@ export class EdgeModifier implements IActionHandler {
     private nextTexture = () => this.changeTexture(this.texLib.next);
     private changeTexture = (dir: (ITextureReference)=>ITextureReference) => {
         this.adaptEdges(_ => {
+            // TODO: are we adapting exterior/interior (or both) material => depend on specific key modifier            
             if (!_.material?.texture) { return; }
             _.material.texture = dir(_.material.texture);
         });};

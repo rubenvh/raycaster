@@ -8,3 +8,4 @@ export const cloneMaterial = (m: IMaterial): IMaterial => m == null ? null : ({
     color: [...m.color], 
     texture: m.texture != null ? {id: m.texture.id, index: m.texture.index} : null,
     luminosity: m.luminosity});
+

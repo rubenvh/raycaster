@@ -49,8 +49,8 @@ export const hasIntersect = (ray: IRay, box: BoundingBox): boolean => {
             if (tmin > tmax) return false;
         }
     }
-    // intersection = q
-    // const q = add(p, scale(tmin, d));
+    // The intersection if needed could be calculated as follows:    
+    // const intersection = add(p, scale(tmin, d));
     return true;
 }
 
