@@ -1,12 +1,12 @@
-import { IntersectionFace } from './../geometry/collision';
 import { ILineSegment, distanceTo, projectOn } from './lineSegment';
 import { Vector } from '../math/vector';
 import { intersectRay, IRay, makeRay } from '../geometry/collision';
+import { Face } from '../geometry/properties';
 
 describe('line segment tests', () => {
     describe('ray intersection tests', () => {  
         let ray: IRay;
-        const test = (s: ILineSegment, expected: Vector, face?: IntersectionFace)=> {
+        const test = (s: ILineSegment, expected: Vector, face?: Face)=> {
             let actual = intersectRay(ray, s);            
             if (expected) expect(actual?.point).toEqual(expected);
             else expect(actual).toBeNull();
@@ -17,12 +17,12 @@ describe('line segment tests', () => {
             beforeEach(() => {
                 ray = makeRay([3,2],[0,3]);
             });
-            it('test1',  () => test([[1,6],[5,6]], [3,6], 'interior'));
-            it('test1b', () => test([[5,6],[1,6]], [3,6], 'exterior'));
-            it('test2',  () => test([[3,3],[5,6]], [3,3], 'interior'));
-            it('test2b', () => test([[5,6],[3,3]], [3,3], 'exterior'));
-            it('test3',  () => test([[2,4],[4,6]], [3,5], 'interior'));
-            it('test3b', () => test([[4,6],[2,4]], [3,5], 'exterior'));
+            it('test1',  () => test([[1,6],[5,6]], [3,6], Face.interior));
+            it('test1b', () => test([[5,6],[1,6]], [3,6], Face.exterior));
+            it('test2',  () => test([[3,3],[5,6]], [3,3], Face.interior));
+            it('test2b', () => test([[5,6],[3,3]], [3,3], Face.exterior));
+            it('test3',  () => test([[2,4],[4,6]], [3,5], Face.interior));
+            it('test3b', () => test([[4,6],[2,4]], [3,5], Face.exterior));
             it('test4',  () => test([[4,4],[8,5]], null));
             it('test5',  () => test([[-3,3],[1,4]], null));
             it('test5',  () => test([[1,1],[5,1]], null));
@@ -32,15 +32,15 @@ describe('line segment tests', () => {
                 ray = makeRay([3,5],[0,-3]);
             });
             it('test1',  () => test([[1,6],[5,6]], null));
-            it('test2',  () => test([[1,1],[5,1]], [3,1], 'exterior'));
-            it('test2b', () => test([[5,1],[1,1]], [3,1], 'interior'));
+            it('test2',  () => test([[1,1],[5,1]], [3,1], Face.exterior));
+            it('test2b', () => test([[5,1],[1,1]], [3,1], Face.interior));
         });   
         describe('tests', () => {
             beforeEach(() => {
                 ray = makeRay([0,0], [1,1]);                
             })
-            it('test1', () => test([[0,2],[2,0]], [1,1], 'interior'));
-            it('test1', () => test([[2,0],[0,2]], [1,1], 'exterior'));
+            it('test1', () => test([[0,2],[2,0]], [1,1], Face.interior));
+            it('test1', () => test([[2,0],[0,2]], [1,1], Face.exterior));
         });
         
     });

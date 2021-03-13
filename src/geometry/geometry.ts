@@ -51,7 +51,7 @@ export const splitEdge = (cut: vector.Vector, edge: IEdge, poligon: IPolygon, ge
             if (e.id === edge.id) {
                 const newEnd = e.end;
                 e.end = makeVertex(cut);
-                const newEdge: IEdge = loadEdge({start: e.end, end: newEnd, immaterial: e.immaterial, material: {color: [...e.material.color]}});
+                const newEdge: IEdge = loadEdge({start: e.end, end: newEnd, immaterial: e.immaterial, material: cloneMaterial(e.material)});
                 return acc.concat(e, newEdge);
             }
             return acc.concat(e);

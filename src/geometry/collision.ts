@@ -4,13 +4,13 @@ import { add, cross, dot, normalize, scale, subtract, Vector } from "../math/vec
 import { IEdge } from "./edge";
 import { BoundingBox, IPolygon } from "./polygon";
 import { distance, IVertex } from "./vertex";
+import { Face, getMaterial, IMaterial } from './properties';
 
 export type Collision = VertexCollision | EdgeCollision;
 type BaseCollision = {polygon: IPolygon, distance: number, kind: string};
 export type VertexCollision = BaseCollision & { vertex: IVertex, kind: "vertex"};
 export type EdgeCollision = BaseCollision & {edge: IEdge, kind: "edge" };
-export type IntersectionFace = "interior" | "exterior";
-export type Intersection = {point: Vector, face: IntersectionFace};
+export type Intersection = {point: Vector, face: Face};
 export type RayHit = {polygon: IPolygon, edge: IEdge, intersection: Intersection, ray: IRay, distance: number};
 export type IntersectionStats = {percentage: number, amount: number };
 export type RayCollisions = {hits: RayHit[], stats: IntersectionStats};
@@ -109,7 +109,9 @@ export const intersectRay = (ray: IRay, s: ILineSegment): Intersection => {
     let t2 = d_v1 / d_v2;
     if (t1 >=  0 && t2 >= 0 && t2 <= 1) return ({
         point: add(ray.position, scale(t1, ray.dn)),
-        face: c < 0 ? 'interior' : 'exterior' // TODO: enum
+        face: c < 0 ? Face.interior : Face.exterior
     });
     return null;
   }
+
+  export const lookupMaterialFor = (hit: RayHit): IMaterial => hit.intersection && getMaterial(hit.intersection.face, hit.edge?.material);

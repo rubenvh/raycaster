@@ -1,10 +1,10 @@
 import { ILineSegment, slope } from "../math/lineSegment";
 import { Vector } from "../math/vector";
 import { giveIdentity, IEntity } from "./entity";
-import { cloneMaterial, Color, IMaterial } from "./properties";
+import { cloneMaterial, Color, IDirectedMaterial } from "./properties";
 import { areClose, cloneVertex, distance, duplicateVertex, IVertex, makeVertex } from "./vertex";
 
-type EdgeBase = IEntity & { start: IVertex, end: IVertex, material?: IMaterial, immaterial?: boolean};
+type EdgeBase = IEntity & { start: IVertex, end: IVertex, material?: IDirectedMaterial, immaterial?: boolean};
 export type IEdge = EdgeBase & { length: number, slope: number, luminosity: number, segment: ILineSegment};
 export type IStoredEdge = EdgeBase;
 export const storeEdge = (e: IEdge): IStoredEdge => ({
@@ -78,7 +78,7 @@ export const createEdges = (vectors: Vector[]): IEdge[] =>  {
         .edges;    
 }
 
-export const determineLuminosity = (slope: number) => {        
+export const determineLuminosity = (slope: number): number => {        
     let percentage = 0.4;
     let m = Math.abs(slope || 0);
     if (!isFinite(m)) return 1;        

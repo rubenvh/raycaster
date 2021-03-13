@@ -1,5 +1,6 @@
-import { IntersectionFace, IntersectionStats, IRay, RayHit } from "./geometry/collision";
+import { IntersectionStats, IRay, lookupMaterialFor, RayHit } from "./geometry/collision";
 import { detectCollisions, IGeometry } from "./geometry/geometry";
+import { isTranslucent } from "./geometry/properties";
 
 
 export type CastedRay = {hits: RayHit[], stats: IntersectionStats};
@@ -41,8 +42,5 @@ export const castRays = (rays: IRay[], geometry: IGeometry, hitFilter: (hits: Ra
         });
 };
 
-// TODO: this should be determined by edge material at intersected face (interior material vs exterior material)
-const isTranslucentEdge = (hit: RayHit) => hit.edge.material?.color[3] < 1;
-
-// TODO: check if the edge has dedicated material for the intersected face orientation hit.intersection.face (interior vs exterior)
-const needsRendering = (hit: RayHit): boolean => !!hit.edge.material;
+const isTranslucentEdge = (hit: RayHit): boolean => isTranslucent(hit.intersection.face, hit.edge.material);
+const needsRendering = (hit: RayHit): boolean => !!lookupMaterialFor(hit);

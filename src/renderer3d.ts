@@ -1,13 +1,12 @@
 import { TextureLibrary } from './textures/textureLibrary';
 import { Texture } from "./textures/texture";
 import { makeRays } from './camera';
-import { slope } from './math/lineSegment';
 import * as raycaster from './raycaster';
 import { World } from './stateModel';
 import { drawRect, drawTrapezoid } from './drawing/drawing';
 import { Guid } from 'guid-typescript';
-import { RayHit } from './geometry/collision';
-import { distance, Vector } from './math/vector';
+import { lookupMaterialFor, RayHit } from './geometry/collision';
+import { Vector } from './math/vector';
 import { IMaterial } from './geometry/properties';
 import { isSelectedEdge } from './geometry/selectable';
 
@@ -46,9 +45,8 @@ export class Renderer3d {
         const edgeId = hit.edge && hit.edge.id || Guid.parse(Guid.EMPTY);
 
         return ({edgeId, height, 
-            edgeLuminosity: hit.edge?.luminosity || 0,
-            // TODO: material should be selected based on intersected face: hit.intersection.face
-            material: hit.edge?.material,
+            edgeLuminosity: hit.edge?.luminosity || 0,            
+            material: lookupMaterialFor(hit),
             rowRange: [startRow, endRow],
             colRange: [this.mapToColumn(rayIndex), this.mapToColumn(rayIndex+1)],
             intersection: hit.intersection?.point,
