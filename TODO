@@ -1,5 +1,7 @@
 - add linter
 - display stats in statusbar
+- remove material at face
+- reverse polygon (to change faces)
 - toggle texture key (ctrl-T) should open popup with scrollable popup of all textures
 - override dynamic lightning strategy by explicitly setting luminosity and fading parameters on edges
 - luminosity on edge as a function of time to implement flickering 

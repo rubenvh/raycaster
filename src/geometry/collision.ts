@@ -109,7 +109,7 @@ export const intersectRay = (ray: IRay, s: ILineSegment): Intersection => {
     let t2 = d_v1 / d_v2;
     if (t1 >=  0 && t2 >= 0 && t2 <= 1) return ({
         point: add(ray.position, scale(t1, ray.dn)),
-        face: c < 0 ? Face.interior : Face.exterior
+        face: c < 0 ? Face.exterior : Face.interior
     });
     return null;
   }
