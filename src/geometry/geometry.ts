@@ -202,3 +202,13 @@ export const splitPolygon = (v1: IVertex, v2: IVertex, poligonId: Guid, geometry
 
     return result;   
 }
+
+export const reversePolygon = (polygonIds: Guid[], geometry: IGeometry): IGeometry => {    
+    return adaptPolygons(polygonIds, geometry, p => {        
+        const edges = createEdges([p.vertices[0], ...p.vertices.slice(1).reverse()]
+                .map(v => v.vector));
+        return edges
+            .map((e, i) => ({newEdge: e, basedOn: p.edges[p.edges.length-(i+1)] }))
+            .map(_ => ({..._.newEdge, immaterial: _.basedOn?.immaterial ?? false, material: _.basedOn && cloneMaterial(_.basedOn.material) || _.newEdge.material }));;
+    });
+}

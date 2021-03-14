@@ -12,6 +12,7 @@ import { TextureLibrary } from '../textures/textureLibrary';
 import { PolygonExpander } from './polygonExpander';
 import { PolygonSplitter } from './polygonSplitter';
 import { PolygonRotator } from './polygonRotator';
+import { PolygonReverser } from './PolygonReverser';
 
 export function createGlobalActionHandlers(world: World): IActionHandler[] {
     return [
@@ -38,6 +39,7 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, world: World, te
             new PolygonCreator(canvas.getContext('2d'), t, world),
             new PolygonSplitter(world),
             new EdgeModifier(world, texLib),
+            new PolygonReverser(world),
         ]
         .map(_ => _.register(canvas));
 }

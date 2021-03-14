@@ -1,7 +1,6 @@
 - add linter
 - display stats in statusbar
 - remove material at face
-- reverse polygon (to change faces)
 - toggle texture key (ctrl-T) should open popup with scrollable popup of all textures
 - override dynamic lightning strategy by explicitly setting luminosity and fading parameters on edges
 - luminosity on edge as a function of time to implement flickering 
@@ -20,5 +19,3 @@
 - implement BSP or quadtree structure to further reduce intersection tests
 - collision detection for moving camera should include distance (only detect collisions with geometry close to camera position)
 
-gave up (deemed unimportant) :)
-- fix ts code map (for debugging in dev tools)

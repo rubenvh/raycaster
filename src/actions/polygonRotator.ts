@@ -1,12 +1,11 @@
-import { isEdge, isPolygon, SelectedPolygon } from './../geometry/selectable';
+import { isPolygon } from './../geometry/selectable';
 import { IPolygon } from "../geometry/polygon";
-import { SelectedEdge } from "../geometry/selectable";
 import { World } from "../stateModel";
 import { IActionHandler } from "./actions";
 import { ISpaceTranslator } from "./geometrySelector";
 import { ipcRenderer } from 'electron';
 import { drawSegment, drawVector } from '../drawing/drawing';
-import { IGeometry, expandPolygon, rotatePolygon } from '../geometry/geometry';
+import { IGeometry, rotatePolygon } from '../geometry/geometry';
 import undoService from './undoService';
 
 export class PolygonRotator implements IActionHandler {

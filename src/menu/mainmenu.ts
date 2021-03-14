@@ -74,6 +74,11 @@ const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
         click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_polygon_rotate'); }}
       }, 
       {
+        label: 'Reverse polygon',
+        accelerator: 'Control+Alt+R',
+        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_polygon_reverse'); }}
+      }, 
+      {
         type: 'separator'
       },
       {
