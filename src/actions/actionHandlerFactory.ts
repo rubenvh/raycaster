@@ -12,7 +12,7 @@ import { TextureLibrary } from '../textures/textureLibrary';
 import { PolygonExpander } from './polygonExpander';
 import { PolygonSplitter } from './polygonSplitter';
 import { PolygonRotator } from './polygonRotator';
-import { PolygonReverser } from './PolygonReverser';
+import { PolygonReverser } from './polygonReverser';
 
 export function createGlobalActionHandlers(world: World): IActionHandler[] {
     return [
