@@ -6,16 +6,22 @@
     <link rel="stylesheet" href="css/main.css" type="text/css">
   </head>
   <body> 
+    <div class="container">
     <div class="views">
       <div class="dim2">
-        <canvas id="view_2d" width="1280" height="960"></canvas> 
+        <canvas id="view_2d"></canvas> 
       </div> 
       <div class="dim3">
-        <canvas id="view_3d" width="1280" height="960"></canvas>      
+        <canvas id="view_3d"></canvas>      
       </div>    
-    </div>    
+    </div>  
+    <div class="tools">
+      <my-test></my-test>
+    </div>  
+  </div>
   </body>
   <script>
-    require('../dist/renderer.js')
+    require('../dist/renderer.js')    
+    require("../dist/components/test.js")    
   </script>
 </html>

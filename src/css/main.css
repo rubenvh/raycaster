@@ -3,24 +3,44 @@ body {
     color: #eee;    
 }
 
-/* canvas {
-    background-color: #444444;
-} */
+.container {
+    display: flex; 
+    flex-direction: column;
+    height: 100%;
+    min-height: 1000px;
+    align-items: stretch;
+    justify-content: space-evenly;
+    align-content: stretch;
+}
 
-div.views {
-    width: 2580px;    
-    height: 962px;
-    /*overflow: hidden; /* add this to contain floated children */
+.views {
+    flex: 2;
+    display: flex;
+    flex-direction: row;    
+    align-items: stretch;
+    justify-content: space-evenly;
+    align-content: stretch;
 }
-div.dim2 {
-    width: 1280px;
-    height: 960px;
-    float:left; /* add this */
-    border: 1px solid black;
+
+.tools {
+    flex: 1;
+    display: flex;
+    flex-direction: row;    
 }
-div.dim3 {
-    border: 1px solid black;
-    width: 1280px;
-    height: 960px;
-    float: right; /* add this */
+
+.dim2 {
+    flex: 1;    
+    border: 1px solid black;       
+}
+.dim3 {
+    flex: 1;
+    border: 1px solid black;        
+}
+
+.views canvas {
+    margin: 0;
+    padding: 0;  
+    display: block;
+    width: 100%;
+    height: 100%;
 }

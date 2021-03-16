@@ -24,7 +24,7 @@ export type WallProps = {
 };
 type ZBuffer = Map<Guid,WallProps[]>[];
 export class Renderer3d {
-    private context: CanvasRenderingContext2D;
+    private context: CanvasRenderingContext2D;    
     private width: number;
     private height: number;        
     private resolution = 1280;
@@ -34,9 +34,13 @@ export class Renderer3d {
         this.context = canvas.getContext('2d');
         this.context.imageSmoothingEnabled = false;        
         this.context.font = '12px sans-serif';
-        this.width = canvas.width;
-        this.height = canvas.height;
+
+        this.canvas.width = this.resolution;
+        this.canvas.height = Math.round(this.resolution * 3 / 4);
+        this.width = this.canvas.width;
+        this.height = this.canvas.height;
     }
+
         
     private createWall = (hit: RayHit, rayIndex: number): WallProps => {
         const height = this.convertDistanceToWallHeight(hit.distance || this.horizonDistance);                    

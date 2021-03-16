@@ -1,5 +1,4 @@
 import { add, angleBetween, areOrthogonal, cross, distance, dot, getX, getY, norm, normalize, normSqr, perpendicular, proj, rotate, scale, subtract, Vector } from "./vector";
-import math = require("mathjs");
 
 describe('vector tests', () => {  
   describe('component getter tests', () => {
@@ -70,18 +69,18 @@ describe('vector tests', () => {
   });
   describe('distance calculation', () => {
     const test = (u: Vector, v: Vector, e: number) => expect(distance(u, v)).toEqual(e);
-    it('d([0,1],[1,0])', () => test([0,1], [1,0], math.sqrt(2)));
+    it('d([0,1],[1,0])', () => test([0,1], [1,0], Math.sqrt(2)));
     it('d([0,0],[1,0])', () => test([0,0], [1,0], 1));
     it('d([0,3],[4,0])', () => test([0,3], [4,0], 5));
   });
   describe('angle calculation', () => {
     const test = (u: Vector, v: Vector, e: number) => expect(angleBetween(u, v)).toBeCloseTo(e);    
-    it('angle([0, 1],[1, 0]) = -pi/2', () => test([0,1], [1, 0], -math.pi/2));
-    it('angle([1, 0],[0, 1]) = pi/2',  () => test([1, 0],[0, 1], math.pi/2));
+    it('angle([0, 1],[1, 0]) = -pi/2', () => test([0,1], [1, 0], -Math.PI/2));
+    it('angle([1, 0],[0, 1]) = pi/2',  () => test([1, 0],[0, 1], Math.PI/2));
     it('angle([0, 1],[0, 2]) = 0',    () => test([0,1], [0, 2], 0));    
-    it('angle([1, 0],[-1,0]) = pi',   () => test([1,0], [-1,0], math.pi));
-    it('angle([1, 1],[0, 1]) = pi/4', () => test([1,1], [0, 1], math.pi/4));
-    it('angle([1, 0],[0,-1]) = -pi/2', () => test([1,0], [0,-1], -math.pi/2));
+    it('angle([1, 0],[-1,0]) = pi',   () => test([1,0], [-1,0], Math.PI));
+    it('angle([1, 1],[0, 1]) = pi/4', () => test([1,1], [0, 1], Math.PI/4));
+    it('angle([1, 0],[0,-1]) = -pi/2', () => test([1,0], [0,-1], -Math.PI/2));
     it('angle([5.45,1.12],[-3.86, 4.32]) = 120.17`', () => test([5.45,1.12],[-3.86, 4.32], 120.17*Math.PI/180));
   });
   describe('projection tests', () => {
@@ -96,12 +95,12 @@ describe('vector tests', () => {
       actual.map((_, i) => expect(_).toBeCloseTo(e[i]));
     };
     it('[1,0] by 0      = [1,0]',                 () => test([1,0], 0, [1,0]));
-    it('[1,0] by pi/2   = [0,1]',                 () => test([1,0], math.pi/2, [0,1]));
-    it('[1,0] by pi     = [-1,0]',                () => test([1,0], math.pi, [-1,0]));
-    it('[1,0] by 3/2*pi = [0,-1]',                () => test([1,0], 3/2*math.pi, [0,-1]));
-    it('[1,0] by 2*pi   = [1,0]',                 () => test([1,0], 2*math.pi, [1,0]));
-    it('[1,0] by pi/4   = [cos(pi/4),sin(pi/4)]', () => test([1,0], math.pi/4, [math.cos(math.pi/4), math.sin(math.pi/4)]));
-    it('[0,2] by pi/2   = [-2,0]',                () => test([0,2], math.pi/2, [-2,0]));
+    it('[1,0] by pi/2   = [0,1]',                 () => test([1,0], Math.PI/2, [0,1]));
+    it('[1,0] by pi     = [-1,0]',                () => test([1,0], Math.PI, [-1,0]));
+    it('[1,0] by 3/2*pi = [0,-1]',                () => test([1,0], 3/2*Math.PI, [0,-1]));
+    it('[1,0] by 2*pi   = [1,0]',                 () => test([1,0], 2*Math.PI, [1,0]));
+    it('[1,0] by pi/4   = [cos(pi/4),sin(pi/4)]', () => test([1,0], Math.PI/4, [Math.cos(Math.PI/4), Math.sin(Math.PI/4)]));
+    it('[0,2] by pi/2   = [-2,0]',                () => test([0,2], Math.PI/2, [-2,0]));
   });
   describe('cross product tests', () => {
     const test = (u: Vector, v: Vector, e: number) => expect(cross(u, v)).toEqual(e);

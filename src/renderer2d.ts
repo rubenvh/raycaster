@@ -13,6 +13,18 @@ export class Renderer2d {
     constructor(private world: World, private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');
         this.background = document.createElement('canvas') as HTMLCanvasElement;
+        this.resizeCanvas();        
+        window.addEventListener('resize', e => {
+            e.preventDefault();  
+            this.resizeCanvas();
+        });
+    }
+
+    private resizeCanvas = (): void => {
+        this.canvas.width = this.canvas.clientWidth;//Math.round(0.99 * this.canvas.parentElement.clientWidth);
+        this.canvas.height = this.canvas.clientHeight;//Math.round(0.99 * this.canvas.parentElement.clientHeight);
+        this.background.width = this.canvas.width;
+        this.background.height = this.canvas.height;
         this.initGrid();
     }
 
@@ -79,7 +91,7 @@ export class Renderer2d {
 
     private initGrid = () => {        
         this.background.width = this.canvas.width;
-        this.background.height = this.canvas.height;
+        this.background.height = this.canvas.height;        
         const backgroundContext = this.background.getContext('2d');
         backgroundContext.beginPath();
         backgroundContext.lineWidth = 1;
