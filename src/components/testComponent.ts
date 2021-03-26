@@ -1,4 +1,5 @@
 import { ipcRenderer } from "electron";
+import { IpcRendererEvent } from "electron/main";
 
 const template = document.createElement('template');
 template.innerHTML = `
@@ -22,7 +23,7 @@ export class MyTestElement extends HTMLElement {
         shadowRoot.appendChild(template.content.cloneNode(true));
         const element = shadowRoot.querySelector('div');
 
-        ipcRenderer.on('undo', this.test(element));
+        ipcRenderer.on('renderStats', this.test(element));
     }
 
     connectedCallback() {
@@ -35,7 +36,7 @@ export class MyTestElement extends HTMLElement {
     } 
 
     test(element: HTMLDivElement){
-        return () => element.innerHTML = new Date().toISOString();
+        return (event: IpcRendererEvent, ...args: any[]) => element.innerHTML = JSON.stringify(args);
     }
 }
 

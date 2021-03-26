@@ -42,5 +42,7 @@ body {
     padding: 0;  
     display: block;
     width: 100%;
+}
+.views > .dim2 > canvas {    
     height: 100%;
 }

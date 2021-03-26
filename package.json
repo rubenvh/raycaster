@@ -19,6 +19,7 @@
   "author": "Ruben Van Havermaet",
   "license": "MIT",
   "dependencies": {
+    "@reduxjs/toolkit": "^1.5.1",
     "electron": "^11.3.0",
     "guid-typescript": "^1.0.9",
     "image-size": "^0.9.7",

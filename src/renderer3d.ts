@@ -9,6 +9,7 @@ import { lookupMaterialFor, RayHit } from './geometry/collision';
 import { Vector } from './math/vector';
 import { IMaterial } from './geometry/properties';
 import { isSelectedEdge } from './geometry/selectable';
+import { remote } from 'electron';
 
 export type WallProps = {
     edgeId: Guid,
@@ -83,6 +84,9 @@ export class Renderer3d {
         const zBuffering = startDrawing - startZBuffering;
         this.context.fillStyle = "rgb(255,255,255)";
         this.context.fillText(`C=${casting.toFixed(2)}ms (${(casting/total*100).toFixed(2)}%), Z=${zBuffering.toFixed(2)}ms (${(zBuffering/total*100).toFixed(2)}%), D=${drawing.toFixed(2)}ms (${(drawing/total*100).toFixed(2)}%)`, 10, this.canvas.height - 20);
+        //ipcRenderer.sendToHost('renderStats', {casting, zBuffering, drawing, total});
+
+        remote.getCurrentWebContents().send('renderStats', {casting, zBuffering, drawing, total});
     };
 
     /**

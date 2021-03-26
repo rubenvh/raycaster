@@ -5,8 +5,6 @@ export const math = create(all, config)
 
 export type Vector = [number, number];
 
-const getX = (u: Vector): number => u[0];
-const getY = (u: Vector): number => u[1];
 const dot = (u: Vector, v: Vector): number => u[0]*v[0] + u[1]*v[1];
 const norm = (u: Vector): number => Math.sqrt(normSqr(u));
 const normSqr = (u: Vector): number => dot(u, u);
@@ -24,8 +22,8 @@ const angleBetween = (u: Vector, v: Vector): number => Math.atan2(cross(u, v), d
  */
 const proj = (u: Vector, v: Vector): Vector => scale(dot(u, v) / dot(v, v), v);
 const rotate = (angle: number, u: Vector): Vector => [...math.multiply(createRotation(angle), u) as any as [number, number]]
-const cross = (u: Vector, v: Vector): number => getX(u) * getY(v) - getY(u) * getX(v);
-const perpendicular = (u: Vector): Vector => [-getY(u), getX(u)];
+const cross = (u: Vector, v: Vector): number => u[0] * v[1] - u[1] * v[0];
+const perpendicular = (u: Vector): Vector => [-u[1], u[0]];
 const copyIn = (u: Vector, v: Vector): Vector => {    
     u[0] = v[0];
     u[1] = v[1];    
@@ -36,7 +34,7 @@ const snap = (u: Vector, ): Vector => [roundToGrid(u[0]), roundToGrid(u[1])];
 const minimumComponents = (u: Vector, v: Vector): Vector => [Math.min(u[0], v[0]), Math.min(u[1], v[1])];
 const maximumComponents = (u: Vector, v: Vector): Vector => [Math.max(u[0], v[0]), Math.max(u[1], v[1])];
 
-export {getX, getY, dot, norm, normSqr, normalize, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, cross, perpendicular, copyIn, snap, minimumComponents, maximumComponents};
+export {dot, norm, normSqr, normalize, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, cross, perpendicular, copyIn, snap, minimumComponents, maximumComponents};
 
 const createRotation = (angle: number) => [
     [Math.cos(angle), -1 * Math.sin(angle)],

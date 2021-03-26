@@ -1,10 +1,6 @@
-import { add, angleBetween, areOrthogonal, cross, distance, dot, getX, getY, norm, normalize, normSqr, perpendicular, proj, rotate, scale, subtract, Vector } from "./vector";
+import { add, angleBetween, areOrthogonal, cross, distance, dot, norm, normalize, normSqr, perpendicular, proj, rotate, scale, subtract, Vector } from "./vector";
 
-describe('vector tests', () => {  
-  describe('component getter tests', () => {
-    it('x component', () => expect(getX([1, 2])).toBe(1));
-    it('y component', () => expect(getY([1, 2])).toBe(2));
-  });  
+describe('vector tests', () => {   
   describe('dot product tests', () => {
     const test = (x: Vector, y: Vector, e: number) => expect(dot(x, y)).toEqual(e);    
     it('(0,0).(1,1) = 0',  () => test([0,0], [1,1], 0));

@@ -1,6 +1,6 @@
 import { ILineSegment } from './../math/lineSegment';
 import { distanceToMidPoint, ILine } from "../math/lineSegment";
-import { add, cross, dot, normalize, scale, subtract, Vector } from "../math/vector";
+import { add, cross, dot, normalize, perpendicular, scale, subtract, Vector } from "../math/vector";
 import { IEdge } from "./edge";
 import { BoundingBox, IPolygon } from "./polygon";
 import { distance, IVertex } from "./vertex";
@@ -14,17 +14,18 @@ export type Intersection = {point: Vector, face: Face};
 export type RayHit = {polygon: IPolygon, edge: IEdge, intersection: Intersection, ray: IRay, distance: number};
 export type IntersectionStats = {percentage: number, amount: number };
 export type RayCollisions = {hits: RayHit[], stats: IntersectionStats};
-export type IRay = {position: Vector, direction: Vector, dn: Vector, dperp: Vector, line: ILine, ood: Vector, angle: number, }; 
+export type IRay = {position: Vector, direction: Vector, dn: Vector, dperp: Vector, line: ILine, ood: Vector, angle: number, cosAngle: number}; 
 
 export const makeRay = (p: Vector, d: Vector, angle: number = 0): IRay => {
     const line: ILine = [p, add(p, d)];
     const dn = normalize(d);    
     return ({ position: p, direction: d, 
         dn, 
-        dperp: [-dn[1], dn[0]],     
+        dperp: perpendicular(dn),     
         ood: [1/d[0], 1/d[1]],
         line, 
-        angle});
+        angle,
+        cosAngle: Math.cos(angle)});
 }
 export const hasIntersect = (ray: IRay, box: BoundingBox): boolean => {
     const p = ray.position,
@@ -54,20 +55,26 @@ export const hasIntersect = (ray: IRay, box: BoundingBox): boolean => {
     return true;
 }
 
+/**
+ * This function is used to detect collision candidates at a given point (vector)
+ * @param vector a query point 
+ * @param polygons a collection of polygons for which to find collisions with query point
+ * @returns a collection of edge- and/or vertex-collisions
+ */
 export const detectCollisionAt = (vector: Vector, polygons: IPolygon[]): VertexCollision|EdgeCollision => {
     const distanceComparer = (x: {distance:number}, y: {distance:number}) => x.distance - y.distance;
-        return polygons.reduce((acc, p) => {            
-            let edges: Collision[] = p.edges
-                .map(e => ({polygon: p, kind: "edge", edge: e, distance: distanceToMidPoint(vector, e.segment)} as const));
-            let vertices: Collision[] = p.vertices
-            .map(v => ({ polygon: p, kind: "vertex", vertex: v, distance: distance(v, vector)} as const));
+    return polygons.reduce((acc, p) => {            
+        let edges: Collision[] = p.edges
+            .map(e => ({polygon: p, kind: "edge", edge: e, distance: distanceToMidPoint(vector, e.segment)} as const));
+        let vertices: Collision[] = p.vertices
+        .map(v => ({ polygon: p, kind: "vertex", vertex: v, distance: distance(v, vector)} as const));
 
-            let closest = edges.concat(vertices)                
-            .filter(_ => _.distance <= 10)
-            .sort(distanceComparer)[0];
-            return closest ? acc.concat(closest) : acc;
-        }, [])
+        let closest = edges.concat(vertices)                
+        .filter(_ => _.distance <= 10)
         .sort(distanceComparer)[0];
+        return closest ? acc.concat(closest) : acc;
+    }, [])
+    .sort(distanceComparer)[0];
 } 
 
 export const detectCollisions = (ray: IRay, polygons: IPolygon[]): RayCollisions => {
@@ -76,8 +83,7 @@ export const detectCollisions = (ray: IRay, polygons: IPolygon[]): RayCollisions
     let totalEdges = 0;
 
     // TODO: replace this naive implementation with something more efficient:
-    // 1) bounding box tests 
-    // 2) BSP
+    //  * BSP, quadtrees, ...
     // ...
     for (const polygon of polygons){
         totalEdges += polygon.edgeCount;
@@ -87,7 +93,7 @@ export const detectCollisions = (ray: IRay, polygons: IPolygon[]): RayCollisions
             const intersection = intersectRay(ray, edge.segment);                                    
             if (intersection) {
                 result.hits.push({polygon, ray, edge, intersection,
-                    distance: distance(intersection.point, ray.line[0]) * Math.cos(ray.angle)
+                    distance: distance(intersection.point, ray.line[0]) * ray.cosAngle
                 })
             }
         }
@@ -97,11 +103,9 @@ export const detectCollisions = (ray: IRay, polygons: IPolygon[]): RayCollisions
     return result;
 }
 
-export const intersectRay = (ray: IRay, s: ILineSegment): Intersection => {
-    let a = s[0];
-    let b = s[1];    
-    let v1 = subtract(ray.position, a);
-    let v2 = subtract(b, a);    
+export const intersectRay = (ray: IRay, s: ILineSegment): Intersection => {    
+    let v1 = subtract(ray.position, s[0]);
+    let v2 = subtract(s[1], s[0]);    
     let c = cross(v2, v1);    
     let d_v2 = dot(v2, ray.dperp);
     let d_v1 = dot(v1, ray.dperp);

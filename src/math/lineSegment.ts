@@ -1,4 +1,4 @@
-import { add, distance, angleBetween, cross, dot, getX, getY, norm, normalize, normSqr, perpendicular, scale, subtract, Vector, proj } from './vector';
+import { add, distance, angleBetween, cross, dot, norm, normalize, normSqr, perpendicular, scale, subtract, Vector, proj } from './vector';
 
 export type ILine = [Vector, Vector]; // or other representations
 export type ILineSegment = [Vector, Vector];
