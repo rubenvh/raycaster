@@ -1,5 +1,5 @@
 import { ICamera, makeRays } from './camera';
-import { drawSegment, drawVector, drawRect, drawBoundingBox } from './drawing/drawing';
+import { drawSegment, drawVector, drawBoundingBox } from './drawing/drawing';
 import { IEdge } from './geometry/edge';
 import { IGeometry } from './geometry/geometry';
 import { isSelectedEdge, isSelectedPolygon, isSelectedVertex } from './geometry/selectable';
@@ -35,28 +35,16 @@ export class Renderer2d {
         this.drawGeometry(this.context, this.world.geometry);
         
         // TODO: put stats in UI element (status bar?) instead of canvas
-        let edgePercentage = 0;
-        let avgIntersectionsPerRay = 0;
-        if (this.world.rays?.length > 0) {
-            this.world.rays.forEach((c, rayIndex) => {
-                edgePercentage = Math.max(edgePercentage, c.stats.percentage);
-                avgIntersectionsPerRay += c.stats.amount;
-                // c.hits.forEach(hit => {
-                //     if (hit?.intersection) {
-                //         drawVector(this.context, hit.intersection, 'rgba(0,255, 0, 0.03)');
-                //         if (rayIndex % (this.canvas.width/10) === 0) drawSegment(this.context, [hit.intersection, hit.ray.line[0]], 'green');
-                //     };
-                // });
-            });
-            avgIntersectionsPerRay /= this.world.rays.length;
-            if (this.world.rays[0].stats) {
-                this.context.fillStyle = "rgb(255,255,255)";
-                this.context.fillText(`FPS=${fps}, I=${edgePercentage.toFixed(2)}, #=${avgIntersectionsPerRay.toFixed(2)}`, 10, this.canvas.height - 20);
-            }
-        }
-
-       
-        
+        // if (this.world.rays?.length > 0) {
+        //     this.world.rays.forEach((c, rayIndex) => {
+        //         // c.hits.forEach(hit => {
+        //         //     if (hit?.intersection) {
+        //         //         drawVector(this.context, hit.intersection, 'rgba(0,255, 0, 0.03)');
+        //         //         if (rayIndex % (this.canvas.width/10) === 0) drawSegment(this.context, [hit.intersection, hit.ray.line[0]], 'green');
+        //         //     };
+        //         // });
+        //     });
+        //}
     };
 
     private drawCamera = (context: CanvasRenderingContext2D, cam: ICamera) => {

@@ -9,7 +9,10 @@ import { lookupMaterialFor, RayHit } from './geometry/collision';
 import { Vector } from './math/vector';
 import { IMaterial } from './geometry/properties';
 import { isSelectedEdge } from './geometry/selectable';
-import { remote } from 'electron';
+import { updateStatistics } from './store/stats';
+import { useAppDispatch } from './store';
+
+const dispatch = useAppDispatch();
 
 export type WallProps = {
     edgeId: Guid,
@@ -61,7 +64,8 @@ export class Renderer3d {
         });
     };
 
-    public render = () => {                           
+    private lastUpdated;
+    public render = (fps: number) => {                           
         // initiate raycasting
         const startCasting = performance.now();
         this.world.rays = raycaster.castRays(makeRays(this.resolution, this.world.camera), this.world.geometry, raycaster.passTroughTranslucentEdges);
@@ -78,15 +82,23 @@ export class Renderer3d {
 
         const endDrawing = performance.now();
 
-        const total = endDrawing - startCasting;
-        const drawing = endDrawing - startDrawing;
-        const casting = startZBuffering - startCasting;
-        const zBuffering = startDrawing - startZBuffering;
-        this.context.fillStyle = "rgb(255,255,255)";
-        this.context.fillText(`C=${casting.toFixed(2)}ms (${(casting/total*100).toFixed(2)}%), Z=${zBuffering.toFixed(2)}ms (${(zBuffering/total*100).toFixed(2)}%), D=${drawing.toFixed(2)}ms (${(drawing/total*100).toFixed(2)}%)`, 10, this.canvas.height - 20);
-        //ipcRenderer.sendToHost('renderStats', {casting, zBuffering, drawing, total});
-
-        remote.getCurrentWebContents().send('renderStats', {casting, zBuffering, drawing, total});
+        if (!this.lastUpdated || endDrawing-this.lastUpdated > 250){
+            this.lastUpdated= endDrawing;
+            updateStatistics({
+                performance: { 
+                    timing: {
+                        drawing: endDrawing-startDrawing, 
+                        casting: startZBuffering - startCasting, 
+                        zbuffering: startDrawing - startZBuffering, 
+                        total: endDrawing - startCasting
+                    }, 
+                    fps}, 
+                intersections: {rayIntersectionStats: this.world.rays?.map(x => x.stats)}})(dispatch);       
+        }
+        
+        
+       
+        
     };
 
     /**

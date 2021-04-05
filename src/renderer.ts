@@ -41,7 +41,7 @@ window.requestAnimationFrame(loop)
 
 function redraw() {      
     renderer2d.render(fps);
-    renderer3d.render();
+    renderer3d.render(fps);
 }
 
 function update() {    
