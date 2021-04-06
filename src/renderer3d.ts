@@ -9,7 +9,7 @@ import { lookupMaterialFor, RayHit } from './geometry/collision';
 import { Vector } from './math/vector';
 import { IMaterial } from './geometry/properties';
 import { isSelectedEdge } from './geometry/selectable';
-import { updateStatistics } from './store/stats';
+import { statisticsUpdated } from './store/stats';
 import { useAppDispatch } from './store';
 
 const dispatch = useAppDispatch();
@@ -84,7 +84,7 @@ export class Renderer3d {
 
         if (!this.lastUpdated || endDrawing-this.lastUpdated > 250){
             this.lastUpdated= endDrawing;
-            updateStatistics({
+            dispatch(statisticsUpdated({
                 performance: { 
                     timing: {
                         drawing: endDrawing-startDrawing, 
@@ -93,7 +93,7 @@ export class Renderer3d {
                         total: endDrawing - startCasting
                     }, 
                     fps}, 
-                intersections: {rayIntersectionStats: this.world.rays?.map(x => x.stats)}})(dispatch);       
+                intersections: {rayIntersectionStats: this.world.rays?.map(x => x.stats)}}));
         }
         
         

@@ -22,11 +22,4 @@ const slice = createSlice({
 });
 export default slice.reducer
 // Actions
-const { statisticsUpdated } = slice.actions
-export const updateStatistics = (statistics: IStatsState) => async dispatch => {
-  try {    
-    dispatch(statisticsUpdated(statistics));
-  } catch (e) {
-    return console.error(e.message);
-  }
-}
+export const { statisticsUpdated } = slice.actions
