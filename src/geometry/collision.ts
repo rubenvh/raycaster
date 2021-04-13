@@ -12,8 +12,8 @@ export type VertexCollision = BaseCollision & { vertex: IVertex, kind: "vertex"}
 export type EdgeCollision = BaseCollision & {edge: IEdge, kind: "edge" };
 export type Intersection = {point: Vector, face: Face};
 export type RayHit = {polygon: IPolygon, edge: IEdge, intersection: Intersection, ray: IRay, distance: number};
-export type IntersectionStats = {percentage: number, amount: number };
-export type RayCollisions = {hits: RayHit[], stats: IntersectionStats};
+export type IntersectionStats = {edgeCount: number, amount: number };
+export type RayCollisions = {hits: RayHit[], stats: IntersectionStats, ray: IRay};
 export type IRay = {position: Vector, direction: Vector, dn: Vector, dperp: Vector, line: ILine, ood: Vector, angle: number, cosAngle: number}; 
 
 export const makeRay = (p: Vector, d: Vector, angle: number = 0): IRay => {
@@ -78,15 +78,14 @@ export const detectCollisionAt = (vector: Vector, polygons: IPolygon[]): VertexC
 } 
 
 export const detectCollisions = (ray: IRay, polygons: IPolygon[]): RayCollisions => {
-    const result: RayCollisions = {stats: {amount: 0, percentage: 0}, hits: []};
+    const result: RayCollisions = {ray, stats: {amount: 0, edgeCount: 0}, hits: []};
     let intersectionCalculations = 0;
-    let totalEdges = 0;
-
+    
     // TODO: replace this naive implementation with something more efficient:
     //  * BSP, quadtrees, ...
     // ...
     for (const polygon of polygons){
-        totalEdges += polygon.edgeCount;
+        result.stats.edgeCount += polygon.edgeCount;
         if (polygon.edgeCount > 4 && !hasIntersect(ray, polygon.boundingBox)) continue;
         for (const edge of polygon.edges) {            
             intersectionCalculations += 1;
@@ -98,7 +97,7 @@ export const detectCollisions = (ray: IRay, polygons: IPolygon[]): RayCollisions
             }
         }
     }
-    result.stats.percentage = intersectionCalculations/totalEdges;
+    
     result.stats.amount = intersectionCalculations;
     return result;
 }

@@ -5,19 +5,26 @@ import { Guid } from 'guid-typescript';
 import { World } from "../stateModel";
 import { IActionHandler } from "./actions";
 import { IEdge } from '../geometry/edge';
-import { isEdge, isPolygon } from "../geometry/selectable";
+import { isEdge, isPolygon, SelectableElement } from "../geometry/selectable";
 import { TextureLibrary } from '../textures/textureLibrary';
 import { ipcRenderer } from 'electron';
 import undoService from './undoService';
 import { applyTexture, Face, toggleTexture } from '../geometry/properties';
+import { connect } from '../store/store-connector';
 
 
 export class EdgeModifier implements IActionHandler {
     
-    constructor(private world: World, private texLib: TextureLibrary) {}
+    private selectedElements: SelectableElement[] = [];
+    
+    constructor(private world: World, private texLib: TextureLibrary) {
+        connect(s => {
+            this.selectedElements = s.selection.elements;
+        });
+    }
    
     private get selectedEdges(): Map<Guid, IEdge[]> {
-        return this.world.selection.reduce((acc, s) => 
+        return this.selectedElements.reduce((acc, s) => 
             acc.set(s.polygon.id, Array.from(new Set<IEdge>([...(acc.get(s.polygon.id)||[]).concat(
             isEdge(s)
                 ? [s.edge]

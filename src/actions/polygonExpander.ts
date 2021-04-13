@@ -1,25 +1,32 @@
 import { expandPolygon, IGeometry } from './../geometry/geometry';
 import { IPolygon } from './../geometry/polygon';
 import { ipcRenderer } from "electron";
-import { isEdge, SelectedEdge } from "../geometry/selectable";
+import { isEdge, SelectableElement, SelectedEdge } from "../geometry/selectable";
 import { World } from "../stateModel";
 import { IActionHandler } from "./actions";
 import { ISpaceTranslator } from "./geometrySelector";
 import undoService from "./undoService";
 import { drawSegment, drawVector } from '../drawing/drawing';
+import { connect } from '../store/store-connector';
 
 export class PolygonExpander implements IActionHandler {
     
     private isExpanding: boolean;
     private candidate: IPolygon;
-
+    private selectedElements: SelectableElement[] = [];
+    
     constructor(
         private context: CanvasRenderingContext2D,
         private spaceTranslator: ISpaceTranslator,
-        private world: World) {}
+        private world: World) {
+            connect(s => {
+                this.selectedElements = s.selection.elements;
+            });
+        }
    
     private get selectedEdge(): SelectedEdge {
-        return this.world.selection.length === 1 ? this.world.selection.filter(isEdge)[0] : null;
+
+        return this.selectedElements.length === 1 ? this.selectedElements.filter(isEdge)[0] : null;
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
@@ -38,7 +45,7 @@ export class PolygonExpander implements IActionHandler {
     }     
     public isActive = () => this.isExpanding;
     private startExpanding = () => this.isExpanding = this.canActivate();
-    private canActivate = () => this.world.selection.length === 1 && isEdge(this.world.selection[0]);
+    private canActivate = () => this.selectedElements.length === 1 && isEdge(this.selectedElements[0]);
     private cancel = () => {
         this.isExpanding = false;
         this.candidate = null;

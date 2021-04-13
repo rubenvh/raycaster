@@ -63,7 +63,7 @@ export class WorldLoader {
         this.world.camera = w.camera ? makeCamera(w.camera) : WorldLoader.initWorld().camera;
         this.world.geometry = loadGeometry(w.geometry || []);
         this.world.config = w.config || {fadeOn: null};
-        this.world.rays.length = this.world.selection.length = 0;
+        this.world.rays.length = 0;
 
         undoService.initialize(this.world.geometry);
     }
@@ -72,8 +72,7 @@ export class WorldLoader {
         return {
             camera: makeCamera({position: [50,50], direction: [0,10], plane: [15, 0]}),
             geometry: createGeometry([]),
-            config: {fadeOn: null},
-            selection: [],
+            config: {fadeOn: null},            
             rays: []
         };
     }

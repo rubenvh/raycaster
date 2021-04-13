@@ -1,14 +1,17 @@
+import { RootState } from './store/index';
+import { connect } from './store/store-connector';
 import { ICamera, makeRays } from './camera';
 import { drawSegment, drawVector, drawBoundingBox } from './drawing/drawing';
 import { IEdge } from './geometry/edge';
 import { IGeometry } from './geometry/geometry';
-import { isSelectedEdge, isSelectedPolygon, isSelectedVertex } from './geometry/selectable';
+import { isSelectedEdge, isSelectedPolygon, isSelectedVertex, SelectableElement } from './geometry/selectable';
 import { IVertex } from './geometry/vertex';
 import { World } from './stateModel';
 
 export class Renderer2d {
     private context: CanvasRenderingContext2D;
     private background: HTMLCanvasElement;
+    selectedElements: SelectableElement[] = [];
     
     constructor(private world: World, private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');
@@ -18,8 +21,11 @@ export class Renderer2d {
             e.preventDefault();  
             this.resizeCanvas();
         });
+        connect(s => {
+            this.selectedElements = s.selection.elements;
+        });
     }
-
+   
     private resizeCanvas = (): void => {
         this.canvas.width = this.canvas.clientWidth;//Math.round(0.99 * this.canvas.parentElement.clientWidth);
         this.canvas.height = this.canvas.clientHeight;//Math.round(0.99 * this.canvas.parentElement.clientHeight);
@@ -33,8 +39,7 @@ export class Renderer2d {
         this.drawGrid();
         this.drawCamera(this.context, this.world.camera);
         this.drawGeometry(this.context, this.world.geometry);
-        
-        // TODO: put stats in UI element (status bar?) instead of canvas
+                
         // if (this.world.rays?.length > 0) {
         //     this.world.rays.forEach((c, rayIndex) => {
         //         // c.hits.forEach(hit => {
@@ -57,7 +62,7 @@ export class Renderer2d {
     private drawGeometry = (context: CanvasRenderingContext2D, geometry: IGeometry) => {
         
         geometry.polygons.forEach(p => {
-            const selected = isSelectedPolygon(p.id, this.world.selection);
+            const selected = isSelectedPolygon(p.id, this.selectedElements);
             drawBoundingBox(context, p.boundingBox, selected ? 'rgb(255,100,0,0.8)' : 'rgb(150,100,50,0.8)');
             p.vertices.forEach(e => this.drawVertex(context, e, selected));
             p.edges.forEach(e => this.drawEdge(context, e, selected));
@@ -65,7 +70,7 @@ export class Renderer2d {
     };
 
     private drawEdge = (context: CanvasRenderingContext2D, edge: IEdge, selected: boolean = false) => {
-        selected = selected || isSelectedEdge(edge.id, this.world.selection);        
+        selected = selected || isSelectedEdge(edge.id, this.selectedElements);        
         const color = selected ? 'rgb(255,100,0)' : edge.immaterial ? 'rgb(100,100,0)' : 'rgb(255,255,255)';
         const width = selected ? 2 : 1;
         drawSegment(context, [edge.start.vector, edge.end.vector], color, width);
@@ -73,7 +78,7 @@ export class Renderer2d {
    
 
     private drawVertex = (context: CanvasRenderingContext2D, vertex: IVertex, selected: boolean = false) => {
-        selected = selected || isSelectedVertex(vertex.id, this.world.selection);
+        selected = selected || isSelectedVertex(vertex.id, this.selectedElements);
         drawVector(context, vertex.vector, selected ? 'rgb(250,100,0)' : 'rgb(100,100,0)');
     };    
 

@@ -1,4 +1,4 @@
-import { isPolygon } from './../geometry/selectable';
+import { isPolygon, SelectableElement } from './../geometry/selectable';
 import { IPolygon } from "../geometry/polygon";
 import { World } from "../stateModel";
 import { IActionHandler } from "./actions";
@@ -7,19 +7,25 @@ import { ipcRenderer } from 'electron';
 import { drawSegment, drawVector } from '../drawing/drawing';
 import { IGeometry, rotatePolygon } from '../geometry/geometry';
 import undoService from './undoService';
+import { connect } from '../store/store-connector';
 
 export class PolygonRotator implements IActionHandler {
     
     private isRotating: boolean;
     private candidates: IPolygon[] = [];
-
+    private selectedElements: SelectableElement[] = [];
+    
     constructor(
         private context: CanvasRenderingContext2D,
         private spaceTranslator: ISpaceTranslator,
-        private world: World) {}
+        private world: World) {
+            connect(s => {
+                this.selectedElements = s.selection.elements;
+            });
+        }
    
     private get selectedPolygons(): IPolygon[] {
-        return this.world.selection.filter(isPolygon).map(_ => _.polygon);
+        return this.selectedElements.filter(isPolygon).map(_ => _.polygon);
     }
 
     register(g: GlobalEventHandlers): IActionHandler {

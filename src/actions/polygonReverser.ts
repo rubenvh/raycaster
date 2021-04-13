@@ -1,18 +1,25 @@
 import { reversePolygon } from '../geometry/geometry';
-import { isPolygon } from '../geometry/selectable';
+import { isPolygon, SelectableElement } from '../geometry/selectable';
 import { IPolygon } from "../geometry/polygon";
 import { World } from "../stateModel";
 import { IActionHandler } from "./actions";
 import { ipcRenderer } from 'electron';
 import undoService from './undoService';
+import { connect } from '../store/store-connector';
 
 
 export class PolygonReverser implements IActionHandler {
    
-    constructor(private world: World) { }
+    private selectedElements: SelectableElement[] = [];
+    
+    constructor(private world: World) { 
+        connect(s => {
+            this.selectedElements = s.selection.elements;
+        });
+    }
 
     private get selectedPolygons(): IPolygon[] {
-        return this.world.selection.filter(isPolygon).map(_ => _.polygon);
+        return this.selectedElements.filter(isPolygon).map(_ => _.polygon);
     }
 
     register(g: GlobalEventHandlers): IActionHandler {

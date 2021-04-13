@@ -1,12 +1,11 @@
-import { IntersectionStats, IRay, lookupMaterialFor, RayHit } from "./geometry/collision";
+import { IntersectionStats, IRay, lookupMaterialFor, RayCollisions, RayHit } from "./geometry/collision";
 import { detectCollisions, IGeometry } from "./geometry/geometry";
 import { isTranslucent } from "./geometry/properties";
-
 
 export type CastedRay = {hits: RayHit[], stats: IntersectionStats};
 const makeInfinity = (ray: IRay): CastedRay => ({
     hits: [{ray, edge: null, intersection: null, polygon: null, distance: Number.POSITIVE_INFINITY}],
-    stats: {percentage: 0, amount: 0}
+    stats: {edgeCount: 0, amount: 0}
 });
 
 /**
@@ -33,10 +32,11 @@ export const castRays = (rays: IRay[], geometry: IGeometry, hitFilter: (hits: Ra
     return rays
         .map(_ => {
             const collisions = detectCollisions(_, geometry);                                    
-            const result = hitFilter(collisions.hits
+            const hits = collisions.hits
                 .filter(needsRendering)
-                .sort((a,b)=> a.distance - b.distance));
+                .sort((a,b)=> a.distance - b.distance);
 
+            const result = hitFilter(hits);
             if (!result || result.length < 1) { return makeInfinity(_); }                                    
             return { stats: collisions.stats, hits: result };
         });

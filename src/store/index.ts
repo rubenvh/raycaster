@@ -1,18 +1,21 @@
-import { compose, configureStore } from '@reduxjs/toolkit'
+import { configureStore } from '@reduxjs/toolkit'
 import { combineReducers } from 'redux'
 import stats from './stats'
 import logger from 'redux-logger'
-import { composeWithDevTools } from 'redux-devtools-extension';
+import selection from './selection'
 
 const reducer = combineReducers({
-  stats
+  stats,
+  selection
 })
 
 
 const store = configureStore({
   reducer,  
-  middleware: (getDefaultMiddleware) => getDefaultMiddleware(),//.concat(logger),
-  devTools: true,//process.env.NODE_ENV !== 'production',
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware({
+    serializableCheck: false
+ }),//.concat(logger),
+  devTools: process.env.NODE_ENV !== 'production',
   enhancers: (defaultEnhancers) => [...defaultEnhancers]
 })
 export type RootState = ReturnType<typeof store.getState>

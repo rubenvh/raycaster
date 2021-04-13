@@ -8,9 +8,10 @@ import { Guid } from 'guid-typescript';
 import { lookupMaterialFor, RayHit } from './geometry/collision';
 import { Vector } from './math/vector';
 import { IMaterial } from './geometry/properties';
-import { isSelectedEdge } from './geometry/selectable';
+import { isSelectedEdge, SelectableElement } from './geometry/selectable';
 import { statisticsUpdated } from './store/stats';
 import { useAppDispatch } from './store';
+import { connect } from './store/store-connector';
 
 const dispatch = useAppDispatch();
 
@@ -33,6 +34,7 @@ export class Renderer3d {
     private height: number;        
     private resolution = 1280;
     private horizonDistance = 300;
+    private selectedElements: SelectableElement[] = [];
     
     constructor(private world: World, private canvas: HTMLCanvasElement, private textureLibrary: TextureLibrary) {
         this.context = canvas.getContext('2d');
@@ -43,6 +45,10 @@ export class Renderer3d {
         this.canvas.height = Math.round(this.resolution * 3 / 4);
         this.width = this.canvas.width;
         this.height = this.canvas.height;
+        connect(s => {
+            this.selectedElements = s.selection.elements;
+        });
+        
     }
 
         
@@ -211,7 +217,7 @@ export class Renderer3d {
     private drawStats = (wallProps: WallProps[]) => {
         const start = wallProps[wallProps.length-1];
         const end = wallProps[0];
-        if (isSelectedEdge(start.edgeId, this.world.selection)) {
+        if (isSelectedEdge(start.edgeId, this.selectedElements)) {
                        
             const texts = [
                 `edgeId: ${JSON.stringify(start.edgeId)}`,

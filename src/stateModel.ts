@@ -8,7 +8,7 @@ import { WorldLoader } from './storage/stateLoader';
 export type World = {
     camera: ICamera,    
     geometry: IGeometry,     
-    selection: SelectableElement[],
+    //selection: SelectableElement[],
     rays: CastedRay[],
     config?: {fadeOn?: number}
 }

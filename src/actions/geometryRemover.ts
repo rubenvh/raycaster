@@ -2,15 +2,24 @@ import { IPolygon } from '../geometry/polygon';
 import { World } from '../stateModel';
 import { IActionHandler } from './actions';
 import { removeVertex } from '../geometry/geometry';
-import { isEdge, isVertex } from '../geometry/selectable';
+import { isEdge, isVertex, SelectableElement } from '../geometry/selectable';
 import { IVertex } from '../geometry/vertex';
 import { ipcRenderer } from 'electron';
 import undoService from './undoService';
+import { connect } from '../store/store-connector';
+import { useAppDispatch } from '../store';
+import { clearSelection } from '../store/selection';
+
+const dispatch = useAppDispatch();
 
 export class GeometryRemover implements IActionHandler {
         
-    constructor(      
-        private world: World) {
+    private selectedElements: SelectableElement[] = [];
+    
+    constructor(private world: World) {
+        connect(s => {
+            this.selectedElements = s.selection.elements;
+        });
     }
 
     register(g: GlobalEventHandlers): IActionHandler {        
@@ -20,11 +29,11 @@ export class GeometryRemover implements IActionHandler {
 
     handle(): void {}
 
-    public isActive = () => this.world.selection.length > 0;
+    public isActive = () => this.selectedElements.length > 0;
     
     private deleteSelection = () => {
         if (this.isActive()) {
-            this.world.selection.forEach(s => {
+            this.selectedElements.forEach(s => {
                 if (isVertex(s)) { 
                     this.removeVertex(s.vertex, s.polygon); 
                 } else if (isEdge(s)) {
@@ -34,7 +43,7 @@ export class GeometryRemover implements IActionHandler {
                 }
             });
 
-            this.world.selection = [];    
+            dispatch(clearSelection());
             undoService.push(this.world.geometry); 
         }
         

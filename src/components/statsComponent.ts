@@ -1,9 +1,9 @@
+import { connect } from './../store/store-connector';
 import store from "../store";
 import { IPerformanceStatistics, IIntersectionStatistics } from "../store/stats";
 
-//const { stats }: any = useSelector<RootState>(_=>_.stats);
 const template = document.createElement('template');
-template.innerHTML = `
+template.innerHTML =  /*html*/`
 <style> 
 </style>
 <p>Statistics</p>
@@ -24,15 +24,13 @@ export class StatsElement extends HTMLElement {
         shadowRoot.appendChild(template.content.cloneNode(true));
         const element = shadowRoot.querySelector('div');
         
-        store.subscribe(() => {
-            const state = store.getState().stats;
-
+        connect( state => {
             element.innerHTML = `<ul>
-                <li>FPS: ${state.performance.fps}</li>
-                ${this.calculateTiming(state.performance.timing)}
-                ${this.calculateIntersections(state.intersections)}
-                </ul>`;
-        });
+            <li>FPS: ${state.stats.performance.fps}</li>
+            ${this.calculateTiming(state.stats.performance.timing)}
+            ${this.calculateIntersections(state.stats.intersections)}
+            </ul>`;
+        });        
     }
 
     connectedCallback() {     
@@ -49,15 +47,15 @@ export class StatsElement extends HTMLElement {
         
         let t = i.rayIntersectionStats.reduce(
             (acc, cur) => ({
-                edgePercentage: Math.max(acc.edgePercentage, cur.percentage), 
-                max: Math.max(acc.max, cur.amount)}), 
-            {edgePercentage: -Infinity, max: -Infinity, });
+                edgePercentage: Math.max(acc.edgePercentage, cur.edgeCount/cur.amount), 
+                max: Math.max(acc.max, cur.amount),
+                edgeCount: Math.max(acc.edgeCount, cur.edgeCount)}), 
+            {edgePercentage: -Infinity, max: -Infinity, edgeCount: 0 });
         
-        return `<li>Max % intersection tests: ${t.edgePercentage.toFixed(1)}</li>
-                <li>Max # edges tested: ${t.max.toFixed(0)}</li>`;
+        return `<li>Max % intersection tests: ${(100*t.edgePercentage).toFixed(2)}</li>
+                <li>Max # edges tested: ${t.max.toFixed(0)}</li>
+                <li>Total # edges: ${t.edgeCount.toFixed(0)}</li>`;
     }
 }
 
 window.customElements.define('render-stats', StatsElement);
-
-

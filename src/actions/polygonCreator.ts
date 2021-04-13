@@ -1,5 +1,5 @@
 import { duplicatePolygons } from './../geometry/geometry';
-import { isPolygon } from './../geometry/selectable';
+import { isPolygon, SelectableElement } from './../geometry/selectable';
 import { drawSegment, drawVector } from './../drawing/drawing';
 import { snap, Vector } from '../math/vector';
 import { areClose } from '../geometry/vertex';
@@ -10,14 +10,19 @@ import { addPolygon } from '../geometry/geometry';
 import { createPolygon } from '../geometry/polygon';
 import { ipcRenderer } from 'electron';
 import undoService from './undoService';
+import { connect } from '../store/store-connector';
 export class PolygonCreator implements IActionHandler {
     private isCreating: boolean;
     private emergingPolygon: Vector[] = [];
     private nextVertex: Vector;
+    private selectedElements: SelectableElement[] = [];
     constructor(
         private context: CanvasRenderingContext2D,
         private spaceTranslator: ISpaceTranslator,        
         private world: World) {
+            connect(s => {
+                this.selectedElements = s.selection.elements;
+            });
     }
     
 
@@ -48,7 +53,7 @@ export class PolygonCreator implements IActionHandler {
 
     public isActive = () => this.isCreating;
     private startCreation = () => this.isCreating = this.canActivate();
-    private canActivate = () => this.world.selection.length === 0;
+    private canActivate = () => this.selectedElements.length === 0;
     private cancel = () => {
         this.isCreating = false;
         this.nextVertex = null;
@@ -77,14 +82,17 @@ export class PolygonCreator implements IActionHandler {
     };
 
     private duplicatePolygon = () => {        
-        let oldPolygonSelection = this.world.selection.filter(isPolygon);
+        let oldPolygonSelection = this.selectedElements.filter(isPolygon);
         let newPolygons = [];
         [this.world.geometry, newPolygons] = duplicatePolygons(
             oldPolygonSelection.map(x => x.polygon), [10,10], this.world.geometry);
-        this.world.selection = [
-            ...this.world.selection.filter(s => !isPolygon(s) || !oldPolygonSelection.includes(s)),
-            ...newPolygons.map(p => ({kind: 'polygon', polygon: p} as const))
-        ];
+
+        // TODO impact on selection:
+        // this.world.selection = [
+        //     ...this.world.selection.filter(s => !isPolygon(s) || !oldPolygonSelection.includes(s)),
+        //     ...newPolygons.map(p => ({kind: 'polygon', polygon: p} as const))
+        // ];
+
         undoService.push(this.world.geometry);
     }
 }

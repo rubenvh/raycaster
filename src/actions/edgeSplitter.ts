@@ -5,21 +5,26 @@ import { projectOn } from "../math/lineSegment";
 import { IActionHandler } from "./actions";
 import { Vector } from '../math/vector';
 import { drawVector } from '../drawing/drawing';
-import { isEdge, SelectedEdge } from '../geometry/selectable';
+import { isEdge, SelectableElement, SelectedEdge } from '../geometry/selectable';
 import { ipcRenderer } from 'electron';
 import undoService from '../actions/undoService';
+import { connect } from '../store/store-connector';
 
 export class EdgeSplitter implements IActionHandler {
 
     private isSplitting: boolean;
     private candidate: Vector;
+    private selectedElements: SelectableElement[] = [];
     constructor(
         private context: CanvasRenderingContext2D,
         private spaceTranslator: ISpaceTranslator,        
         private world: World) {
+            connect(s => {
+                this.selectedElements = s.selection.elements;
+            });
     }
 
-    private get selectedGeometry() { return this.world.selection; }
+    private get selectedGeometry() { return this.selectedElements; }
     private get selectedEdge(): SelectedEdge {
         return isEdge(this.selectedGeometry[0])
             ? this.selectedGeometry[0] 

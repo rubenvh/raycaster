@@ -1,4 +1,4 @@
-import { isSelectedVertex } from './../geometry/selectable';
+import { isSelectedVertex, SelectableElement } from './../geometry/selectable';
 import { ISpaceTranslator } from "./geometrySelector";
 import { Vector, subtract, add, snap } from "../math/vector";
 import { World } from "../stateModel";
@@ -8,12 +8,17 @@ import { Guid } from "guid-typescript";
 import { moveVertices } from "../geometry/geometry";
 import { isCloseToSelected, isEdge, isVertex } from "../geometry/selectable";
 import undoService from './undoService';
+import { connect } from '../store/store-connector';
 
 export class GeometryMover implements IActionHandler {
     private isDragging: boolean;
     private origin: Vector;
-
+    private selectedElements: SelectableElement[] = [];
+    
     constructor(private spaceTranslator: ISpaceTranslator, private world: World, private blockingHandlers: IActionHandler[] = []) {
+        connect(s => {
+            this.selectedElements = s.selection.elements;
+        });
     }
     
     register(g: GlobalEventHandlers): IActionHandler {
@@ -31,7 +36,7 @@ export class GeometryMover implements IActionHandler {
         // left mouse click for moving
         if (event.button !== 0) { return false; }
         this.origin = this.spaceTranslator.toWorldSpace(event);        
-        this.isDragging = !event.ctrlKey && this.world.selection.some(s => isCloseToSelected(this.origin, s));    
+        this.isDragging = !event.ctrlKey && this.selectedElements.some(s => isCloseToSelected(this.origin, s));    
         // moving started => prevent other mousedown listeners    
         if (this.isDragging) event.stopImmediatePropagation();
         return true;
@@ -51,7 +56,7 @@ export class GeometryMover implements IActionHandler {
         const destination = this.spaceTranslator.toWorldSpace(event);
         let delta = this.snap(event.ctrlKey, subtract(destination, this.origin));
                 
-        const verticesByPolygon: Map<Guid, IVertex[]> = this.world.selection.reduce((acc, s) => {
+        const verticesByPolygon: Map<Guid, IVertex[]> = this.selectedElements.reduce((acc, s) => {
             return acc.set(s.polygon.id, Array.from(new Set<IVertex>([...(acc.get(s.polygon.id)||[]).concat(
                 isVertex(s)
                 ? [s.vertex]

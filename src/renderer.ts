@@ -11,8 +11,7 @@ import { globalState } from './stateModel';
 import { textureLib } from './textures/textureLibrary';
 import { WorldLoader } from './storage/stateLoader';
 
-const ui = {    
-    rotateButton: document.getElementById('rotate'),
+const ui = {        
     view_2d: {
         canvas: document.getElementById('view_2d') as HTMLCanvasElement
     },
