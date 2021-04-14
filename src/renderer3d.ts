@@ -1,3 +1,4 @@
+import { cloneKey, createEntityKey, IEntityKey } from './geometry/entity';
 import { TextureLibrary } from './textures/textureLibrary';
 import { Texture } from "./textures/texture";
 import { makeRays } from './camera';
@@ -16,7 +17,7 @@ import { connect } from './store/store-connector';
 const dispatch = useAppDispatch();
 
 export type WallProps = {
-    edgeId: Guid,
+    edgeId: IEntityKey,
     height: number, 
     edgeLuminosity: number,
     material: IMaterial,
@@ -27,7 +28,7 @@ export type WallProps = {
     colRange: [number,number],
     distance: number,
 };
-type ZBuffer = Map<Guid,WallProps[]>[];
+type ZBuffer = Map<IEntityKey,WallProps[]>[];
 export class Renderer3d {
     private context: CanvasRenderingContext2D;    
     private width: number;
@@ -56,9 +57,9 @@ export class Renderer3d {
         const height = this.convertDistanceToWallHeight(hit.distance || this.horizonDistance);                    
         const startRow = Math.floor((this.height - height)/2);
         const endRow = Math.floor((this.height + height)/2);
-        const edgeId = hit.edge && hit.edge.id || Guid.parse(Guid.EMPTY);
+        const edgeId = hit.edge && hit.edge.id || Guid.EMPTY;
 
-        return ({edgeId, height, 
+        return ({edgeId: cloneKey(edgeId), height, 
             edgeLuminosity: hit.edge?.luminosity || 0,            
             material: lookupMaterialFor(hit),
             rowRange: [startRow, endRow],
@@ -118,16 +119,16 @@ export class Renderer3d {
         const indexes = rays.map(r => r.hits.length);
         const max = Math.max(...indexes);
         for (let i = 0; i < max; i++) {
-            let previousEdge: Guid = null;
-            let currentWallGroup = Guid.create();
+            let previousEdge: IEntityKey = null;
+            let currentWallGroup = createEntityKey();
             const groupedByEdge = rays.reduce(
                 (acc, r, rayIndex) => {
                     if (i > indexes[rayIndex]-1) { return acc; }
                     const wall = this.createWall(r.hits[i], rayIndex); 
-                    if (wall.edgeId !== (previousEdge || wall.edgeId)) { currentWallGroup = Guid.create(); };
+                    if (wall.edgeId !== (previousEdge || wall.edgeId)) { currentWallGroup = createEntityKey(); };
                     previousEdge = wall.edgeId;
                     return acc.set(currentWallGroup, [...acc.get(currentWallGroup)||[], wall]);                    
-                }, new Map<Guid, WallProps[]>());
+                }, new Map<IEntityKey, WallProps[]>());
 
             zbuffer.push(groupedByEdge);
         }
@@ -214,7 +215,8 @@ export class Renderer3d {
         drawTrapezoid(this.context, trapezoid, gradient);
     }
 
-    private drawStats = (wallProps: WallProps[]) => {
+    // TODO remove this: send info to statsComponent via store instead        
+    private drawStats = (wallProps: WallProps[]) => {        
         const start = wallProps[wallProps.length-1];
         const end = wallProps[0];
         if (isSelectedEdge(start.edgeId, this.selectedElements)) {

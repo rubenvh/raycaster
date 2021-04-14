@@ -11,6 +11,10 @@ import { createPolygon } from '../geometry/polygon';
 import { ipcRenderer } from 'electron';
 import undoService from './undoService';
 import { connect } from '../store/store-connector';
+import { useAppDispatch } from '../store';
+import { startNewSelection } from '../store/selection';
+
+const dispatch = useAppDispatch();
 export class PolygonCreator implements IActionHandler {
     private isCreating: boolean;
     private emergingPolygon: Vector[] = [];
@@ -87,11 +91,10 @@ export class PolygonCreator implements IActionHandler {
         [this.world.geometry, newPolygons] = duplicatePolygons(
             oldPolygonSelection.map(x => x.polygon), [10,10], this.world.geometry);
 
-        // TODO impact on selection:
-        // this.world.selection = [
-        //     ...this.world.selection.filter(s => !isPolygon(s) || !oldPolygonSelection.includes(s)),
-        //     ...newPolygons.map(p => ({kind: 'polygon', polygon: p} as const))
-        // ];
+        dispatch(startNewSelection([
+                 ...this.selectedElements.filter(s => !isPolygon(s) || !oldPolygonSelection.includes(s)),
+                 ...newPolygons.map(p => ({kind: 'polygon', polygon: p} as const))
+            ]));
 
         undoService.push(this.world.geometry);
     }

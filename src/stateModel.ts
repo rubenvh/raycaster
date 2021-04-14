@@ -1,14 +1,12 @@
 import { CastedRay } from './raycaster';
 import { ICamera } from "./camera";
 import { IGeometry } from './geometry/geometry';
-import { SelectableElement } from './geometry/selectable';
 import { ITextureSource } from './textures/model';
 import { WorldLoader } from './storage/stateLoader';
 
 export type World = {
     camera: ICamera,    
-    geometry: IGeometry,     
-    //selection: SelectableElement[],
+    geometry: IGeometry,         
     rays: CastedRay[],
     config?: {fadeOn?: number}
 }

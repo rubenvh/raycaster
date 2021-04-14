@@ -4,7 +4,7 @@ import { Guid } from 'guid-typescript';
 import * as vector from '../math/vector';
 import * as collision from './collision';
 import { IEdge, cloneEdge, duplicateEdge, makeEdge, createEdges, loadEdge } from './edge';
-import { IEntity, giveIdentity } from './entity';
+import { IEntity, giveIdentity, IEntityKey, createEntityKey, cloneKey } from './entity';
 import { BoundingBox, createPolygon, IPolygon, IStoredPolygon, loadPolygon, contains, containsVertex, containsEdge, centerOf, merge, storePolygon } from './polygon';
 import { SelectableElement, SelectedEdge, SelectedPolygon, SelectedVertex } from './selectable';
 import { areEqual, IVertex, makeVertex } from './vertex';
@@ -26,7 +26,7 @@ export const detectCollisions = (ray: collision.IRay, geometry: IGeometry): coll
     return collision.detectCollisions(ray, geometry.polygons);
 }
 
-const forkPolygons = (ids: Guid[], geometry: IGeometry, polygonSplitter: (poligon: IPolygon)=>IEdge[][]) : IGeometry => {
+const forkPolygons = (ids: IEntityKey[], geometry: IGeometry, polygonSplitter: (poligon: IPolygon)=>IEdge[][]) : IGeometry => {
     
     let [unchanged, adapted]: [IPolygon[], IPolygon[]] = geometry.polygons.reduce((acc, p) => {
         acc[+ids.includes(p.id)].push(p);
@@ -35,12 +35,12 @@ const forkPolygons = (ids: Guid[], geometry: IGeometry, polygonSplitter: (poligo
 
     let adaptedPolygons = adapted
         .map(p => ({p, edgeSets: polygonSplitter(p)}))        
-        .reduce((acc, _, i) => acc.concat(..._.edgeSets.map(s => loadPolygon({id: acc.some(p => p.id === _.p.id) ? Guid.create(): _.p.id, edges: s}))), [] as IPolygon[]);
+        .reduce((acc, _, i) => acc.concat(..._.edgeSets.map(s => loadPolygon({id: acc.some(p => p.id === _.p.id) ? createEntityKey(): cloneKey(_.p.id), edges: s}))), [] as IPolygon[]);
 
     return ({...geometry, polygons: [...unchanged, ...adaptedPolygons]});
 };
 
-const adaptPolygons = (ids: Guid[], geometry: IGeometry, edgeTransformer: (poligon: IPolygon)=>IEdge[]) => {    
+const adaptPolygons = (ids: IEntityKey[], geometry: IGeometry, edgeTransformer: (poligon: IPolygon)=>IEdge[]) => {    
     return forkPolygons(ids, geometry, (p)=>[edgeTransformer(p)]);    
 };
 
@@ -59,7 +59,7 @@ export const splitEdge = (cut: vector.Vector, edge: IEdge, poligon: IPolygon, ge
     });
 }
 
-export const moveVertices = (isSnapping: boolean, delta: vector.Vector, map: Map<Guid, IVertex[]>, geometry: IGeometry): IGeometry => {
+export const moveVertices = (isSnapping: boolean, delta: vector.Vector, map: Map<IEntityKey, IVertex[]>, geometry: IGeometry): IGeometry => {
     const doSnap = (v: vector.Vector) => isSnapping ? vector.snap(v) : v;
     return adaptPolygons(Array.from(map.keys()), geometry, p => {
         const vertices = [...map.get(p.id)];
@@ -120,13 +120,13 @@ export const duplicatePolygons = (poligons: IPolygon[], delta: vector.Vector, ge
         newPoligons];
 };
 
-export const transformEdges = (edges: IEdge[], poligonId: Guid, transformer: (_: IEdge) => IEdge, geometry: IGeometry): IGeometry => {
+export const transformEdges = (edges: IEdge[], poligonId: IEntityKey, transformer: (_: IEdge) => IEdge, geometry: IGeometry): IGeometry => {
     return adaptPolygons([poligonId], geometry, p => p.edges
         .map(cloneEdge)
         .reduce((acc, e) => acc.concat(edges.some(_ => e.id === _.id) ? transformer(e) : e), []));
 };
 
-export const expandPolygon = (edge: IEdge, poligonId: Guid, target: vector.Vector, geometry: IGeometry): [IPolygon, IGeometry] => {
+export const expandPolygon = (edge: IEdge, poligonId: IEntityKey, target: vector.Vector, geometry: IGeometry): [IPolygon, IGeometry] => {
     const result = adaptPolygons([poligonId], geometry, p => {
         const center = centerOf(p.boundingBox);        
         const centerToTarget = vector.distance(center, target);
@@ -158,7 +158,7 @@ export const expandPolygon = (edge: IEdge, poligonId: Guid, target: vector.Vecto
     return [result.polygons.find(p => p.id === poligonId), result];    
 }
 
-export const rotatePolygon = (polygonIds: Guid[], target: vector.Vector, geometry: IGeometry): IGeometry => {
+export const rotatePolygon = (polygonIds: IEntityKey[], target: vector.Vector, geometry: IGeometry): IGeometry => {
     const polygons = geometry.polygons.filter(x => polygonIds.includes(x.id));
     const mergedBoundedBox = polygons.slice(1).reduce((acc, p) => merge(acc, p.boundingBox), polygons[0].boundingBox);
     const center = centerOf(mergedBoundedBox);     
@@ -176,7 +176,7 @@ export const rotatePolygon = (polygonIds: Guid[], target: vector.Vector, geometr
     });
 }
 
-export const splitPolygon = (v1: IVertex, v2: IVertex, poligonId: Guid, geometry: IGeometry): IGeometry => {
+export const splitPolygon = (v1: IVertex, v2: IVertex, poligonId: IEntityKey, geometry: IGeometry): IGeometry => {
     const result = forkPolygons([poligonId], geometry, p => {   
         // find indices of splitting vertices
         let i = p.vertices.findIndex(v => areEqual(v, v1));
@@ -203,7 +203,7 @@ export const splitPolygon = (v1: IVertex, v2: IVertex, poligonId: Guid, geometry
     return result;   
 }
 
-export const reversePolygon = (polygonIds: Guid[], geometry: IGeometry): IGeometry => {    
+export const reversePolygon = (polygonIds: IEntityKey[], geometry: IGeometry): IGeometry => {    
     return adaptPolygons(polygonIds, geometry, p => {        
         const edges = createEdges([p.vertices[0], ...p.vertices.slice(1).reverse()]
                 .map(v => v.vector));

@@ -1,13 +1,12 @@
-import { connect, IStoreConnector } from './../store/store-connector';
-import { isEdge, isPolygon, selectedElement } from './../geometry/selectable';
+import { selectedElement } from './../geometry/selectable';
 import { IActionHandler } from './actions';
 import { detectCollisionAt, selectRegion } from '../geometry/geometry';
 import { Vector } from '../math/vector';
 import { World } from '../stateModel';
 import { BoundingBox } from '../geometry/polygon';
 import { drawBoundingBox } from '../drawing/drawing';
-import { isVertex, SelectableElement } from '../geometry/selectable';
-import { RootState, useAppDispatch } from '../store';
+import { SelectableElement } from '../geometry/selectable';
+import { useAppDispatch } from '../store';
 import { addSelectedElement, clearSelection, startNewSelection } from '../store/selection';
 
 const dispatch = useAppDispatch();
@@ -82,19 +81,7 @@ export class GeometrySelector implements IActionHandler {
     private performSelection = (event: MouseEvent, ss: SelectableElement[]) => {        
         if (!event.ctrlKey) dispatch(clearSelection());
         if (!ss || ss.length === 0) return;         
-        dispatch(!event.ctrlKey ? startNewSelection(ss) : addSelectedElement(ss));
-        // ss.forEach(s => {            
-        //     let i = this.selectedElements.findIndex(_ => 
-        //         isPolygon(_) && isPolygon(s) && _.polygon.id === s.polygon.id 
-        //         || isVertex(_) && isVertex(s) && _.vertex.id === s.vertex.id
-        //         || isEdge(_) && isEdge(s) && _.edge.id === s.edge.id);
-        
-        //     if (i === -1) {            
-        //         this.world.selection.push(s);
-        //     } else {
-        //         this.world.selection.splice(i, 1);
-        //     }    
-        // });        
+        dispatch(!event.ctrlKey ? startNewSelection(ss) : addSelectedElement(ss));        
     }
 }
 

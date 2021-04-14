@@ -1,4 +1,3 @@
-import { RootState } from './store/index';
 import { connect } from './store/store-connector';
 import { ICamera, makeRays } from './camera';
 import { drawSegment, drawVector, drawBoundingBox } from './drawing/drawing';
@@ -27,8 +26,8 @@ export class Renderer2d {
     }
    
     private resizeCanvas = (): void => {
-        this.canvas.width = this.canvas.clientWidth;//Math.round(0.99 * this.canvas.parentElement.clientWidth);
-        this.canvas.height = this.canvas.clientHeight;//Math.round(0.99 * this.canvas.parentElement.clientHeight);
+        this.canvas.width = this.canvas.clientWidth;
+        this.canvas.height = this.canvas.clientHeight;
         this.background.width = this.canvas.width;
         this.background.height = this.canvas.height;
         this.initGrid();

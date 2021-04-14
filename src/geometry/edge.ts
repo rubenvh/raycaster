@@ -1,6 +1,6 @@
 import { ILineSegment, slope } from "../math/lineSegment";
 import { Vector } from "../math/vector";
-import { giveIdentity, IEntity } from "./entity";
+import { cloneKey, giveIdentity, IEntity } from "./entity";
 import { cloneMaterial, Color, IDirectedMaterial } from "./properties";
 import { areClose, cloneVertex, distance, duplicateVertex, IVertex, makeVertex } from "./vertex";
 
@@ -8,7 +8,7 @@ type EdgeBase = IEntity & { start: IVertex, end: IVertex, material?: IDirectedMa
 export type IEdge = EdgeBase & { length: number, slope: number, luminosity: number, segment: ILineSegment};
 export type IStoredEdge = EdgeBase;
 export const storeEdge = (e: IEdge): IStoredEdge => ({
-    id: e.id,
+    id: cloneKey(e.id),
     start: e.start,
     end: e.end,
     immaterial: e.immaterial,
@@ -19,7 +19,7 @@ export const loadEdge = (e: IStoredEdge): IEdge => {
     const segment: ILineSegment = [e.start.vector, e.end.vector];
     const m: number = slope(segment);
     return ({
-        id: e.id,
+        id: cloneKey(e.id),
         start: e.start,
         end: e.end,
         material: e.material,
@@ -47,7 +47,7 @@ export const duplicateEdge = (e: IEdge, delta: Vector): IEdge => giveIdentity<IE
 });
 
 export const cloneEdge = (e: IEdge): IEdge => loadEdge({
-    id: e.id,
+    id: cloneKey(e.id),
     start: cloneVertex(e.start),
     end: cloneVertex(e.end),
     immaterial: e.immaterial,
