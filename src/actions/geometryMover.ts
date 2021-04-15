@@ -1,10 +1,10 @@
+import { IEntityKey } from './../geometry/entity';
 import { isSelectedVertex, SelectableElement } from './../geometry/selectable';
 import { ISpaceTranslator } from "./geometrySelector";
 import { Vector, subtract, add, snap } from "../math/vector";
 import { World } from "../stateModel";
 import { IActionHandler } from "./actions";
 import { IVertex } from "../geometry/vertex";
-import { Guid } from "guid-typescript";
 import { moveVertices } from "../geometry/geometry";
 import { isCloseToSelected, isEdge, isVertex } from "../geometry/selectable";
 import undoService from './undoService';
@@ -56,7 +56,7 @@ export class GeometryMover implements IActionHandler {
         const destination = this.spaceTranslator.toWorldSpace(event);
         let delta = this.snap(event.ctrlKey, subtract(destination, this.origin));
                 
-        const verticesByPolygon: Map<Guid, IVertex[]> = this.selectedElements.reduce((acc, s) => {
+        const verticesByPolygon: Map<IEntityKey, IVertex[]> = this.selectedElements.reduce((acc, s) => {
             return acc.set(s.polygon.id, Array.from(new Set<IVertex>([...(acc.get(s.polygon.id)||[]).concat(
                 isVertex(s)
                 ? [s.vertex]

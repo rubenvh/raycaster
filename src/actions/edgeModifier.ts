@@ -1,7 +1,7 @@
+import { IEntityKey } from './../geometry/entity';
 import { getMaterial, setTexture } from './../geometry/properties';
 import { transformEdges } from './../geometry/geometry';
 import { ITextureReference } from './../textures/model';
-import { Guid } from 'guid-typescript';
 import { World } from "../stateModel";
 import { IActionHandler } from "./actions";
 import { IEdge } from '../geometry/edge';
@@ -23,7 +23,7 @@ export class EdgeModifier implements IActionHandler {
         });
     }
    
-    private get selectedEdges(): Map<Guid, IEdge[]> {
+    private get selectedEdges(): Map<IEntityKey, IEdge[]> {
         return this.selectedElements.reduce((acc, s) => 
             acc.set(s.polygon.id, Array.from(new Set<IEdge>([...(acc.get(s.polygon.id)||[]).concat(
             isEdge(s)
