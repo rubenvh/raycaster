@@ -3,10 +3,12 @@ import { combineReducers } from 'redux'
 import stats from './stats'
 import logger from 'redux-logger'
 import selection from './selection'
+import player from './player'
 
 const reducer = combineReducers({
   stats,
-  selection
+  selection,
+  player
 })
 
 
@@ -14,7 +16,7 @@ const store = configureStore({
   reducer,  
   middleware: (getDefaultMiddleware) => getDefaultMiddleware({
     serializableCheck: false
- }),//.concat(logger),
+  }).concat(logger),
   devTools: process.env.NODE_ENV !== 'production',
   enhancers: (defaultEnhancers) => [...defaultEnhancers]
 })

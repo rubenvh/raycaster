@@ -4,9 +4,8 @@ import { castRays, passThroughImmaterialEdges } from './raycaster';
 import { IGeometry } from './geometry/geometry';
 import { IRay, makeRay } from './geometry/collision';
 
-export type ICameraData = { position: vector.Vector, direction: vector.Vector, plane?: vector.Vector};
+type ICameraData = { position: vector.Vector, direction: vector.Vector, plane?: vector.Vector};
 export type ICamera = ICameraData & { screen: ILineSegment, midline: ILineSegment};
-
 
 const makeScreen = (data: ICameraData): ILineSegment => {
     let plane = data.plane || vector.perpendicular(data.direction);    
@@ -16,6 +15,8 @@ const makeScreen = (data: ICameraData): ILineSegment => {
 export const makeCamera = (data: ICameraData): ICamera => ({...data,    
     screen: makeScreen(data),
     midline: [data.position, vector.add(data.position, data.direction)]});
+
+export const DEFAULT_CAMERA: ICamera = makeCamera({position: [50,50], direction: [0,10], plane: [15, 0]});
 
 export const adaptAngle = (direction: 0|1|-1, camera: ICamera): ICamera => {
     let delta = vector.scale(direction*0.05, camera.plane); // TODO: magic constant

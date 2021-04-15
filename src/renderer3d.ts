@@ -1,7 +1,7 @@
 import { cloneKey, createEntityKey, IEntityKey } from './geometry/entity';
 import { TextureLibrary } from './textures/textureLibrary';
 import { Texture } from "./textures/texture";
-import { makeRays } from './camera';
+import { ICamera, makeRays, makeCamera, DEFAULT_CAMERA } from './camera';
 import * as raycaster from './raycaster';
 import { World } from './stateModel';
 import { drawRect, drawTrapezoid } from './drawing/drawing';
@@ -36,6 +36,7 @@ export class Renderer3d {
     private resolution = 1280;
     private horizonDistance = 300;
     private selectedElements: SelectableElement[] = [];
+    private camera = DEFAULT_CAMERA;
     
     constructor(private world: World, private canvas: HTMLCanvasElement, private textureLibrary: TextureLibrary) {
         this.context = canvas.getContext('2d');
@@ -48,6 +49,7 @@ export class Renderer3d {
         this.height = this.canvas.height;
         connect(s => {
             this.selectedElements = s.selection.elements;
+            this.camera = s.player.camera;
         });
         
     }
@@ -75,10 +77,10 @@ export class Renderer3d {
     public render = (fps: number) => {                           
         // initiate raycasting
         const startCasting = performance.now();
-        this.world.rays = raycaster.castRays(makeRays(this.resolution, this.world.camera), this.world.geometry, raycaster.passTroughTranslucentEdges);
+        const rays = raycaster.castRays(makeRays(this.resolution, this.camera), this.world.geometry, raycaster.passTroughTranslucentEdges);
         // construct a z-index buffer: 
         const startZBuffering = performance.now();
-        const zbuffer = this.constructZBuffer(this.world.rays);        
+        const zbuffer = this.constructZBuffer(rays);        
 
         // draw floor + sky
         const startDrawing = performance.now();
@@ -89,7 +91,7 @@ export class Renderer3d {
 
         const endDrawing = performance.now();
 
-        if (!this.lastUpdated || endDrawing-this.lastUpdated > 250){
+        if (!this.lastUpdated || endDrawing-this.lastUpdated > 2000){
             this.lastUpdated= endDrawing;
             dispatch(statisticsUpdated({
                 performance: { 
@@ -100,12 +102,8 @@ export class Renderer3d {
                         total: endDrawing - startCasting
                     }, 
                     fps}, 
-                intersections: {rayIntersectionStats: this.world.rays?.map(x => x.stats)}}));
-        }
-        
-        
-       
-        
+                intersections: {rayIntersectionStats: rays?.map(x => x.stats)}}));
+        }        
     };
 
     /**

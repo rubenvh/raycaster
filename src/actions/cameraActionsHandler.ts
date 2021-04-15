@@ -1,10 +1,14 @@
 import { adaptAngle, adaptDepth, ICamera, move, rotate, strafe } from "../camera";
 import { World } from "../stateModel";
+import { useAppDispatch } from "../store";
+import { changeCameraAngle, changeCameraDepth, moveCamera, rotateCamera, strafeCamera } from "../store/player";
 import { bindFlagToKey, Flag, IActionHandler, makeFlag } from "./actions";
 
 const CAMERA_ACTIONS = ["turnleft","turnright","right","left","up","down",
 "camera_angle_up","camera_angle_down","camera_depth_up","camera_depth_down"] as const;
 type CameraAction = typeof CAMERA_ACTIONS[number];
+
+const dispatch = useAppDispatch();
 
 export class CameraActionsHandler implements IActionHandler {
     
@@ -25,21 +29,21 @@ export class CameraActionsHandler implements IActionHandler {
     handle() {
         // TODO: speed of movement is partially here (rotation) and partially inside camera
         // (what about a running mode ? )        
-        if (this.flags.turnleft.value) this.world.camera = rotate(-0.15, this.world.camera);
-        if (this.flags.turnright.value) this.world.camera = rotate(0.15, this.world.camera);
-        if (this.flags.left.value) this.world.camera = this.strafe(-1);
-        if (this.flags.right.value) this.world.camera = this.strafe(1);
-        if (this.flags.up.value) this.world.camera = this.move(1);
-        if (this.flags.down.value) this.world.camera = this.move(-1);
+        if (this.flags.turnleft.value) dispatch(rotateCamera(-0.15));
+        if (this.flags.turnright.value) dispatch(rotateCamera(0.15));
+        if (this.flags.left.value) this.strafe(-1);
+        if (this.flags.right.value) this.strafe(1);
+        if (this.flags.up.value) this.move(1);
+        if (this.flags.down.value) this.move(-1);
 
-        if (this.flags.camera_angle_up.value)   this.world.camera = adaptAngle( 1, this.world.camera);
-        if (this.flags.camera_angle_down.value) this.world.camera = adaptAngle(-1, this.world.camera);
-        if (this.flags.camera_depth_up.value)   this.world.camera = adaptDepth( 1, this.world.camera);
-        if (this.flags.camera_depth_down.value) this.world.camera = adaptDepth(-1, this.world.camera);
+        if (this.flags.camera_angle_up.value)   dispatch(changeCameraAngle( 1 ));
+        if (this.flags.camera_angle_down.value) dispatch(changeCameraAngle(-1 ));
+        if (this.flags.camera_depth_up.value)   dispatch(changeCameraDepth( 1 ));
+        if (this.flags.camera_depth_down.value) dispatch(changeCameraDepth(-1 ));
     }
 
     isActive = () => true;
 
-    private move = (direction: 1|-1): ICamera => move(direction, this.world.camera, this.world.geometry);
-    private strafe = (direction: 1|-1): ICamera => strafe(direction, this.world.camera, this.world.geometry);    
+    private move = (direction: 1|-1) => dispatch(moveCamera({direction, geometry: this.world.geometry}));
+    private strafe = (direction: 1|-1) => dispatch(strafeCamera({direction, geometry: this.world.geometry}));     
 }

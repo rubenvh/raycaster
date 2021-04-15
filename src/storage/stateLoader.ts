@@ -1,15 +1,22 @@
+import { DEFAULT_CAMERA } from './../camera';
+import { useAppDispatch } from './../store/index';
+import { connect } from './../store/store-connector';
 import { saveFile } from './dialogs';
 import { createGeometry, loadGeometry, storeGeometry } from './../geometry/geometry';
 import { ipcRenderer, remote } from "electron";
 import { globalState, World } from "../stateModel";
 import * as fs from "fs";
-import { makeCamera } from "../camera";
+import { ICamera, makeCamera } from "../camera";
 import undoService from '../actions/undoService';
+import { initializeCamera } from '../store/player';
 
+const dispatch = useAppDispatch();
 export class WorldLoader {
     private world: World = globalState.world;
 
     private loadedFile: string;
+    private camera = DEFAULT_CAMERA;
+
     constructor() {
         ipcRenderer.on('openFile', (_, arg) => this.loadFile(arg.filePaths[0]));
         ipcRenderer.on('saveFileAs', (_, arg) => this.saveFile(arg.filePath));
@@ -23,6 +30,10 @@ export class WorldLoader {
         } else {
             this.clear();
         }
+
+        connect(state => {
+            this.camera = state.player.camera;
+        })
     }
 
     private clear = () => {
@@ -50,7 +61,7 @@ export class WorldLoader {
 
     private saveFile = (path: string) => {    
         const data = JSON.stringify({
-            camera: this.world.camera, 
+            camera: this.camera, 
             geometry: storeGeometry(this.world.geometry),
             config: this.world.config });
         fs.writeFile(path, data, {}, () => {
@@ -60,20 +71,19 @@ export class WorldLoader {
     }
 
     private loadWorld = (w: any) => {
-        this.world.camera = w.camera ? makeCamera(w.camera) : WorldLoader.initWorld().camera;
+        if (w.camera) {
+            dispatch(initializeCamera(makeCamera(w.camera)));
+        }        
         this.world.geometry = loadGeometry(w.geometry || []);
         this.world.config = w.config || {fadeOn: null};
-        this.world.rays.length = 0;
-
+        
         undoService.initialize(this.world.geometry);
     }
 
     public static initWorld = (): World => {
-        return {
-            camera: makeCamera({position: [50,50], direction: [0,10], plane: [15, 0]}),
+        return {            
             geometry: createGeometry([]),
-            config: {fadeOn: null},            
-            rays: []
+            config: {fadeOn: null}
         };
     }
 }

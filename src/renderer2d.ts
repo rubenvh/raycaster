@@ -1,5 +1,5 @@
 import { connect } from './store/store-connector';
-import { ICamera, makeRays } from './camera';
+import { ICamera, makeRays, DEFAULT_CAMERA } from './camera';
 import { drawSegment, drawVector, drawBoundingBox } from './drawing/drawing';
 import { IEdge } from './geometry/edge';
 import { IGeometry } from './geometry/geometry';
@@ -10,7 +10,8 @@ import { World } from './stateModel';
 export class Renderer2d {
     private context: CanvasRenderingContext2D;
     private background: HTMLCanvasElement;
-    selectedElements: SelectableElement[] = [];
+    private selectedElements: SelectableElement[] = [];
+    private camera = DEFAULT_CAMERA;
     
     constructor(private world: World, private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');
@@ -22,6 +23,7 @@ export class Renderer2d {
         });
         connect(s => {
             this.selectedElements = s.selection.elements;
+            this.camera = s.player.camera;
         });
     }
    
@@ -36,7 +38,7 @@ export class Renderer2d {
     public render = (fps: number) => {
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);        
         this.drawGrid();
-        this.drawCamera(this.context, this.world.camera);
+        this.drawCamera(this.context, this.camera);
         this.drawGeometry(this.context, this.world.geometry);
                 
         // if (this.world.rays?.length > 0) {
