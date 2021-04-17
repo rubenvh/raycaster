@@ -1,5 +1,4 @@
 import { EMPTY_GEOMETRY } from "../geometry/geometry";
-import { World } from "../stateModel";
 import { useAppDispatch } from "../store";
 import { changeCameraAngle, changeCameraDepth, moveCamera, rotateCamera, strafeCamera } from "../store/player";
 import { connect } from "../store/store-connector";
@@ -16,7 +15,7 @@ export class CameraActionsHandler implements IActionHandler {
     private flags: {[key in CameraAction]: Flag};
     private wallGeometry = EMPTY_GEOMETRY;
 
-    constructor(private world: World) {
+    constructor() {
         connect(s => {            
             this.wallGeometry = s.walls.geometry;
         });

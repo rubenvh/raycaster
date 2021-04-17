@@ -1,7 +1,6 @@
 import { useAppDispatch } from './../store/index';
 import { IEntityKey } from './../geometry/entity';
 import { getMaterial, setTexture } from './../geometry/properties';
-import { transformEdges, EMPTY_GEOMETRY } from './../geometry/geometry';
 import { ITextureReference } from './../textures/model';
 import { IActionHandler } from "./actions";
 import { IEdge } from '../geometry/edge';
@@ -10,19 +9,16 @@ import { TextureLibrary } from '../textures/textureLibrary';
 import { ipcRenderer } from 'electron';
 import { applyTexture, Face, toggleTexture } from '../geometry/properties';
 import { connect } from '../store/store-connector';
-import { updateWalls } from '../store/walls';
+import { adaptEdges } from '../store/walls';
 
 const dispatch = useAppDispatch();
-
 export class EdgeModifier implements IActionHandler {
     
     private selectedElements: SelectableElement[] = [];
-    private wallGeometry = EMPTY_GEOMETRY;
-
+    
     constructor(private texLib: TextureLibrary) {
         connect(s => {
-            this.selectedElements = s.selection.elements;
-            this.wallGeometry = s.walls.geometry;
+            this.selectedElements = s.selection.elements;    
         });
     }
    
@@ -45,17 +41,15 @@ export class EdgeModifier implements IActionHandler {
 
     handle(): void {}
     isActive = (): boolean => true;
-    
-    private adaptEdges = (transformer: (_: IEdge) => void) => {        
-        const updatedWalls = Array.from(this.selectedEdges.entries())
-            .reduce((geo, [poligonId, edges]) => transformEdges(edges, poligonId, _ => {
-                transformer(_);
-                return _;
-            }, geo), this.wallGeometry);
-        dispatch(updateWalls(updatedWalls));        
-    }
-    private toggleImmateriality = () => this.adaptEdges(_ => _.immaterial = !_.immaterial);
-    private toggleMaterialTexture = () => this.adaptEdges(_ => _.material = applyTexture(Face.interior, _.material, {id: this.texLib.textures[0].path, index: 0}, toggleTexture));
+        
+    private toggleImmateriality = () => this.adaptEdges(_ => {
+        _.immaterial = !_.immaterial;
+        return _;
+    });
+    private toggleMaterialTexture = () => this.adaptEdges(_ => { 
+        _.material = applyTexture(Face.interior, _.material, {id: this.texLib.textures[0].path, index: 0}, toggleTexture);
+        return _;
+    });
     private previousTexture = () => this.changeTexture(this.texLib.previous);
     private nextTexture = () => this.changeTexture(this.texLib.next);
     private changeTexture = (dir: (ITextureReference)=>ITextureReference) => {
@@ -65,6 +59,7 @@ export class EdgeModifier implements IActionHandler {
             if (!m) { return; }
 
             _.material = applyTexture(Face.interior, _.material, dir(m.texture), setTexture);
+            return _;
         });};
 
     private increaseTranslucency = () => this.adaptEdges(_ => this.changeColor(-0.1, x => Math.max(0, x), _));
@@ -73,5 +68,8 @@ export class EdgeModifier implements IActionHandler {
         const m = getMaterial(Face.interior, edge.material);
         if (!m) return;
         m.color[3] = guard(m.color[3] + dir);
+        return edge;
     }
+
+    private adaptEdges = (transformer: (_: IEdge) => IEdge) => dispatch(adaptEdges({edgeMap: this.selectedEdges, transformer}));
 }

@@ -16,7 +16,7 @@ import { PolygonReverser } from './polygonReverser';
 
 export function createGlobalActionHandlers(world: World): IActionHandler[] {
     return [
-        new CameraActionsHandler(world),
+        new CameraActionsHandler(),
         new GlobalActionsHandler(world),
     ]
     .map(_ => _.register(window));
@@ -27,7 +27,7 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, world: World, te
     const t = spaceTranslator(canvas);
 
     const blockingHandlers = [
-        new EdgeSplitter(canvas.getContext('2d'), t, world),
+        new EdgeSplitter(canvas.getContext('2d'), t),
         new PolygonExpander(canvas.getContext('2d'), t, world),
         new PolygonRotator(canvas.getContext('2d'), t, world)
     ];

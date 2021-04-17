@@ -45,8 +45,8 @@ const adaptPolygons = (ids: IEntityKey[], geometry: IGeometry, edgeTransformer: 
 };
 
 
-export const splitEdge = (cut: vector.Vector, edge: IEdge, poligon: IPolygon, geometry: IGeometry) => {
-    return adaptPolygons([poligon.id], geometry, (selectedPolygon) => {
+export const splitEdge = (cut: vector.Vector, edge: IEdge, poligon: IEntityKey, geometry: IGeometry) => {
+    return adaptPolygons([poligon], geometry, (selectedPolygon) => {
         return selectedPolygon.edges.map(cloneEdge).reduce((acc, e) => {
             if (e.id === edge.id) {
                 const newEnd = e.end;

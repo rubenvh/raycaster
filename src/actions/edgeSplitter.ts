@@ -1,5 +1,3 @@
-import { EMPTY_GEOMETRY, splitEdge } from './../geometry/geometry';
-import { World } from '../stateModel';
 import { ISpaceTranslator } from "./geometrySelector";
 import { projectOn } from "../math/lineSegment";
 import { IActionHandler } from "./actions";
@@ -7,23 +5,23 @@ import { Vector } from '../math/vector';
 import { drawVector } from '../drawing/drawing';
 import { isEdge, SelectableElement, SelectedEdge } from '../geometry/selectable';
 import { ipcRenderer } from 'electron';
-import undoService from '../actions/undoService';
 import { connect } from '../store/store-connector';
+import { useAppDispatch } from '../store';
+import { splitEdge } from '../store/walls';
+
+const dispatch = useAppDispatch();
 
 export class EdgeSplitter implements IActionHandler {
 
     private isSplitting: boolean;
     private candidate: Vector;
-    private selectedElements: SelectableElement[] = [];
-    private wallGeometry = EMPTY_GEOMETRY;
+    private selectedElements: SelectableElement[] = [];    
     
     constructor(
         private context: CanvasRenderingContext2D,
-        private spaceTranslator: ISpaceTranslator,        
-        private world: World) {
+        private spaceTranslator: ISpaceTranslator) {
             connect(s => {
                 this.selectedElements = s.selection.elements;
-                this.wallGeometry = s.walls.geometry;
             });
     }
 
@@ -64,11 +62,12 @@ export class EdgeSplitter implements IActionHandler {
         if (event.button !== 0) { return false; }
         if (!this.isActive()) { return false; }
         event.stopImmediatePropagation();
-
-        const c = this.calculateCut(event);        
-        // TODO store: create reducer
-        this.wallGeometry = splitEdge(c, this.selectedEdge.edge, this.selectedEdge.polygon, this.wallGeometry);
-        undoService.push(this.wallGeometry);
+       
+        dispatch(splitEdge({
+            edge: this.selectedEdge.edge, 
+            poligon: this.selectedEdge.polygon.id,
+            target: this.spaceTranslator.toWorldSpace(event)
+        }));
 
         // stop cutting (even if keys are still pressed)
         this.cancel();
