@@ -1,7 +1,8 @@
-import { adaptAngle, adaptDepth, ICamera, move, rotate, strafe } from "../camera";
+import { EMPTY_GEOMETRY } from "../geometry/geometry";
 import { World } from "../stateModel";
 import { useAppDispatch } from "../store";
 import { changeCameraAngle, changeCameraDepth, moveCamera, rotateCamera, strafeCamera } from "../store/player";
+import { connect } from "../store/store-connector";
 import { bindFlagToKey, Flag, IActionHandler, makeFlag } from "./actions";
 
 const CAMERA_ACTIONS = ["turnleft","turnright","right","left","up","down",
@@ -11,11 +12,15 @@ type CameraAction = typeof CAMERA_ACTIONS[number];
 const dispatch = useAppDispatch();
 
 export class CameraActionsHandler implements IActionHandler {
-    
-    
+        
     private flags: {[key in CameraAction]: Flag};
-    
-    constructor(private world: World) {}
+    private wallGeometry = EMPTY_GEOMETRY;
+
+    constructor(private world: World) {
+        connect(s => {            
+            this.wallGeometry = s.walls.geometry;
+        });
+    }
 
     register(g: GlobalEventHandlers): IActionHandler {
         this.flags = CAMERA_ACTIONS.reduce((acc, x) => {
@@ -44,6 +49,6 @@ export class CameraActionsHandler implements IActionHandler {
 
     isActive = () => true;
 
-    private move = (direction: 1|-1) => dispatch(moveCamera({direction, geometry: this.world.geometry}));
-    private strafe = (direction: 1|-1) => dispatch(strafeCamera({direction, geometry: this.world.geometry}));     
+    private move = (direction: 1|-1) => dispatch(moveCamera({direction, geometry: this.wallGeometry}));
+    private strafe = (direction: 1|-1) => dispatch(strafeCamera({direction, geometry: this.wallGeometry}));     
 }

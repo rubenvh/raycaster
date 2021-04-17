@@ -1,14 +1,15 @@
-import { IGeometry } from './geometry/geometry';
 import { ITextureSource } from './textures/model';
 import { WorldLoader } from './storage/stateLoader';
 
 /* 
-    geometry
-        elements
-        bsp
-        nonstatic
-            doors
-            npcs
+    world
+        walls
+            geometry
+            bsp
+        doors
+            geometry
+        characters
+
 
     player
         camera
@@ -21,8 +22,7 @@ import { WorldLoader } from './storage/stateLoader';
     
 
  */
-export type World = {    
-    geometry: IGeometry,   
+export type World = {        
     config?: {fadeOn?: number}
 }
 export type State = {

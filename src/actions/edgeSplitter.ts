@@ -1,4 +1,4 @@
-import { splitEdge } from './../geometry/geometry';
+import { EMPTY_GEOMETRY, splitEdge } from './../geometry/geometry';
 import { World } from '../stateModel';
 import { ISpaceTranslator } from "./geometrySelector";
 import { projectOn } from "../math/lineSegment";
@@ -15,12 +15,15 @@ export class EdgeSplitter implements IActionHandler {
     private isSplitting: boolean;
     private candidate: Vector;
     private selectedElements: SelectableElement[] = [];
+    private wallGeometry = EMPTY_GEOMETRY;
+    
     constructor(
         private context: CanvasRenderingContext2D,
         private spaceTranslator: ISpaceTranslator,        
         private world: World) {
             connect(s => {
                 this.selectedElements = s.selection.elements;
+                this.wallGeometry = s.walls.geometry;
             });
     }
 
@@ -63,8 +66,9 @@ export class EdgeSplitter implements IActionHandler {
         event.stopImmediatePropagation();
 
         const c = this.calculateCut(event);        
-        this.world.geometry = splitEdge(c, this.selectedEdge.edge, this.selectedEdge.polygon, this.world.geometry);
-        undoService.push(this.world.geometry);
+        // TODO store: create reducer
+        this.wallGeometry = splitEdge(c, this.selectedEdge.edge, this.selectedEdge.polygon, this.wallGeometry);
+        undoService.push(this.wallGeometry);
 
         // stop cutting (even if keys are still pressed)
         this.cancel();

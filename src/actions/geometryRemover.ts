@@ -1,7 +1,7 @@
 import { IPolygon } from '../geometry/polygon';
 import { World } from '../stateModel';
 import { IActionHandler } from './actions';
-import { removeVertex } from '../geometry/geometry';
+import { EMPTY_GEOMETRY, removeVertex } from '../geometry/geometry';
 import { isEdge, isVertex, SelectableElement } from '../geometry/selectable';
 import { IVertex } from '../geometry/vertex';
 import { ipcRenderer } from 'electron';
@@ -15,10 +15,12 @@ const dispatch = useAppDispatch();
 export class GeometryRemover implements IActionHandler {
         
     private selectedElements: SelectableElement[] = [];
-    
+    private wallGeometry = EMPTY_GEOMETRY;
+
     constructor(private world: World) {
         connect(s => {
             this.selectedElements = s.selection.elements;
+            this.wallGeometry = s.walls.geometry;
         });
     }
 
@@ -44,12 +46,12 @@ export class GeometryRemover implements IActionHandler {
             });
 
             dispatch(clearSelection());
-            undoService.push(this.world.geometry); 
+            undoService.push(this.wallGeometry); 
         }
         
     }
 
     private removeVertex = (v: IVertex, p: IPolygon) => {
-        this.world.geometry = removeVertex(v, p, this.world.geometry);               
+        this.wallGeometry = removeVertex(v, p, this.wallGeometry);               
     }
 }

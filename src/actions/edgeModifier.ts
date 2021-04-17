@@ -1,25 +1,28 @@
+import { useAppDispatch } from './../store/index';
 import { IEntityKey } from './../geometry/entity';
 import { getMaterial, setTexture } from './../geometry/properties';
-import { transformEdges } from './../geometry/geometry';
+import { transformEdges, EMPTY_GEOMETRY } from './../geometry/geometry';
 import { ITextureReference } from './../textures/model';
-import { World } from "../stateModel";
 import { IActionHandler } from "./actions";
 import { IEdge } from '../geometry/edge';
 import { isEdge, isPolygon, SelectableElement } from "../geometry/selectable";
 import { TextureLibrary } from '../textures/textureLibrary';
 import { ipcRenderer } from 'electron';
-import undoService from './undoService';
 import { applyTexture, Face, toggleTexture } from '../geometry/properties';
 import { connect } from '../store/store-connector';
+import { updateWalls } from '../store/walls';
 
+const dispatch = useAppDispatch();
 
 export class EdgeModifier implements IActionHandler {
     
     private selectedElements: SelectableElement[] = [];
-    
-    constructor(private world: World, private texLib: TextureLibrary) {
+    private wallGeometry = EMPTY_GEOMETRY;
+
+    constructor(private texLib: TextureLibrary) {
         connect(s => {
             this.selectedElements = s.selection.elements;
+            this.wallGeometry = s.walls.geometry;
         });
     }
    
@@ -43,12 +46,13 @@ export class EdgeModifier implements IActionHandler {
     handle(): void {}
     isActive = (): boolean => true;
     
-    private adaptEdges = (transformer: (_: IEdge) => void) => {
-        this.world.geometry = Array.from(this.selectedEdges.entries()).reduce((geo, [poligonId, edges]) => transformEdges(edges, poligonId, _ => {
-            transformer(_);
-            return _;
-        }, geo), this.world.geometry);
-        undoService.push(this.world.geometry);
+    private adaptEdges = (transformer: (_: IEdge) => void) => {        
+        const updatedWalls = Array.from(this.selectedEdges.entries())
+            .reduce((geo, [poligonId, edges]) => transformEdges(edges, poligonId, _ => {
+                transformer(_);
+                return _;
+            }, geo), this.wallGeometry);
+        dispatch(updateWalls(updatedWalls));        
     }
     private toggleImmateriality = () => this.adaptEdges(_ => _.immaterial = !_.immaterial);
     private toggleMaterialTexture = () => this.adaptEdges(_ => _.material = applyTexture(Face.interior, _.material, {id: this.texLib.textures[0].path, index: 0}, toggleTexture));

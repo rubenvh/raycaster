@@ -1,6 +1,6 @@
 import { selectedElement } from './../geometry/selectable';
 import { IActionHandler } from './actions';
-import { detectCollisionAt, selectRegion } from '../geometry/geometry';
+import { detectCollisionAt, EMPTY_GEOMETRY, selectRegion } from '../geometry/geometry';
 import { Vector } from '../math/vector';
 import { World } from '../stateModel';
 import { BoundingBox } from '../geometry/polygon';
@@ -8,16 +8,21 @@ import { drawBoundingBox } from '../drawing/drawing';
 import { SelectableElement } from '../geometry/selectable';
 import { useAppDispatch } from '../store';
 import { addSelectedElement, clearSelection, startNewSelection } from '../store/selection';
+import { connect } from '../store/store-connector';
 
 const dispatch = useAppDispatch();
 
 export class GeometrySelector implements IActionHandler {    
     private isDragging: boolean;
     private region: BoundingBox;
+    private wallGeometry = EMPTY_GEOMETRY;
     
     constructor(
         private context: CanvasRenderingContext2D,
         private spaceTranslator: ISpaceTranslator, private world: World, private blockingHandlers: IActionHandler[] = []) {    
+            connect(s => {               
+                this.wallGeometry = s.walls.geometry;
+            });
         }
     
     register(g: GlobalEventHandlers): IActionHandler {        
@@ -37,7 +42,7 @@ export class GeometrySelector implements IActionHandler {
         
     private trySelectElement = (location: Vector, event: MouseEvent): boolean => {
         
-        const collision = detectCollisionAt(location, this.world.geometry);
+        const collision = detectCollisionAt(location, this.wallGeometry);
         
         if (collision) {            
             let s = selectedElement(collision, event.shiftKey);
@@ -72,7 +77,7 @@ export class GeometrySelector implements IActionHandler {
     }
     private selectRegion = (region: BoundingBox, event: MouseEvent): boolean => {
         
-        const elements = selectRegion(region, this.world.geometry);
+        const elements = selectRegion(region, this.wallGeometry);
 
         this.performSelection(event, elements);
         return true;

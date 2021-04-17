@@ -1,3 +1,4 @@
+import { EMPTY_GEOMETRY, IGeometry } from './geometry/geometry';
 import { cloneKey, createEntityKey, IEntityKey } from './geometry/entity';
 import { TextureLibrary } from './textures/textureLibrary';
 import { Texture } from "./textures/texture";
@@ -37,6 +38,7 @@ export class Renderer3d {
     private horizonDistance = 300;
     private selectedElements: SelectableElement[] = [];
     private camera = DEFAULT_CAMERA;
+    private wallGeometry = EMPTY_GEOMETRY;
     
     constructor(private world: World, private canvas: HTMLCanvasElement, private textureLibrary: TextureLibrary) {
         this.context = canvas.getContext('2d');
@@ -50,6 +52,7 @@ export class Renderer3d {
         connect(s => {
             this.selectedElements = s.selection.elements;
             this.camera = s.player.camera;
+            this.wallGeometry = s.walls.geometry;
         });
         
     }
@@ -77,7 +80,7 @@ export class Renderer3d {
     public render = (fps: number) => {                           
         // initiate raycasting
         const startCasting = performance.now();
-        const rays = raycaster.castRays(makeRays(this.resolution, this.camera), this.world.geometry, raycaster.passTroughTranslucentEdges);
+        const rays = raycaster.castRays(makeRays(this.resolution, this.camera), this.wallGeometry, raycaster.passTroughTranslucentEdges);
         // construct a z-index buffer: 
         const startZBuffering = performance.now();
         const zbuffer = this.constructZBuffer(rays);        

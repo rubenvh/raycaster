@@ -5,7 +5,7 @@ import { Vector, subtract, add, snap } from "../math/vector";
 import { World } from "../stateModel";
 import { IActionHandler } from "./actions";
 import { IVertex } from "../geometry/vertex";
-import { moveVertices } from "../geometry/geometry";
+import { EMPTY_GEOMETRY, moveVertices } from "../geometry/geometry";
 import { isCloseToSelected, isEdge, isVertex } from "../geometry/selectable";
 import undoService from './undoService';
 import { connect } from '../store/store-connector';
@@ -14,10 +14,12 @@ export class GeometryMover implements IActionHandler {
     private isDragging: boolean;
     private origin: Vector;
     private selectedElements: SelectableElement[] = [];
-    
+    private wallGeometry = EMPTY_GEOMETRY;
+
     constructor(private spaceTranslator: ISpaceTranslator, private world: World, private blockingHandlers: IActionHandler[] = []) {
         connect(s => {
             this.selectedElements = s.selection.elements;
+            this.wallGeometry = s.walls.geometry;
         });
     }
     
@@ -46,7 +48,7 @@ export class GeometryMover implements IActionHandler {
         if (this.isDragging) {
             this.isDragging = false;
             this.move(event);
-            undoService.push(this.world.geometry);
+            undoService.push(this.wallGeometry);
             return true;
         }
         return false;
@@ -65,7 +67,7 @@ export class GeometryMover implements IActionHandler {
                 : s.polygon.vertices)])));
         }, new Map());
         
-        this.world.geometry = moveVertices(event.ctrlKey, delta, verticesByPolygon, this.world.geometry);
+        this.wallGeometry = moveVertices(event.ctrlKey, delta, verticesByPolygon, this.wallGeometry);
 
         // calculate new origin for next drag operation
         this.origin = add(this.origin, delta);

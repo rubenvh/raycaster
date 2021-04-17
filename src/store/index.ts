@@ -4,11 +4,13 @@ import stats from './stats'
 import logger from 'redux-logger'
 import selection from './selection'
 import player from './player'
+import walls from './walls'
 
 const reducer = combineReducers({
   stats,
   selection,
-  player
+  player,
+  walls,
 })
 
 

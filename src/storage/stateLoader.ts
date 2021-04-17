@@ -2,13 +2,14 @@ import { DEFAULT_CAMERA } from './../camera';
 import { useAppDispatch } from './../store/index';
 import { connect } from './../store/store-connector';
 import { saveFile } from './dialogs';
-import { createGeometry, loadGeometry, storeGeometry } from './../geometry/geometry';
+import { createGeometry, EMPTY_GEOMETRY, loadGeometry, storeGeometry } from './../geometry/geometry';
 import { ipcRenderer, remote } from "electron";
 import { globalState, World } from "../stateModel";
 import * as fs from "fs";
 import { ICamera, makeCamera } from "../camera";
 import undoService from '../actions/undoService';
 import { initializeCamera } from '../store/player';
+import { loadWalls } from '../store/walls';
 
 const dispatch = useAppDispatch();
 export class WorldLoader {
@@ -16,6 +17,7 @@ export class WorldLoader {
 
     private loadedFile: string;
     private camera = DEFAULT_CAMERA;
+    private wallGeometry = EMPTY_GEOMETRY;
 
     constructor() {
         ipcRenderer.on('openFile', (_, arg) => this.loadFile(arg.filePaths[0]));
@@ -33,6 +35,7 @@ export class WorldLoader {
 
         connect(state => {
             this.camera = state.player.camera;
+            this.wallGeometry = state.walls.geometry;
         })
     }
 
@@ -62,7 +65,7 @@ export class WorldLoader {
     private saveFile = (path: string) => {    
         const data = JSON.stringify({
             camera: this.camera, 
-            geometry: storeGeometry(this.world.geometry),
+            geometry: storeGeometry(this.wallGeometry),
             config: this.world.config });
         fs.writeFile(path, data, {}, () => {
             localStorage.setItem('loadedFile', path);
@@ -74,15 +77,16 @@ export class WorldLoader {
         if (w.camera) {
             dispatch(initializeCamera(makeCamera(w.camera)));
         }        
-        this.world.geometry = loadGeometry(w.geometry || []);
+
+        dispatch(loadWalls(w.geometry || EMPTY_GEOMETRY));
         this.world.config = w.config || {fadeOn: null};
         
-        undoService.initialize(this.world.geometry);
+        // TODO undo: make undoService aware of store
+        //undoService.initialize(this.world.geometry);
     }
 
     public static initWorld = (): World => {
-        return {            
-            geometry: createGeometry([]),
+        return {                        
             config: {fadeOn: null}
         };
     }

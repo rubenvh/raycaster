@@ -12,7 +12,7 @@ import { cloneMaterial } from './properties';
 
 export type IStoredGeometry = IEntity & { polygons: IStoredPolygon[]};
 export type IGeometry = IEntity & { polygons: IPolygon[]};
-
+export const EMPTY_GEOMETRY: IGeometry = {polygons: []};
 export const storeGeometry = (g: IGeometry): IStoredGeometry => ({id: g.id, polygons: g.polygons.map(storePolygon)});
 export const loadGeometry = (g : IStoredGeometry): IGeometry => ({id: g.id, polygons: g.polygons.map(loadPolygon)});
 export const createGeometry = (polygonCollection: vector.Vector[][]): IGeometry => ({polygons: polygonCollection.map(createPolygon)});

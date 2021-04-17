@@ -1,4 +1,4 @@
-import { reversePolygon } from '../geometry/geometry';
+import { EMPTY_GEOMETRY, reversePolygon } from '../geometry/geometry';
 import { isPolygon, SelectableElement } from '../geometry/selectable';
 import { IPolygon } from "../geometry/polygon";
 import { World } from "../stateModel";
@@ -11,10 +11,12 @@ import { connect } from '../store/store-connector';
 export class PolygonReverser implements IActionHandler {
    
     private selectedElements: SelectableElement[] = [];
-    
+    private wallGeometry = EMPTY_GEOMETRY;
+
     constructor(private world: World) { 
         connect(s => {
             this.selectedElements = s.selection.elements;
+            this.wallGeometry = s.walls.geometry;
         });
     }
 
@@ -33,8 +35,8 @@ export class PolygonReverser implements IActionHandler {
 
 
     private reverse = (): boolean => {
-        this.world.geometry = reversePolygon(this.selectedPolygons.map(x => x.id), this.world.geometry);
-        undoService.push(this.world.geometry);
+        this.wallGeometry = reversePolygon(this.selectedPolygons.map(x => x.id), this.wallGeometry);
+        undoService.push(this.wallGeometry);
         return true;
     };
 }

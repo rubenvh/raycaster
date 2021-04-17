@@ -1,4 +1,4 @@
-import { duplicatePolygons } from './../geometry/geometry';
+import { duplicatePolygons, EMPTY_GEOMETRY } from './../geometry/geometry';
 import { isPolygon, SelectableElement } from './../geometry/selectable';
 import { drawSegment, drawVector } from './../drawing/drawing';
 import { snap, Vector } from '../math/vector';
@@ -20,12 +20,15 @@ export class PolygonCreator implements IActionHandler {
     private emergingPolygon: Vector[] = [];
     private nextVertex: Vector;
     private selectedElements: SelectableElement[] = [];
+    private wallGeometry = EMPTY_GEOMETRY;
+
     constructor(
         private context: CanvasRenderingContext2D,
         private spaceTranslator: ISpaceTranslator,        
         private world: World) {
             connect(s => {
                 this.selectedElements = s.selection.elements;
+                this.wallGeometry = s.walls.geometry;
             });
     }
     
@@ -77,8 +80,8 @@ export class PolygonCreator implements IActionHandler {
         this.emergingPolygon.push(this.nextVertex);
 
         if (this.emergingPolygon.length > 2 && areClose(this.emergingPolygon[0], this.emergingPolygon[this.emergingPolygon.length-1], 5)) {            
-            this.world.geometry = addPolygon(createPolygon(this.emergingPolygon), this.world.geometry);
-            undoService.push(this.world.geometry);
+            this.wallGeometry = addPolygon(createPolygon(this.emergingPolygon), this.wallGeometry);
+            undoService.push(this.wallGeometry);
             this.cancel();
         }
         
@@ -88,14 +91,14 @@ export class PolygonCreator implements IActionHandler {
     private duplicatePolygon = () => {        
         let oldPolygonSelection = this.selectedElements.filter(isPolygon);
         let newPolygons = [];
-        [this.world.geometry, newPolygons] = duplicatePolygons(
-            oldPolygonSelection.map(x => x.polygon), [10,10], this.world.geometry);
+        [this.wallGeometry, newPolygons] = duplicatePolygons(
+            oldPolygonSelection.map(x => x.polygon), [10,10], this.wallGeometry);
 
         dispatch(startNewSelection([
                  ...this.selectedElements.filter(s => !isPolygon(s) || !oldPolygonSelection.includes(s)),
                  ...newPolygons.map(p => ({kind: 'polygon', polygon: p} as const))
             ]));
 
-        undoService.push(this.world.geometry);
+        undoService.push(this.wallGeometry);
     }
 }

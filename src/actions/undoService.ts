@@ -1,13 +1,26 @@
 import { ipcRenderer } from 'electron';
-import { globalState, World } from '../stateModel';
-import { IGeometry } from './../geometry/geometry';
-export class UndoService {
-    private world: World = globalState.world;
+import { useAppDispatch } from '../store';
+import { connect } from '../store/store-connector';
+import { updateWalls } from '../store/walls';
+import { EMPTY_GEOMETRY, IGeometry } from './../geometry/geometry';
+
+const dispatch = useAppDispatch();
+
+export class UndoService {    
     private timeline: IGeometry[] = []
     private index: number = 0;
+    private wallGeometry = EMPTY_GEOMETRY;
+    
     constructor() {        
         ipcRenderer.on('undo', this.undo);
         ipcRenderer.on('redo', this.redo);
+
+        connect(state => {
+            if (!this.timeline.includes(state.walls.geometry)) {
+                this.wallGeometry = state.walls.geometry;
+                this.push(this.wallGeometry);
+            }            
+        });
     }
 
     initialize = (g: IGeometry): IGeometry => {
@@ -23,12 +36,15 @@ export class UndoService {
 
     private undo = () => {
         this.index = Math.max(0, this.index - 1);
-        this.world.geometry = this.timeline[this.index];
+
+        dispatch(updateWalls(this.timeline[this.index]));        
     }
     private redo = () => {
-        this.world.geometry = (this.timeline[this.index+1] != undefined)
+        const redone = (this.timeline[this.index+1] != undefined)
             ? this.timeline[++this.index]
             : this.timeline[this.index];
+
+        dispatch(updateWalls(redone));
     }
 }
 

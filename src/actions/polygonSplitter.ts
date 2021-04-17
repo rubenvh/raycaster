@@ -5,16 +5,18 @@ import { World } from '../stateModel';
 import { IActionHandler } from './actions';
 import undoService from './undoService';
 import { IVertex } from '../geometry/vertex';
-import { splitPolygon } from '../geometry/geometry';
+import { EMPTY_GEOMETRY, splitPolygon } from '../geometry/geometry';
 import { connect } from '../store/store-connector';
 
 export class PolygonSplitter implements IActionHandler {
 
     private selectedElements: SelectableElement[] = [];
+    private wallGeometry = EMPTY_GEOMETRY;
     
     constructor(private world: World) { 
         connect(s => {
             this.selectedElements = s.selection.elements;
+            this.wallGeometry = s.walls.geometry;
         });
     }
     register(g: GlobalEventHandlers): IActionHandler {
@@ -36,8 +38,8 @@ export class PolygonSplitter implements IActionHandler {
         if (!this.isActive()) { return; }
 
         const [p, [a, b]] = this.selectedVertices;
-        this.world.geometry = splitPolygon(a, b, p.id, this.world.geometry);
-        undoService.push(this.world.geometry);        
+        this.wallGeometry = splitPolygon(a, b, p.id, this.wallGeometry);
+        undoService.push(this.wallGeometry);        
     }   
 
 }

@@ -5,7 +5,7 @@ import { IActionHandler } from "./actions";
 import { ISpaceTranslator } from "./geometrySelector";
 import { ipcRenderer } from 'electron';
 import { drawSegment, drawVector } from '../drawing/drawing';
-import { IGeometry, rotatePolygon } from '../geometry/geometry';
+import { EMPTY_GEOMETRY, IGeometry, rotatePolygon } from '../geometry/geometry';
 import undoService from './undoService';
 import { connect } from '../store/store-connector';
 
@@ -14,13 +14,15 @@ export class PolygonRotator implements IActionHandler {
     private isRotating: boolean;
     private candidates: IPolygon[] = [];
     private selectedElements: SelectableElement[] = [];
-    
+    private wallGeometry = EMPTY_GEOMETRY;
+
     constructor(
         private context: CanvasRenderingContext2D,
         private spaceTranslator: ISpaceTranslator,
         private world: World) {
             connect(s => {
                 this.selectedElements = s.selection.elements;
+                this.wallGeometry = s.walls.geometry;
             });
         }
    
@@ -64,14 +66,14 @@ export class PolygonRotator implements IActionHandler {
         if (event.button !== 0) { return false; }
         if (!this.isActive()) { return false; }
         event.stopImmediatePropagation();
-        this.world.geometry = this.calculateRotation(event);
-        undoService.push(this.world.geometry);        
+        this.wallGeometry = this.calculateRotation(event);
+        undoService.push(this.wallGeometry);        
         this.cancel();
         return true;
     };
 
     private calculateRotation = (event: MouseEvent): IGeometry => {
         const target = this.spaceTranslator.toWorldSpace(event);
-        return rotatePolygon(this.selectedPolygons.map(x => x.id), target, this.world.geometry);
+        return rotatePolygon(this.selectedPolygons.map(x => x.id), target, this.wallGeometry);
     }    
 }

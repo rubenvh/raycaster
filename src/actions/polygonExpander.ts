@@ -1,4 +1,4 @@
-import { expandPolygon, IGeometry } from './../geometry/geometry';
+import { EMPTY_GEOMETRY, expandPolygon, IGeometry } from './../geometry/geometry';
 import { IPolygon } from './../geometry/polygon';
 import { ipcRenderer } from "electron";
 import { isEdge, SelectableElement, SelectedEdge } from "../geometry/selectable";
@@ -14,6 +14,7 @@ export class PolygonExpander implements IActionHandler {
     private isExpanding: boolean;
     private candidate: IPolygon;
     private selectedElements: SelectableElement[] = [];
+    private wallGeometry = EMPTY_GEOMETRY;
     
     constructor(
         private context: CanvasRenderingContext2D,
@@ -21,6 +22,7 @@ export class PolygonExpander implements IActionHandler {
         private world: World) {
             connect(s => {
                 this.selectedElements = s.selection.elements;
+                this.wallGeometry = s.walls.geometry;
             });
         }
    
@@ -64,14 +66,14 @@ export class PolygonExpander implements IActionHandler {
 
         const [, geometry] = this.calculateExpansion(event);        
 
-        this.world.geometry = geometry;
-        undoService.push(this.world.geometry);        
+        this.wallGeometry = geometry;
+        undoService.push(this.wallGeometry);        
         this.cancel();
         return true;
     };
 
     private calculateExpansion = (event: MouseEvent): [IPolygon, IGeometry] => {
         const target = this.spaceTranslator.toWorldSpace(event);
-        return expandPolygon(this.selectedEdge.edge, this.selectedEdge.polygon.id, target, this.world.geometry);
+        return expandPolygon(this.selectedEdge.edge, this.selectedEdge.polygon.id, target, this.wallGeometry);
     }    
 }
