@@ -1,5 +1,5 @@
 import { IEntityKey } from './../geometry/entity';
-import { SelectableElement } from './../geometry/selectable';
+import { createVertexMap, SelectableElement } from './../geometry/selectable';
 import { ISpaceTranslator } from "./geometrySelector";
 import { Vector, subtract, add, snap } from "../math/vector";
 import { IActionHandler } from "./actions";
@@ -52,17 +52,10 @@ export class GeometryMover implements IActionHandler {
     };
 
     private move = (event: MouseEvent, disableUndo: boolean = undefined): boolean => {
+
+        const verticesMap: Map<IEntityKey, IVertex[]> = createVertexMap(this.selectedElements);
         const destination = this.spaceTranslator.toWorldSpace(event);
         let direction = this.snap(event.ctrlKey, subtract(destination, this.origin));
-                
-        const verticesMap: Map<IEntityKey, IVertex[]> = this.selectedElements.reduce((acc, s) => {
-            return acc.set(s.polygon.id, Array.from(new Set<IVertex>([...(acc.get(s.polygon.id)||[]).concat(
-                isVertex(s)
-                ? [s.vertex]
-                : isEdge(s)
-                ? [s.edge.start, s.edge.end]
-                : s.polygon.vertices)])));
-        }, new Map());
         
         dispatch(move({
             snap: event.ctrlKey, 

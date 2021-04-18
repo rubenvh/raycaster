@@ -1,4 +1,3 @@
-import { Guid } from "guid-typescript";
 import { distanceTo } from "../math/lineSegment";
 import { Vector } from "../math/vector";
 import { EdgeCollision, VertexCollision } from "./collision";
@@ -42,3 +41,12 @@ export const selectedElement = (collision : VertexCollision|EdgeCollision, selec
     ? ({kind: collision.kind, edge: collision.edge, polygon: collision.polygon }) 
     : ({kind: collision.kind, vertex: collision.vertex, polygon: collision.polygon });
 }
+
+export const createVertexMap = (elements: SelectableElement[]) => elements.reduce((acc, s) => {
+    return acc.set(s.polygon.id, Array.from(new Set<IVertex>([...(acc.get(s.polygon.id)||[]).concat(
+        isVertex(s)
+        ? [s.vertex]
+        : isEdge(s)
+        ? [s.edge.start, s.edge.end]
+        : s.polygon.vertices)])));
+}, new Map());

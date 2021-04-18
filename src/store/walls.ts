@@ -1,12 +1,12 @@
 import { IEntityKey } from './../geometry/entity';
 import { IEdge } from './../geometry/edge';
-import { IStoredGeometry, loadGeometry, IGeometry, transformEdges, moveVertices } from './../geometry/geometry';
+import { IStoredGeometry, loadGeometry, IGeometry, transformEdges, moveVertices, removeVertex } from './../geometry/geometry';
 import {splitEdge as makeEdgeSplit } from './../geometry/geometry';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { EMPTY_GEOMETRY } from '../geometry/geometry';
 import { Vector } from '../math/vector';
 import { projectOn } from '../math/lineSegment';
-import { IVertex } from '../geometry/vertex';
+import { IVertex, IVertexMap } from '../geometry/vertex';
 // Slice
 export type IWallState = {geometry: IGeometry, disableUndo?: boolean }
 const slice = createSlice({
@@ -30,12 +30,16 @@ const slice = createSlice({
       const cut = projectOn(action.payload.target, action.payload.edge.segment);
       state.geometry = makeEdgeSplit(cut, action.payload.edge, action.payload.poligon, state.geometry);
     },
-    move: (state, action: PayloadAction<{direction: Vector, verticesMap: Map<IEntityKey, IVertex[]>, snap: boolean, disableUndo?: boolean}>) => {      
+    move: (state, action: PayloadAction<{direction: Vector, verticesMap: IVertexMap, snap: boolean, disableUndo?: boolean}>) => {      
       state.disableUndo = action.payload.disableUndo;
       state.geometry = moveVertices(action.payload.snap, action.payload.direction, action.payload.verticesMap, state.geometry);
-  },
+    },
+    remove: (state, action: PayloadAction<IVertexMap>) => {
+      
+      state.geometry = Array.from(action.payload.entries()).reduce((acc, cur) => cur[1].reduce((acc2, v) => removeVertex(v, cur[0], acc2), acc), state.geometry);
+    }
   },
 });
 export default slice.reducer
 // Actions
-export const { loadWalls, updateWalls, adaptEdges, splitEdge, move } = slice.actions
+export const { loadWalls, updateWalls, adaptEdges, splitEdge, move, remove } = slice.actions

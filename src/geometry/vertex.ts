@@ -1,8 +1,8 @@
 import * as vector from '../math/vector';
-import { IEntity, giveIdentity } from './entity';
+import { IEntity, giveIdentity, IEntityKey } from './entity';
 
 export type IVertex = IEntity & { vector: vector.Vector };
-
+export type IVertexMap = Map<IEntityKey, IVertex[]>;
 export const makeVertex = (v: vector.Vector): IVertex => ({vector: v});
 const isVertex = (v: IVertex|vector.Vector): v is IVertex => (v as IVertex).vector !== undefined;    
 const getVector = (vertexOrVector: IVertex|vector.Vector): vector.Vector => isVertex(vertexOrVector) ? vertexOrVector.vector : vertexOrVector;

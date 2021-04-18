@@ -1,26 +1,22 @@
-import { IPolygon } from '../geometry/polygon';
+import { createVertexMap } from './../geometry/selectable';
 import { World } from '../stateModel';
 import { IActionHandler } from './actions';
-import { EMPTY_GEOMETRY, removeVertex } from '../geometry/geometry';
-import { isEdge, isVertex, SelectableElement } from '../geometry/selectable';
-import { IVertex } from '../geometry/vertex';
+import { SelectableElement } from '../geometry/selectable';
 import { ipcRenderer } from 'electron';
-import undoService from './undoService';
 import { connect } from '../store/store-connector';
 import { useAppDispatch } from '../store';
 import { clearSelection } from '../store/selection';
+import { remove } from '../store/walls';
 
 const dispatch = useAppDispatch();
 
 export class GeometryRemover implements IActionHandler {
         
     private selectedElements: SelectableElement[] = [];
-    private wallGeometry = EMPTY_GEOMETRY;
-
-    constructor(private world: World) {
+    
+    constructor() {
         connect(s => {
-            this.selectedElements = s.selection.elements;
-            this.wallGeometry = s.walls.geometry;
+            this.selectedElements = s.selection.elements;         
         });
     }
 
@@ -33,25 +29,29 @@ export class GeometryRemover implements IActionHandler {
 
     public isActive = () => this.selectedElements.length > 0;
     
-    private deleteSelection = () => {
+    private deleteSelection = () => {        
         if (this.isActive()) {
-            this.selectedElements.forEach(s => {
-                if (isVertex(s)) { 
-                    this.removeVertex(s.vertex, s.polygon); 
-                } else if (isEdge(s)) {
-                    this.removeVertex(s.edge.start, s.polygon);                     
-                } else {
-                    s.polygon.vertices.forEach(v => this.removeVertex(v, s.polygon));
-                }
-            });
-
+            const map = createVertexMap(this.selectedElements);
+            
+            dispatch(remove(map));
             dispatch(clearSelection());
-            undoService.push(this.wallGeometry); 
+            
+            // this.selectedElements.forEach(s => {
+            //     if (isVertex(s)) { 
+            //         this.removeVertex(s.vertex, s.polygon); 
+            //     } else if (isEdge(s)) {
+            //         this.removeVertex(s.edge.start, s.polygon);                     
+            //     } else {
+            //         s.polygon.vertices.forEach(v => this.removeVertex(v, s.polygon));
+            //     }
+            // });
+
+            
         }
         
     }
 
-    private removeVertex = (v: IVertex, p: IPolygon) => {
-        this.wallGeometry = removeVertex(v, p, this.wallGeometry);               
-    }
+    // private removeVertex = (v: IVertex, p: IPolygon) => {
+    //     this.wallGeometry = removeVertex(v, p.id, this.wallGeometry);               
+    // }
 }

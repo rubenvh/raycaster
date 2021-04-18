@@ -7,7 +7,7 @@ import { IEdge, cloneEdge, duplicateEdge, makeEdge, createEdges, loadEdge } from
 import { IEntity, giveIdentity, IEntityKey, createEntityKey, cloneKey } from './entity';
 import { BoundingBox, createPolygon, IPolygon, IStoredPolygon, loadPolygon, contains, containsVertex, containsEdge, centerOf, merge, storePolygon } from './polygon';
 import { SelectableElement, SelectedEdge, SelectedPolygon, SelectedVertex } from './selectable';
-import { areEqual, IVertex, makeVertex } from './vertex';
+import { areEqual, IVertex, IVertexMap, makeVertex } from './vertex';
 import { cloneMaterial } from './properties';
 
 export type IStoredGeometry = IEntity & { polygons: IStoredPolygon[]};
@@ -59,7 +59,7 @@ export const splitEdge = (cut: vector.Vector, edge: IEdge, poligon: IEntityKey, 
     });
 }
 
-export const moveVertices = (isSnapping: boolean, delta: vector.Vector, map: Map<IEntityKey, IVertex[]>, geometry: IGeometry): IGeometry => {
+export const moveVertices = (isSnapping: boolean, delta: vector.Vector, map: IVertexMap, geometry: IGeometry): IGeometry => {
     const doSnap = (v: vector.Vector) => isSnapping ? vector.snap(v) : v;
     return adaptPolygons(Array.from(map.keys()), geometry, p => {
         const vertices = [...map.get(p.id)];
@@ -77,8 +77,8 @@ export const moveVertices = (isSnapping: boolean, delta: vector.Vector, map: Map
     });
 };
 
-export const removeVertex = (vertex: IVertex, poligon: IPolygon, geometry: IGeometry) => {    
-    return adaptPolygons([poligon.id], geometry, (selectedPolygon) => {
+export const removeVertex = (vertex: IVertex, poligon: IEntityKey, geometry: IGeometry) => {    
+    return adaptPolygons([poligon], geometry, (selectedPolygon) => {
         const {edges} = selectedPolygon.edges.map(cloneEdge).reduce((acc, e)=> {                
             if (e.end.id === vertex.id && acc.lastEnd) { // first vertex in polygon was removed and we arrive at the last edge
                 e.end = acc.lastEnd;
