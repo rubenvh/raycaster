@@ -16,7 +16,7 @@ export class UndoService {
         ipcRenderer.on('redo', this.redo);
 
         connect(state => {
-            if (!this.timeline.includes(state.walls.geometry)) {
+            if (!this.timeline.includes(state.walls.geometry) && !state.walls.disableUndo) {
                 this.wallGeometry = state.walls.geometry;
                 this.push(this.wallGeometry);
             }            

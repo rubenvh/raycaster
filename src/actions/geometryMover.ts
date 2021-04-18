@@ -1,25 +1,25 @@
 import { IEntityKey } from './../geometry/entity';
-import { isSelectedVertex, SelectableElement } from './../geometry/selectable';
+import { SelectableElement } from './../geometry/selectable';
 import { ISpaceTranslator } from "./geometrySelector";
 import { Vector, subtract, add, snap } from "../math/vector";
 import { World } from "../stateModel";
 import { IActionHandler } from "./actions";
 import { IVertex } from "../geometry/vertex";
-import { EMPTY_GEOMETRY, moveVertices } from "../geometry/geometry";
 import { isCloseToSelected, isEdge, isVertex } from "../geometry/selectable";
-import undoService from './undoService';
 import { connect } from '../store/store-connector';
+import { useAppDispatch } from '../store';
+import { move } from '../store/walls';
+
+const dispatch = useAppDispatch();
 
 export class GeometryMover implements IActionHandler {
     private isDragging: boolean;
     private origin: Vector;
     private selectedElements: SelectableElement[] = [];
-    private wallGeometry = EMPTY_GEOMETRY;
-
+    
     constructor(private spaceTranslator: ISpaceTranslator, private world: World, private blockingHandlers: IActionHandler[] = []) {
         connect(s => {
-            this.selectedElements = s.selection.elements;
-            this.wallGeometry = s.walls.geometry;
+            this.selectedElements = s.selection.elements;    
         });
     }
     
@@ -43,22 +43,20 @@ export class GeometryMover implements IActionHandler {
         if (this.isDragging) event.stopImmediatePropagation();
         return true;
     };
-    private drag = (event: MouseEvent): boolean => this.isDragging ? this.move(event) : true;
+    private drag = (event: MouseEvent): boolean => this.isDragging ? this.move(event, true) : true;
     private dragStop = (event: MouseEvent): boolean => {
         if (this.isDragging) {
             this.isDragging = false;
-            this.move(event);
-            undoService.push(this.wallGeometry);
-            return true;
+            return this.move(event);
         }
         return false;
     };
 
-    private move = (event: MouseEvent): boolean => {
+    private move = (event: MouseEvent, disableUndo: boolean = undefined): boolean => {
         const destination = this.spaceTranslator.toWorldSpace(event);
-        let delta = this.snap(event.ctrlKey, subtract(destination, this.origin));
+        let direction = this.snap(event.ctrlKey, subtract(destination, this.origin));
                 
-        const verticesByPolygon: Map<IEntityKey, IVertex[]> = this.selectedElements.reduce((acc, s) => {
+        const verticesMap: Map<IEntityKey, IVertex[]> = this.selectedElements.reduce((acc, s) => {
             return acc.set(s.polygon.id, Array.from(new Set<IVertex>([...(acc.get(s.polygon.id)||[]).concat(
                 isVertex(s)
                 ? [s.vertex]
@@ -67,10 +65,15 @@ export class GeometryMover implements IActionHandler {
                 : s.polygon.vertices)])));
         }, new Map());
         
-        this.wallGeometry = moveVertices(event.ctrlKey, delta, verticesByPolygon, this.wallGeometry);
+        dispatch(move({
+            snap: event.ctrlKey, 
+            direction, 
+            verticesMap,
+            disableUndo
+        }));
 
         // calculate new origin for next drag operation
-        this.origin = add(this.origin, delta);
+        this.origin = add(this.origin, direction);
         return true;
     };
 
