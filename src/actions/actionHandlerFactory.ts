@@ -33,7 +33,7 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, world: World, te
     ];
     return [
             ...blockingHandlers,
-            new GeometryMover(t, world, blockingHandlers),
+            new GeometryMover(t, blockingHandlers),
             new GeometrySelector(canvas.getContext('2d'), t, world, blockingHandlers),
             new GeometryRemover(world),
             new PolygonCreator(canvas.getContext('2d'), t, world),

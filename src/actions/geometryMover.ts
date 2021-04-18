@@ -2,7 +2,6 @@ import { IEntityKey } from './../geometry/entity';
 import { SelectableElement } from './../geometry/selectable';
 import { ISpaceTranslator } from "./geometrySelector";
 import { Vector, subtract, add, snap } from "../math/vector";
-import { World } from "../stateModel";
 import { IActionHandler } from "./actions";
 import { IVertex } from "../geometry/vertex";
 import { isCloseToSelected, isEdge, isVertex } from "../geometry/selectable";
@@ -17,7 +16,7 @@ export class GeometryMover implements IActionHandler {
     private origin: Vector;
     private selectedElements: SelectableElement[] = [];
     
-    constructor(private spaceTranslator: ISpaceTranslator, private world: World, private blockingHandlers: IActionHandler[] = []) {
+    constructor(private spaceTranslator: ISpaceTranslator, private blockingHandlers: IActionHandler[] = []) {
         connect(s => {
             this.selectedElements = s.selection.elements;    
         });
