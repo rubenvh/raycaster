@@ -1,4 +1,3 @@
-import { duplicatePolygons, EMPTY_GEOMETRY } from './../geometry/geometry';
 import { isPolygon, SelectableElement } from './../geometry/selectable';
 import { drawSegment, drawVector } from './../drawing/drawing';
 import { snap, Vector } from '../math/vector';
@@ -6,11 +5,9 @@ import { areClose } from '../geometry/vertex';
 import { IActionHandler } from './actions';
 import { ISpaceTranslator } from './geometrySelector';
 import { ipcRenderer } from 'electron';
-import undoService from './undoService';
 import { connect } from '../store/store-connector';
 import { useAppDispatch } from '../store';
-import { startNewSelection } from '../store/selection';
-import { createPolygon } from '../store/walls';
+import { clonePolygon, createPolygon } from '../store/walls';
 
 const dispatch = useAppDispatch();
 export class PolygonCreator implements IActionHandler {
@@ -18,17 +15,18 @@ export class PolygonCreator implements IActionHandler {
     private emergingPolygon: Vector[] = [];
     private nextVertex: Vector;
     private selectedElements: SelectableElement[] = [];
-    private wallGeometry = EMPTY_GEOMETRY;
+    private duplicationCount: number = 0;
 
     constructor(
         private context: CanvasRenderingContext2D,
         private spaceTranslator: ISpaceTranslator) {
             connect(s => {
-                this.selectedElements = s.selection.elements;
-                this.wallGeometry = s.walls.geometry;
+                if (this.selectedElements !== s.selection.elements) {
+                    this.selectedElements = s.selection.elements;
+                    this.duplicationCount = 0;
+                }
             });
     }
-    
 
     register(g: GlobalEventHandlers): IActionHandler {
         ipcRenderer.on('geometry_polygon_clone', this.duplicatePolygon);
@@ -75,7 +73,6 @@ export class PolygonCreator implements IActionHandler {
         if (!this.isCreating) { return false; }
 
         this.emergingPolygon.push(this.nextVertex);
-
         if (this.emergingPolygon.length > 2 && areClose(this.emergingPolygon[0], this.emergingPolygon[this.emergingPolygon.length-1], 5)) {          
             dispatch(createPolygon(this.emergingPolygon));
             this.cancel();
@@ -85,16 +82,10 @@ export class PolygonCreator implements IActionHandler {
     };
 
     private duplicatePolygon = () => {        
-        let oldPolygonSelection = this.selectedElements.filter(isPolygon);
-        let newPolygons = [];
-        [this.wallGeometry, newPolygons] = duplicatePolygons(
-            oldPolygonSelection.map(x => x.polygon), [10,10], this.wallGeometry);
-
-        dispatch(startNewSelection([
-                 ...this.selectedElements.filter(s => !isPolygon(s) || !oldPolygonSelection.includes(s)),
-                 ...newPolygons.map(p => ({kind: 'polygon', polygon: p} as const))
-            ]));
-
-        undoService.push(this.wallGeometry);
+        let oldPolygonSelection = this.selectedElements.filter(isPolygon);        
+        dispatch(clonePolygon({
+            polygons: oldPolygonSelection.map(x => x.polygon), 
+            displacementIndex: ++this.duplicationCount
+        }));        
     }
 }
