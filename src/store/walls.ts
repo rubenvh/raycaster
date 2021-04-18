@@ -1,7 +1,7 @@
 import { createPolygon as doCreatePolygon, IPolygon } from './../geometry/polygon';
 import { IEntityKey } from './../geometry/entity';
 import { IEdge } from './../geometry/edge';
-import { IStoredGeometry, loadGeometry, IGeometry, transformEdges, moveVertices, removeVertex, addPolygon, duplicatePolygons, expandPolygon as doExpandPolygon } from './../geometry/geometry';
+import { IStoredGeometry, loadGeometry, IGeometry, transformEdges, moveVertices, removeVertex, addPolygon, duplicatePolygons, expandPolygon as doExpandPolygon, reversePolygon as doReversePolygon } from './../geometry/geometry';
 import {splitEdge as makeEdgeSplit } from './../geometry/geometry';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { EMPTY_GEOMETRY } from '../geometry/geometry';
@@ -54,9 +54,12 @@ const slice = createSlice({
     expandPolygon: (state, action: PayloadAction<{edge: IEdge, polygon: IEntityKey, direction: Vector}>) => {
       const {edge, polygon, direction} = action.payload;
       [,state.geometry] = doExpandPolygon(edge, polygon, direction, state.geometry);
+    },
+    reversePolygon: (state, action: PayloadAction<IEntityKey[]>) => {
+      state.geometry = doReversePolygon(action.payload, state.geometry);
     }
   },
 });
 export default slice.reducer
 // Actions
-export const { loadWalls, updateWalls, adaptEdges, splitEdge, move, remove, createPolygon, clonePolygon, expandPolygon } = slice.actions
+export const { loadWalls, updateWalls, adaptEdges, splitEdge, move, remove, createPolygon, clonePolygon, expandPolygon, reversePolygon } = slice.actions

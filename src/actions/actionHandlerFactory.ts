@@ -39,7 +39,7 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, world: World, te
             new PolygonCreator(canvas.getContext('2d'), t),
             new PolygonSplitter(world),
             new EdgeModifier(texLib),
-            new PolygonReverser(world),
+            new PolygonReverser(),
         ]
         .map(_ => _.register(canvas));
 }

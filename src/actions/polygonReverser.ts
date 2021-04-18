@@ -1,22 +1,20 @@
-import { EMPTY_GEOMETRY, reversePolygon } from '../geometry/geometry';
+import { EMPTY_GEOMETRY } from '../geometry/geometry';
 import { isPolygon, SelectableElement } from '../geometry/selectable';
 import { IPolygon } from "../geometry/polygon";
-import { World } from "../stateModel";
 import { IActionHandler } from "./actions";
 import { ipcRenderer } from 'electron';
-import undoService from './undoService';
 import { connect } from '../store/store-connector';
+import * as actions from '../store/walls';
+import { useAppDispatch } from '../store';
 
-
+const dispatch = useAppDispatch();
 export class PolygonReverser implements IActionHandler {
    
     private selectedElements: SelectableElement[] = [];
-    private wallGeometry = EMPTY_GEOMETRY;
-
-    constructor(private world: World) { 
+    
+    constructor() { 
         connect(s => {
-            this.selectedElements = s.selection.elements;
-            this.wallGeometry = s.walls.geometry;
+            this.selectedElements = s.selection.elements;    
         });
     }
 
@@ -35,8 +33,7 @@ export class PolygonReverser implements IActionHandler {
 
 
     private reverse = (): boolean => {
-        this.wallGeometry = reversePolygon(this.selectedPolygons.map(x => x.id), this.wallGeometry);
-        undoService.push(this.wallGeometry);
+        dispatch(actions.reversePolygon(this.selectedPolygons.map(x => x.id)));
         return true;
     };
 }
