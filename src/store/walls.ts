@@ -1,7 +1,7 @@
-import { createPolygon as makePolygon, IPolygon } from './../geometry/polygon';
+import { createPolygon as doCreatePolygon, IPolygon } from './../geometry/polygon';
 import { IEntityKey } from './../geometry/entity';
 import { IEdge } from './../geometry/edge';
-import { IStoredGeometry, loadGeometry, IGeometry, transformEdges, moveVertices, removeVertex, addPolygon, duplicatePolygons } from './../geometry/geometry';
+import { IStoredGeometry, loadGeometry, IGeometry, transformEdges, moveVertices, removeVertex, addPolygon, duplicatePolygons, expandPolygon as doExpandPolygon } from './../geometry/geometry';
 import {splitEdge as makeEdgeSplit } from './../geometry/geometry';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { EMPTY_GEOMETRY } from '../geometry/geometry';
@@ -42,7 +42,7 @@ const slice = createSlice({
           state.geometry);
     },
     createPolygon: (state, action: PayloadAction<Vector[]>) => {
-      state.geometry = addPolygon(makePolygon(action.payload), state.geometry);
+      state.geometry = addPolygon(doCreatePolygon(action.payload), state.geometry);
     },
     clonePolygon: (state, action: PayloadAction<{polygons: IPolygon[], displacementIndex? : number}>) => {
       const displacement = (action.payload.displacementIndex??1) * 10;
@@ -50,9 +50,13 @@ const slice = createSlice({
         action.payload.polygons, 
         [displacement, displacement], 
         state.geometry);
+    },
+    expandPolygon: (state, action: PayloadAction<{edge: IEdge, polygon: IEntityKey, direction: Vector}>) => {
+      const {edge, polygon, direction} = action.payload;
+      [,state.geometry] = doExpandPolygon(edge, polygon, direction, state.geometry);
     }
   },
 });
 export default slice.reducer
 // Actions
-export const { loadWalls, updateWalls, adaptEdges, splitEdge, move, remove, createPolygon, clonePolygon } = slice.actions
+export const { loadWalls, updateWalls, adaptEdges, splitEdge, move, remove, createPolygon, clonePolygon, expandPolygon } = slice.actions

@@ -28,7 +28,7 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, world: World, te
 
     const blockingHandlers = [
         new EdgeSplitter(canvas.getContext('2d'), t),
-        new PolygonExpander(canvas.getContext('2d'), t, world),
+        new PolygonExpander(canvas.getContext('2d'), t),
         new PolygonRotator(canvas.getContext('2d'), t, world)
     ];
     return [

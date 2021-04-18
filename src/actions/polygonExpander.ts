@@ -1,14 +1,15 @@
-import { EMPTY_GEOMETRY, expandPolygon, IGeometry } from './../geometry/geometry';
+import { EMPTY_GEOMETRY, expandPolygon } from './../geometry/geometry';
 import { IPolygon } from './../geometry/polygon';
 import { ipcRenderer } from "electron";
 import { isEdge, SelectableElement, SelectedEdge } from "../geometry/selectable";
-import { World } from "../stateModel";
 import { IActionHandler } from "./actions";
 import { ISpaceTranslator } from "./geometrySelector";
-import undoService from "./undoService";
 import { drawSegment, drawVector } from '../drawing/drawing';
 import { connect } from '../store/store-connector';
+import { useAppDispatch } from '../store';
+import * as actions from '../store/walls';
 
+const dispatch = useAppDispatch();
 export class PolygonExpander implements IActionHandler {
     
     private isExpanding: boolean;
@@ -18,16 +19,14 @@ export class PolygonExpander implements IActionHandler {
     
     constructor(
         private context: CanvasRenderingContext2D,
-        private spaceTranslator: ISpaceTranslator,
-        private world: World) {
-            connect(s => {
+        private spaceTranslator: ISpaceTranslator) {
+            connect(s => {                
                 this.selectedElements = s.selection.elements;
                 this.wallGeometry = s.walls.geometry;
             });
         }
    
     private get selectedEdge(): SelectedEdge {
-
         return this.selectedElements.length === 1 ? this.selectedElements.filter(isEdge)[0] : null;
     }
 
@@ -55,25 +54,18 @@ export class PolygonExpander implements IActionHandler {
 
     private selectExpansion = (event: MouseEvent): boolean => {
         if (!this.isActive()) { return false; }        
-        this.candidate = this.calculateExpansion(event)[0];
+        [this.candidate, ] = expandPolygon(this.selectedEdge.edge, this.selectedEdge.polygon.id, this.calculateTarget(event), this.wallGeometry);
         return true;
     };    
 
     private finalizeExpansion = (event: MouseEvent): boolean => {
         if (event.button !== 0) { return false; }
         if (!this.isActive()) { return false; }
-        event.stopImmediatePropagation();
-
-        const [, geometry] = this.calculateExpansion(event);        
-
-        this.wallGeometry = geometry;
-        undoService.push(this.wallGeometry);        
+        event.stopImmediatePropagation();        
+        dispatch(actions.expandPolygon({edge: this.selectedEdge.edge, polygon: this.selectedEdge.polygon.id, direction: this.calculateTarget(event)}))        
         this.cancel();
         return true;
     };
 
-    private calculateExpansion = (event: MouseEvent): [IPolygon, IGeometry] => {
-        const target = this.spaceTranslator.toWorldSpace(event);
-        return expandPolygon(this.selectedEdge.edge, this.selectedEdge.polygon.id, target, this.wallGeometry);
-    }    
+    private calculateTarget = (event: MouseEvent) => this.spaceTranslator.toWorldSpace(event);
 }
