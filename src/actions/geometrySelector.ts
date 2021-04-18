@@ -2,7 +2,6 @@ import { selectedElement } from './../geometry/selectable';
 import { IActionHandler } from './actions';
 import { detectCollisionAt, EMPTY_GEOMETRY, selectRegion } from '../geometry/geometry';
 import { Vector } from '../math/vector';
-import { World } from '../stateModel';
 import { BoundingBox } from '../geometry/polygon';
 import { drawBoundingBox } from '../drawing/drawing';
 import { SelectableElement } from '../geometry/selectable';
@@ -19,7 +18,7 @@ export class GeometrySelector implements IActionHandler {
     
     constructor(
         private context: CanvasRenderingContext2D,
-        private spaceTranslator: ISpaceTranslator, private world: World, private blockingHandlers: IActionHandler[] = []) {    
+        private spaceTranslator: ISpaceTranslator, private blockingHandlers: IActionHandler[] = []) {    
             connect(s => {               
                 this.wallGeometry = s.walls.geometry;
             });

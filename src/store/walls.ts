@@ -1,12 +1,13 @@
+import { createPolygon as makePolygon } from './../geometry/polygon';
 import { IEntityKey } from './../geometry/entity';
 import { IEdge } from './../geometry/edge';
-import { IStoredGeometry, loadGeometry, IGeometry, transformEdges, moveVertices, removeVertex } from './../geometry/geometry';
+import { IStoredGeometry, loadGeometry, IGeometry, transformEdges, moveVertices, removeVertex, addPolygon } from './../geometry/geometry';
 import {splitEdge as makeEdgeSplit } from './../geometry/geometry';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { EMPTY_GEOMETRY } from '../geometry/geometry';
 import { Vector } from '../math/vector';
 import { projectOn } from '../math/lineSegment';
-import { IVertex, IVertexMap } from '../geometry/vertex';
+import { IVertexMap } from '../geometry/vertex';
 // Slice
 export type IWallState = {geometry: IGeometry, disableUndo?: boolean }
 const slice = createSlice({
@@ -37,9 +38,12 @@ const slice = createSlice({
     remove: (state, action: PayloadAction<IVertexMap>) => {
       
       state.geometry = Array.from(action.payload.entries()).reduce((acc, cur) => cur[1].reduce((acc2, v) => removeVertex(v, cur[0], acc2), acc), state.geometry);
+    },
+    createPolygon: (state, action: PayloadAction<Vector[]>) => {
+      state.geometry = addPolygon(makePolygon(action.payload), state.geometry);
     }
   },
 });
 export default slice.reducer
 // Actions
-export const { loadWalls, updateWalls, adaptEdges, splitEdge, move, remove } = slice.actions
+export const { loadWalls, updateWalls, adaptEdges, splitEdge, move, remove, createPolygon } = slice.actions

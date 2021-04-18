@@ -3,16 +3,14 @@ import { isPolygon, SelectableElement } from './../geometry/selectable';
 import { drawSegment, drawVector } from './../drawing/drawing';
 import { snap, Vector } from '../math/vector';
 import { areClose } from '../geometry/vertex';
-import { World } from '../stateModel';
 import { IActionHandler } from './actions';
 import { ISpaceTranslator } from './geometrySelector';
-import { addPolygon } from '../geometry/geometry';
-import { createPolygon } from '../geometry/polygon';
 import { ipcRenderer } from 'electron';
 import undoService from './undoService';
 import { connect } from '../store/store-connector';
 import { useAppDispatch } from '../store';
 import { startNewSelection } from '../store/selection';
+import { createPolygon } from '../store/walls';
 
 const dispatch = useAppDispatch();
 export class PolygonCreator implements IActionHandler {
@@ -24,8 +22,7 @@ export class PolygonCreator implements IActionHandler {
 
     constructor(
         private context: CanvasRenderingContext2D,
-        private spaceTranslator: ISpaceTranslator,        
-        private world: World) {
+        private spaceTranslator: ISpaceTranslator) {
             connect(s => {
                 this.selectedElements = s.selection.elements;
                 this.wallGeometry = s.walls.geometry;
@@ -79,9 +76,8 @@ export class PolygonCreator implements IActionHandler {
 
         this.emergingPolygon.push(this.nextVertex);
 
-        if (this.emergingPolygon.length > 2 && areClose(this.emergingPolygon[0], this.emergingPolygon[this.emergingPolygon.length-1], 5)) {            
-            this.wallGeometry = addPolygon(createPolygon(this.emergingPolygon), this.wallGeometry);
-            undoService.push(this.wallGeometry);
+        if (this.emergingPolygon.length > 2 && areClose(this.emergingPolygon[0], this.emergingPolygon[this.emergingPolygon.length-1], 5)) {          
+            dispatch(createPolygon(this.emergingPolygon));
             this.cancel();
         }
         
