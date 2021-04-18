@@ -35,9 +35,11 @@ const slice = createSlice({
       state.disableUndo = action.payload.disableUndo;
       state.geometry = moveVertices(action.payload.snap, action.payload.direction, action.payload.verticesMap, state.geometry);
     },
-    remove: (state, action: PayloadAction<IVertexMap>) => {
-      
-      state.geometry = Array.from(action.payload.entries()).reduce((acc, cur) => cur[1].reduce((acc2, v) => removeVertex(v, cur[0], acc2), acc), state.geometry);
+    remove: (state, action: PayloadAction<IVertexMap>) => {      
+      state.geometry = Array.from(action.payload.entries())
+        .reduce((acc, [polygon, vertices]) => 
+          vertices.reduce((_, vertex) => removeVertex(vertex, polygon, _), acc), 
+          state.geometry);
     },
     createPolygon: (state, action: PayloadAction<Vector[]>) => {
       state.geometry = addPolygon(makePolygon(action.payload), state.geometry);

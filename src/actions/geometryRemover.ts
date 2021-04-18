@@ -1,5 +1,4 @@
 import { createVertexMap } from './../geometry/selectable';
-import { World } from '../stateModel';
 import { IActionHandler } from './actions';
 import { SelectableElement } from '../geometry/selectable';
 import { ipcRenderer } from 'electron';
@@ -31,27 +30,9 @@ export class GeometryRemover implements IActionHandler {
     
     private deleteSelection = () => {        
         if (this.isActive()) {
-            const map = createVertexMap(this.selectedElements);
-            
+            const map = createVertexMap(this.selectedElements);            
             dispatch(remove(map));
             dispatch(clearSelection());
-            
-            // this.selectedElements.forEach(s => {
-            //     if (isVertex(s)) { 
-            //         this.removeVertex(s.vertex, s.polygon); 
-            //     } else if (isEdge(s)) {
-            //         this.removeVertex(s.edge.start, s.polygon);                     
-            //     } else {
-            //         s.polygon.vertices.forEach(v => this.removeVertex(v, s.polygon));
-            //     }
-            // });
-
-            
-        }
-        
+        }        
     }
-
-    // private removeVertex = (v: IVertex, p: IPolygon) => {
-    //     this.wallGeometry = removeVertex(v, p.id, this.wallGeometry);               
-    // }
 }
