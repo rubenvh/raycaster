@@ -8,14 +8,13 @@ const slice = createSlice({
       elements: [],  
   } as ISelectionState,
   reducers: {
-    addSelectedElement: (state, action: PayloadAction<SelectableElement[]>) => {
-        const valueOf = _ => _.value;
+    addSelectedElement: (state, action: PayloadAction<SelectableElement[]>) => {        
         const ss = action.payload;
         ss.forEach(s => {                                    
             let i = state.elements.findIndex(_ => 
-                _.kind=='polygon' && isPolygon(s) && valueOf(_.polygon.id) === valueOf(s.polygon.id)
-                || _.kind == 'vertex' && isVertex(s) && valueOf(_.vertex.id) === valueOf(s.vertex.id)
-                || _.kind == 'edge' && isEdge(s) && valueOf(_.edge.id) === valueOf(s.edge.id))
+                _.kind=='polygon' && isPolygon(s) && _.polygon.id === s.polygon.id
+                || _.kind == 'vertex' && isVertex(s) && _.vertex.id === s.vertex.id
+                || _.kind == 'edge' && isEdge(s) && _.edge.id === s.edge.id)
         
             if (i === -1) {            
                 state.elements.push(s);
