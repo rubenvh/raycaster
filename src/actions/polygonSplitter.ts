@@ -1,22 +1,20 @@
 import { IPolygon } from './../geometry/polygon';
 import { isVertex, SelectableElement } from './../geometry/selectable';
 import { ipcRenderer } from 'electron';
-import { World } from '../stateModel';
 import { IActionHandler } from './actions';
-import undoService from './undoService';
 import { IVertex } from '../geometry/vertex';
-import { EMPTY_GEOMETRY, splitPolygon } from '../geometry/geometry';
 import { connect } from '../store/store-connector';
+import { useAppDispatch } from '../store';
+import * as actions from '../store/walls';
 
+const dispatch = useAppDispatch();
 export class PolygonSplitter implements IActionHandler {
 
     private selectedElements: SelectableElement[] = [];
-    private wallGeometry = EMPTY_GEOMETRY;
-    
-    constructor(private world: World) { 
+        
+    constructor() { 
         connect(s => {
-            this.selectedElements = s.selection.elements;
-            this.wallGeometry = s.walls.geometry;
+            this.selectedElements = s.selection.elements;    
         });
     }
     register(g: GlobalEventHandlers): IActionHandler {
@@ -36,10 +34,8 @@ export class PolygonSplitter implements IActionHandler {
 
     initiateSplit = () => {
         if (!this.isActive()) { return; }
-
-        const [p, [a, b]] = this.selectedVertices;
-        this.wallGeometry = splitPolygon(a, b, p.id, this.wallGeometry);
-        undoService.push(this.wallGeometry);        
+        const [polygon, [start, end]] = this.selectedVertices;
+        dispatch(actions.splitPolygon({polygon: polygon.id, start, end}))
     }   
 
 }

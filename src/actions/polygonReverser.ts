@@ -1,4 +1,3 @@
-import { EMPTY_GEOMETRY } from '../geometry/geometry';
 import { isPolygon, SelectableElement } from '../geometry/selectable';
 import { IPolygon } from "../geometry/polygon";
 import { IActionHandler } from "./actions";

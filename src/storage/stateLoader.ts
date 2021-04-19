@@ -2,12 +2,11 @@ import { DEFAULT_CAMERA } from './../camera';
 import { useAppDispatch } from './../store/index';
 import { connect } from './../store/store-connector';
 import { saveFile } from './dialogs';
-import { createGeometry, EMPTY_GEOMETRY, loadGeometry, storeGeometry } from './../geometry/geometry';
+import { EMPTY_GEOMETRY, storeGeometry } from './../geometry/geometry';
 import { ipcRenderer, remote } from "electron";
 import { globalState, World } from "../stateModel";
 import * as fs from "fs";
-import { ICamera, makeCamera } from "../camera";
-import undoService from '../actions/undoService';
+import { makeCamera } from "../camera";
 import { initializeCamera } from '../store/player';
 import { loadWalls } from '../store/walls';
 
@@ -24,12 +23,11 @@ export class WorldLoader {
         ipcRenderer.on('saveFileAs', (_, arg) => this.saveFile(arg.filePath));
         ipcRenderer.on('saveFile', (_, arg) => this.save());
         ipcRenderer.on('newFile', (_, arg) => this.clear());
-        this.loadWorld(WorldLoader.initWorld());
-
+        
         const loadedFile = localStorage.getItem('loadedFile');
         if (loadedFile) {
             this.loadFile(loadedFile);
-        } else {
+        } else {            
             this.clear();
         }
 
@@ -79,10 +77,7 @@ export class WorldLoader {
         }        
 
         dispatch(loadWalls(w.geometry || EMPTY_GEOMETRY));
-        this.world.config = w.config || {fadeOn: null};
-        
-        // TODO undo: make undoService aware of store
-        //undoService.initialize(this.world.geometry);
+        this.world.config = w.config || {fadeOn: null};        
     }
 
     public static initWorld = (): World => {

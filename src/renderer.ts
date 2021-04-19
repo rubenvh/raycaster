@@ -1,3 +1,4 @@
+import { UndoService } from './actions/undoService';
 
 
 // This file is required by the index.html file and will
@@ -21,7 +22,8 @@ const ui = {
 };
 
 let worldLoader = new WorldLoader();
-let handlers = [...createGlobalActionHandlers(globalState.world), ...createCanvasHandlers(ui.view_2d.canvas, globalState.world, textureLib)];
+let undoRegistrations = new UndoService();
+let handlers = [...createGlobalActionHandlers(globalState.world), ...createCanvasHandlers(ui.view_2d.canvas, textureLib)];
 let renderer3d = new Renderer3d(globalState.world, ui.view_3d.canvas, textureLib);
 let renderer2d = new Renderer2d(globalState.world, ui.view_2d.canvas);
 

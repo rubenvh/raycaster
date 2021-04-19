@@ -23,13 +23,13 @@ export function createGlobalActionHandlers(world: World): IActionHandler[] {
 
 }
 
-export function createCanvasHandlers(canvas: HTMLCanvasElement, world: World, texLib: TextureLibrary): IActionHandler[] {
+export function createCanvasHandlers(canvas: HTMLCanvasElement, texLib: TextureLibrary): IActionHandler[] {
     const t = spaceTranslator(canvas);
 
     const blockingHandlers = [
         new EdgeSplitter(canvas.getContext('2d'), t),
         new PolygonExpander(canvas.getContext('2d'), t),
-        new PolygonRotator(canvas.getContext('2d'), t, world)
+        new PolygonRotator(canvas.getContext('2d'), t)
     ];
     return [
             ...blockingHandlers,
@@ -37,7 +37,7 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, world: World, te
             new GeometrySelector(canvas.getContext('2d'), t, blockingHandlers),
             new GeometryRemover(),
             new PolygonCreator(canvas.getContext('2d'), t),
-            new PolygonSplitter(world),
+            new PolygonSplitter(),
             new EdgeModifier(texLib),
             new PolygonReverser(),
         ]

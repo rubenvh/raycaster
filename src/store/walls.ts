@@ -1,65 +1,101 @@
 import { createPolygon as doCreatePolygon, IPolygon } from './../geometry/polygon';
 import { IEntityKey } from './../geometry/entity';
 import { IEdge } from './../geometry/edge';
-import { IStoredGeometry, loadGeometry, IGeometry, transformEdges, moveVertices, removeVertex, addPolygon, duplicatePolygons, expandPolygon as doExpandPolygon, reversePolygon as doReversePolygon } from './../geometry/geometry';
-import {splitEdge as makeEdgeSplit } from './../geometry/geometry';
+import { IStoredGeometry, loadGeometry, IGeometry, transformEdges, moveVertices, removeVertex, addPolygon, duplicatePolygons, 
+  splitEdge as doSplitEdge,
+  expandPolygon as doExpandPolygon, reversePolygon as doReversePolygon, splitPolygon as doSplitPolygon,
+  rotatePolygon as doRotatePolygon } from './../geometry/geometry';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { EMPTY_GEOMETRY } from '../geometry/geometry';
 import { Vector } from '../math/vector';
 import { projectOn } from '../math/lineSegment';
-import { IVertexMap } from '../geometry/vertex';
+import { IVertex, IVertexMap } from '../geometry/vertex';
 // Slice
-export type IWallState = {geometry: IGeometry, disableUndo?: boolean }
+
+const performWallUpdate = (state: IWallState, geometry: IGeometry) => {
+  state.geometry = geometry;
+  if (!state.history.includes(state.geometry))
+  {
+    state.historyIndex += 1;
+    state.history = state.history.slice(0, state.historyIndex).concat(state.geometry);
+  }   
+};
+
+export type IWallState = {geometry: IGeometry, disableUndo?: boolean, history: IGeometry[], historyIndex: number }
 const slice = createSlice({
   name: 'walls',
   initialState: {      
-      geometry: EMPTY_GEOMETRY,  
+      geometry: EMPTY_GEOMETRY, 
+      history: [EMPTY_GEOMETRY],
+      historyIndex: 0, 
+      disableUndo: true
   } as IWallState,
   reducers: {
     loadWalls: (state, action: PayloadAction<IStoredGeometry>) => {
-        state.geometry = loadGeometry(action.payload)
+      state.disableUndo = false;        
+      state.geometry = loadGeometry(action.payload);
+      state.history = [state.geometry];
+      state.historyIndex = 0;
     },
     updateWalls: (state, action: PayloadAction<IGeometry>) => {
-        state.geometry = action.payload;
+      performWallUpdate(state, action.payload);      
+    },
+    undo: (state) => {
+      state.historyIndex = Math.max(0, state.historyIndex - 1);
+      state.geometry = state.history[state.historyIndex];
+    },
+    redo: (state) => {
+      state.historyIndex = Math.min(state.history.length-1, state.historyIndex + 1);      
+      state.geometry = state.history[state.historyIndex];
     },
     adaptEdges: (state, action: PayloadAction<{edgeMap: Map<IEntityKey, IEdge[]>, transformer: (_: IEdge) => IEdge}>) => {
-        const updatedEdges = Array.from(action.payload.edgeMap.entries())
-            .reduce((geo, [poligonId, edges]) => transformEdges(edges, poligonId, action.payload.transformer, geo), state.geometry);
-        state.geometry = updatedEdges;
+      const updatedEdges = Array.from(action.payload.edgeMap.entries())
+          .reduce((geo, [poligonId, edges]) => transformEdges(edges, poligonId, action.payload.transformer, geo), state.geometry);
+      performWallUpdate(state, updatedEdges);          
     },
     splitEdge: (state, action: PayloadAction<{edge: IEdge, poligon: IEntityKey, target: Vector}>) => {
       const cut = projectOn(action.payload.target, action.payload.edge.segment);
-      state.geometry = makeEdgeSplit(cut, action.payload.edge, action.payload.poligon, state.geometry);
+      performWallUpdate(state, doSplitEdge(cut, action.payload.edge, action.payload.poligon, state.geometry));
     },
     move: (state, action: PayloadAction<{direction: Vector, verticesMap: IVertexMap, snap: boolean, disableUndo?: boolean}>) => {      
       state.disableUndo = action.payload.disableUndo;
-      state.geometry = moveVertices(action.payload.snap, action.payload.direction, action.payload.verticesMap, state.geometry);
+      performWallUpdate(state, moveVertices(action.payload.snap, action.payload.direction, action.payload.verticesMap, state.geometry));
     },
     remove: (state, action: PayloadAction<IVertexMap>) => {      
-      state.geometry = Array.from(action.payload.entries())
+      performWallUpdate(state, Array.from(action.payload.entries())
         .reduce((acc, [polygon, vertices]) => 
           vertices.reduce((_, vertex) => removeVertex(vertex, polygon, _), acc), 
-          state.geometry);
+          state.geometry));
     },
     createPolygon: (state, action: PayloadAction<Vector[]>) => {
-      state.geometry = addPolygon(doCreatePolygon(action.payload), state.geometry);
+      performWallUpdate(state, addPolygon(doCreatePolygon(action.payload), state.geometry));
     },
     clonePolygon: (state, action: PayloadAction<{polygons: IPolygon[], displacementIndex? : number}>) => {
       const displacement = (action.payload.displacementIndex??1) * 10;
-      [state.geometry, ] = duplicatePolygons(
+      const [duplicated, ] = duplicatePolygons(
         action.payload.polygons, 
         [displacement, displacement], 
         state.geometry);
+      performWallUpdate(state, duplicated);
     },
     expandPolygon: (state, action: PayloadAction<{edge: IEdge, polygon: IEntityKey, direction: Vector}>) => {
       const {edge, polygon, direction} = action.payload;
-      [,state.geometry] = doExpandPolygon(edge, polygon, direction, state.geometry);
+      const [,expanded] = doExpandPolygon(edge, polygon, direction, state.geometry);
+      performWallUpdate(state, expanded);
     },
     reversePolygon: (state, action: PayloadAction<IEntityKey[]>) => {
-      state.geometry = doReversePolygon(action.payload, state.geometry);
+      performWallUpdate(state, doReversePolygon(action.payload, state.geometry));
+    },
+    splitPolygon: (state, action: PayloadAction<{polygon: IEntityKey, start:IVertex, end: IVertex}>) => {
+      const {polygon, start, end} = action.payload;
+      performWallUpdate(state, doSplitPolygon(start, end, polygon, state.geometry));
+    },
+    rotatePolygon: (state, action: PayloadAction<{polygons: IEntityKey[], rotation: Vector}>) => {
+      const {polygons, rotation} = action.payload;
+      performWallUpdate(state, doRotatePolygon(polygons, rotation, state.geometry));
     }
   },
 });
 export default slice.reducer
 // Actions
-export const { loadWalls, updateWalls, adaptEdges, splitEdge, move, remove, createPolygon, clonePolygon, expandPolygon, reversePolygon } = slice.actions
+export const { undo, redo, loadWalls, updateWalls, adaptEdges, splitEdge, move, remove, createPolygon, clonePolygon, expandPolygon, reversePolygon, splitPolygon, rotatePolygon } = slice.actions
