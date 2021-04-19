@@ -1,26 +1,15 @@
 import { ipcRenderer } from "electron";
-import { World } from "../stateModel";
+import { useAppDispatch } from "../store";
 import { IActionHandler } from "./actions";
-export class GlobalActionsHandler implements IActionHandler {
-        
-    constructor(private world: World) {}
+import * as actions from '../store/world-config';
 
+const dispatch = useAppDispatch();
+
+export class GlobalActionsHandler implements IActionHandler {
     register(g: GlobalEventHandlers): IActionHandler {
-        ipcRenderer.on('geometry_config_fadeOut', this.adaptFadingStrategy);            
+        ipcRenderer.on('geometry_config_fadeOut', () => dispatch(actions.toggleFadingStrategy()));
         return this;        
     }
-
-    handle() {}   
-    
+    handle() {}       
     isActive = (): boolean => true;
-
-    adaptFadingStrategy = () => {
-        if (this.world.config.fadeOn == null) {
-            this.world.config.fadeOn = 0;
-        } else if (this.world.config.fadeOn <= 245) {
-            this.world.config.fadeOn += 10;
-        } else {
-            this.world.config.fadeOn = null;
-        }
-    }
 }

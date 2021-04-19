@@ -1,7 +1,6 @@
 import { EdgeModifier } from './edgeModifier';
 import { CameraActionsHandler } from './cameraActionsHandler';
 import { spaceTranslator, GeometrySelector } from './geometrySelector';
-import { World } from '../stateModel';
 import { IActionHandler } from './actions';
 import { EdgeSplitter } from './edgeSplitter';
 import { GeometryMover } from './geometryMover';
@@ -14,10 +13,10 @@ import { PolygonSplitter } from './polygonSplitter';
 import { PolygonRotator } from './polygonRotator';
 import { PolygonReverser } from './polygonReverser';
 
-export function createGlobalActionHandlers(world: World): IActionHandler[] {
+export function createGlobalActionHandlers(): IActionHandler[] {
     return [
         new CameraActionsHandler(),
-        new GlobalActionsHandler(world),
+        new GlobalActionsHandler(),
     ]
     .map(_ => _.register(window));
 

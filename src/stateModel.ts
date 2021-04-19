@@ -1,5 +1,4 @@
 import { ITextureSource } from './textures/model';
-import { WorldLoader } from './storage/stateLoader';
 
 /* 
     world
@@ -22,15 +21,10 @@ import { WorldLoader } from './storage/stateLoader';
     
 
  */
-export type World = {        
-    config?: {fadeOn?: number}
-}
-export type State = {
-    world: World,
+export type State = {    
     textures: ITextureSource[],    
 }
-export const globalState: State = {
-    world: WorldLoader.initWorld(),
+export const globalState: State = {    
     textures: []
 }
 

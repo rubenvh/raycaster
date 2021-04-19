@@ -5,7 +5,6 @@ import { IEdge } from './geometry/edge';
 import { EMPTY_GEOMETRY, IGeometry } from './geometry/geometry';
 import { isSelectedEdge, isSelectedPolygon, isSelectedVertex, SelectableElement } from './geometry/selectable';
 import { IVertex } from './geometry/vertex';
-import { World } from './stateModel';
 
 export class Renderer2d {
     private context: CanvasRenderingContext2D;
@@ -14,7 +13,7 @@ export class Renderer2d {
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
     
-    constructor(private world: World, private canvas: HTMLCanvasElement) {
+    constructor(private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');
         this.background = document.createElement('canvas') as HTMLCanvasElement;
         this.resizeCanvas();        

@@ -5,12 +5,14 @@ import logger from 'redux-logger'
 import selection from './selection'
 import player from './player'
 import walls from './walls'
+import worldConfig from './world-config'
 
 const reducer = combineReducers({
   stats,
   selection,
   player,
   walls,
+  worldConfig
 })
 
 

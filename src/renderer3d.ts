@@ -1,10 +1,9 @@
-import { EMPTY_GEOMETRY, IGeometry } from './geometry/geometry';
+import { EMPTY_GEOMETRY } from './geometry/geometry';
 import { cloneKey, createEntityKey, IEntityKey } from './geometry/entity';
 import { TextureLibrary } from './textures/textureLibrary';
 import { Texture } from "./textures/texture";
-import { ICamera, makeRays, makeCamera, DEFAULT_CAMERA } from './camera';
+import { makeRays, DEFAULT_CAMERA } from './camera';
 import * as raycaster from './raycaster';
-import { World } from './stateModel';
 import { drawRect, drawTrapezoid } from './drawing/drawing';
 import { Guid } from 'guid-typescript';
 import { lookupMaterialFor, RayHit } from './geometry/collision';
@@ -14,6 +13,7 @@ import { isSelectedEdge, SelectableElement } from './geometry/selectable';
 import { statisticsUpdated } from './store/stats';
 import { useAppDispatch } from './store';
 import { connect } from './store/store-connector';
+import { IWorldConfigState } from './store/world-config';
 
 const dispatch = useAppDispatch();
 
@@ -39,8 +39,9 @@ export class Renderer3d {
     private selectedElements: SelectableElement[] = [];
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
+    private worldConfig: IWorldConfigState = {};
     
-    constructor(private world: World, private canvas: HTMLCanvasElement, private textureLibrary: TextureLibrary) {
+    constructor(private canvas: HTMLCanvasElement, private textureLibrary: TextureLibrary) {
         this.context = canvas.getContext('2d');
         this.context.imageSmoothingEnabled = false;        
         this.context.font = '12px sans-serif';
@@ -53,6 +54,7 @@ export class Renderer3d {
             this.selectedElements = s.selection.elements;
             this.camera = s.player.camera;
             this.wallGeometry = s.walls.geometry;
+            this.worldConfig = s.worldConfig;
         });
         
     }
@@ -157,7 +159,7 @@ export class Renderer3d {
     private drawFloor = () => this.drawBackground('rgb(50,80,80)', this.canvas.height/2, this.canvas.height);
     private drawBackground = (color: string, startRow: number, endRow: number) => {        
         let c: string|CanvasGradient = color;
-        const shade = this.world.config?.fadeOn;
+        const shade = this.worldConfig.fadeOn;
         if (shade != null) {
             var gradient = this.context.createLinearGradient(0, startRow, 0, endRow);        
             const convergence = `rgb(${shade},${shade},${shade})`;
@@ -183,7 +185,7 @@ export class Renderer3d {
         }  
         
         // apply fading    
-        if (this.world.config?.fadeOn != null) {
+        if (this.worldConfig.fadeOn != null) {
             this.applyFading(wallProps);
         }   
         
@@ -204,7 +206,7 @@ export class Renderer3d {
         const start = wallProps[wallProps.length-1];
         const end = wallProps[0];
         const trapezoid = getTrapezoid(start, end);
-        const shade = this.world.config?.fadeOn;
+        const shade = this.worldConfig.fadeOn;
         var gradient = this.context.createLinearGradient(trapezoid[0][0], 0, trapezoid[3][0], 0);        
         const addGradient = (step: number, w: WallProps) => {            
             const fadeFactor = Math.min(this.horizonDistance, w.distance)/(this.horizonDistance+10);
