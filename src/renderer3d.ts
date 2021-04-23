@@ -9,7 +9,7 @@ import { Guid } from 'guid-typescript';
 import { lookupMaterialFor, RayHit } from './geometry/collision';
 import { Vector } from './math/vector';
 import { IMaterial } from './geometry/properties';
-import { isSelectedEdge, SelectableElement } from './geometry/selectable';
+import { isSelectedEdge, SelectableElement } from './selection/selectable';
 import { statisticsUpdated } from './store/stats';
 import { useAppDispatch } from './store';
 import { connect } from './store/store-connector';

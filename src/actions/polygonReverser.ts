@@ -1,4 +1,4 @@
-import { isPolygon, SelectableElement } from '../geometry/selectable';
+import { isPolygon, SelectableElement } from '../selection/selectable';
 import { IPolygon } from "../geometry/polygon";
 import { IActionHandler } from "./actions";
 import { ipcRenderer } from 'electron';

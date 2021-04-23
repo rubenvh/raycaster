@@ -1,5 +1,5 @@
 import { IPolygon } from './../geometry/polygon';
-import { isVertex, SelectableElement } from './../geometry/selectable';
+import { isVertex, SelectableElement } from '../selection/selectable';
 import { ipcRenderer } from 'electron';
 import { IActionHandler } from './actions';
 import { IVertex } from '../geometry/vertex';

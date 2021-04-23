@@ -1,7 +1,7 @@
 import { EMPTY_GEOMETRY, expandPolygon } from './../geometry/geometry';
 import { IPolygon } from './../geometry/polygon';
 import { ipcRenderer } from "electron";
-import { isEdge, SelectableElement, SelectedEdge } from "../geometry/selectable";
+import { isEdge, SelectableElement, SelectedEdge } from "../selection/selectable";
 import { IActionHandler } from "./actions";
 import { ISpaceTranslator } from "./geometrySelector";
 import { drawSegment, drawVector } from '../drawing/drawing';

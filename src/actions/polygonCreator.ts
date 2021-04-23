@@ -1,4 +1,4 @@
-import { isPolygon, SelectableElement } from './../geometry/selectable';
+import { isPolygon, SelectableElement } from '../selection/selectable';
 import { drawSegment, drawVector } from './../drawing/drawing';
 import { snap, Vector } from '../math/vector';
 import { areClose } from '../geometry/vertex';

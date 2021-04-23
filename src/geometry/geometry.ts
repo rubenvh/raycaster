@@ -1,12 +1,11 @@
+import { selectPolygon } from './../selection/selectable';
 
-
-import { Guid } from 'guid-typescript';
 import * as vector from '../math/vector';
 import * as collision from './collision';
 import { IEdge, cloneEdge, duplicateEdge, makeEdge, createEdges, loadEdge } from './edge';
 import { IEntity, giveIdentity, IEntityKey, createEntityKey, cloneKey } from './entity';
 import { BoundingBox, createPolygon, IPolygon, IStoredPolygon, loadPolygon, contains, containsVertex, containsEdge, centerOf, merge, storePolygon } from './polygon';
-import { SelectableElement, SelectedEdge, SelectedPolygon, SelectedVertex } from './selectable';
+import { SelectableElement, selectEdge, selectVertex } from '../selection/selectable';
 import { areEqual, IVertex, IVertexMap, makeVertex } from './vertex';
 import { cloneMaterial } from './properties';
 
@@ -104,10 +103,10 @@ export const removeVertex = (vertex: IVertex, poligon: IEntityKey, geometry: IGe
 export const selectRegion = (region: BoundingBox, geometry: IGeometry): SelectableElement[] => {
     const ps = geometry.polygons.filter(p => contains(region, p.boundingBox));
     const [vs, es] = geometry.polygons.filter(p => !ps.includes(p)).reduce((acc, p) => ([
-        [...acc[0], ...p.vertices.filter(v => containsVertex(v, region)).map(v => ({kind: 'vertex', vertex: v, polygon: p} as SelectedVertex))],
-        [...acc[1], ...p.edges.filter(v => containsEdge(v, region)).map(e => ({kind: 'edge', edge: e, polygon: p} as SelectedEdge))]]), [[], []]);
+        [...acc[0], ...p.vertices.filter(v => containsVertex(v, region)).map(v => selectVertex(v, p))],
+        [...acc[1], ...p.edges.filter(v => containsEdge(v, region)).map(e => selectEdge(e, p))]]), [[], []]);
 
-    return [...ps.map(p => ({kind: 'polygon', polygon: p} as SelectedPolygon)),
+    return [...ps.map(p => selectPolygon(p)),
             ...es, ...vs,
     ];
 };

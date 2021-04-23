@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { isEdge, isPolygon, isVertex, SelectableElement } from '../geometry/selectable';
+import { isEdge, isPolygon, isVertex, SelectableElement } from '../selection/selectable';
 // Slice
 export type ISelectionState = {elements: SelectableElement[] }
 const slice = createSlice({

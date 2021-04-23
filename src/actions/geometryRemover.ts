@@ -1,6 +1,6 @@
-import { createVertexMap } from './../geometry/selectable';
+import { createVertexMap } from '../selection/selectable';
 import { IActionHandler } from './actions';
-import { SelectableElement } from '../geometry/selectable';
+import { SelectableElement } from '../selection/selectable';
 import { ipcRenderer } from 'electron';
 import { connect } from '../store/store-connector';
 import { useAppDispatch } from '../store';

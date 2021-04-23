@@ -1,10 +1,10 @@
 import { IEntityKey } from './../geometry/entity';
-import { createVertexMap, SelectableElement } from './../geometry/selectable';
+import { createVertexMap, SelectableElement } from '../selection/selectable';
 import { ISpaceTranslator } from "./geometrySelector";
 import { Vector, subtract, add, snap } from "../math/vector";
 import { IActionHandler } from "./actions";
 import { IVertex } from "../geometry/vertex";
-import { isCloseToSelected, isEdge, isVertex } from "../geometry/selectable";
+import { isCloseToSelected, isEdge, isVertex } from "../selection/selectable";
 import { connect } from '../store/store-connector';
 import { useAppDispatch } from '../store';
 import { move } from '../store/walls';

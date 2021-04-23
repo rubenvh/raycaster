@@ -3,7 +3,7 @@ import { projectOn } from "../math/lineSegment";
 import { IActionHandler } from "./actions";
 import { Vector } from '../math/vector';
 import { drawVector } from '../drawing/drawing';
-import { isEdge, SelectableElement, SelectedEdge } from '../geometry/selectable';
+import { isEdge, SelectableElement, SelectedEdge } from '../selection/selectable';
 import { ipcRenderer } from 'electron';
 import { connect } from '../store/store-connector';
 import { useAppDispatch } from '../store';

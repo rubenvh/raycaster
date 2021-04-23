@@ -4,7 +4,7 @@ import { getMaterial, setTexture } from './../geometry/properties';
 import { ITextureReference } from './../textures/model';
 import { IActionHandler } from "./actions";
 import { IEdge } from '../geometry/edge';
-import { isEdge, isPolygon, SelectableElement } from "../geometry/selectable";
+import { isEdge, isPolygon, SelectableElement } from "../selection/selectable";
 import { TextureLibrary } from '../textures/textureLibrary';
 import { ipcRenderer } from 'electron';
 import { applyTexture, Face, toggleTexture } from '../geometry/properties';

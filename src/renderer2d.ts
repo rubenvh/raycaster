@@ -3,7 +3,7 @@ import { ICamera, makeRays, DEFAULT_CAMERA } from './camera';
 import { drawSegment, drawVector, drawBoundingBox } from './drawing/drawing';
 import { IEdge } from './geometry/edge';
 import { EMPTY_GEOMETRY, IGeometry } from './geometry/geometry';
-import { isSelectedEdge, isSelectedPolygon, isSelectedVertex, SelectableElement } from './geometry/selectable';
+import { isSelectedEdge, isSelectedPolygon, isSelectedVertex, SelectableElement } from './selection/selectable';
 import { IVertex } from './geometry/vertex';
 
 export class Renderer2d {

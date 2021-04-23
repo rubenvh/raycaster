@@ -1,10 +1,10 @@
 import { distanceTo } from "../math/lineSegment";
 import { Vector } from "../math/vector";
-import { EdgeCollision, VertexCollision } from "./collision";
-import { IEdge } from "./edge";
-import { IEntityKey } from "./entity";
-import { IPolygon } from "./polygon";
-import { distance, IVertex } from "./vertex";
+import { EdgeCollision, VertexCollision } from "../geometry/collision";
+import { IEdge } from "../geometry/edge";
+import { IEntityKey } from "../geometry/entity";
+import { IPolygon } from "../geometry/polygon";
+import { distance, IVertex } from "../geometry/vertex";
 
 export type SelectedVertex = {kind: 'vertex', vertex: IVertex, polygon: IPolygon};
 export type SelectedEdge = {kind: 'edge', edge: IEdge, polygon: IPolygon};
@@ -12,7 +12,9 @@ export type SelectedPolygon = {kind: 'polygon', polygon: IPolygon};
 export const isVertex = (_: SelectableElement): _ is SelectedVertex => _.kind === 'vertex';
 export const isEdge = (_: SelectableElement): _ is SelectedEdge => _.kind === 'edge';
 export const isPolygon = (_: SelectableElement): _ is SelectedPolygon => _.kind === 'polygon';
-
+export const selectVertex = (vertex: IVertex, polygon: IPolygon): SelectedVertex => ({kind: 'vertex', vertex, polygon});
+export const selectEdge = (edge: IEdge, polygon: IPolygon): SelectedEdge => ({kind: 'edge', edge, polygon});
+export const selectPolygon = (polygon: IPolygon): SelectedPolygon => ({kind: 'polygon', polygon});
 export type SelectableElement = SelectedVertex | SelectedEdge | SelectedPolygon;
 
 export const isSelectedPolygon = (id: IEntityKey, selection: SelectableElement[]): boolean => {
