@@ -85,7 +85,7 @@ export class GeometrySelector implements IActionHandler {
     private performSelection = (event: MouseEvent, ss: SelectableElement[]) => {        
         if (!event.ctrlKey) dispatch(clearSelection());
         if (!ss || ss.length === 0) return;         
-        dispatch(!event.ctrlKey ? startNewSelection(ss) : addSelectedElement(ss));        
+        dispatch(!event.ctrlKey ? startNewSelection({elements: ss, geometry: this.wallGeometry}) : addSelectedElement({elements: ss, geometry: this.wallGeometry}));
     }
 }
 

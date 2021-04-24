@@ -13,7 +13,7 @@ export const buildSelectionTree = (selection: SelectableElement[], geometry: IGe
     return ({children: selection.map(_ => buildSelectionBranch(_, geometry))});
 }
 
-export const buildSelectionBranch = (selection: SelectableElement, geometry: IGeometry): ISelectionTreeNode => {
+const buildSelectionBranch = (selection: SelectableElement, geometry: IGeometry): ISelectionTreeNode => {
     if (isPolygon(selection)) {
         return buildPolygonBranch(selection);
     } else if (isEdge(selection)) {
@@ -23,7 +23,7 @@ export const buildSelectionBranch = (selection: SelectableElement, geometry: IGe
     }
 }
 
-export const buildPolygonBranch = (selection: SelectableElement): ISelectionTreeNode  => {
+const buildPolygonBranch = (selection: SelectableElement): ISelectionTreeNode  => {
     if (isPolygon(selection)) {
         return ({
             element: selection, 
@@ -37,14 +37,14 @@ export const buildPolygonBranch = (selection: SelectableElement): ISelectionTree
     }
 }
 
-export const buildEdgeBranch = (selection: SelectedEdge, geometry: IGeometry): ISelectionTreeNode  => {
+const buildEdgeBranch = (selection: SelectedEdge, geometry: IGeometry): ISelectionTreeNode  => {
     return ({element: selection, children: [
         buildPolygonBranch(selectPolygon(selection.polygon)),
         buildVertexBranch(selectVertex(selection.edge.start, selection.polygon), geometry),
         buildVertexBranch(selectVertex(selection.edge.end, selection.polygon), geometry)]});
 }
 
-export const buildVertexBranch = (selection: SelectableElement, geometry: IGeometry): ISelectionTreeNode  => {
+const buildVertexBranch = (selection: SelectableElement, geometry: IGeometry): ISelectionTreeNode  => {
     if (isPolygon(selection)) {
         return ({element: selection, children: []});            
     } else if (isEdge(selection)) {
