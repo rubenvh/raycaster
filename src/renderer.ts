@@ -8,6 +8,9 @@ import { Renderer2d } from "./renderer2d";
 import { textureLib } from './textures/textureLibrary';
 import { WorldLoader } from './storage/stateLoader';
 import { UndoService } from './actions/undoService';
+import { StatsElement } from './components/statsComponent';
+import { connect } from './store/store-connector';
+import { GeometrySelectionComponent } from './components/geometrySelectionComponent';
 
 const ui = {        
     view_2d: {
@@ -15,7 +18,9 @@ const ui = {
     },
     view_3d: {
         canvas: document.getElementById('view_3d') as HTMLCanvasElement,
-    }    
+    },
+    stats: document.getElementById('stats') as StatsElement,
+    selectionTree: document.getElementById('geometry-selection') as GeometrySelectionComponent
 };
 
 let worldLoader = new WorldLoader();
@@ -24,6 +29,10 @@ let handlers = [...createGlobalActionHandlers(), ...createCanvasHandlers(ui.view
 let renderer3d = new Renderer3d(ui.view_3d.canvas, textureLib);
 let renderer2d = new Renderer2d(ui.view_2d.canvas);
 
+connect(s => {
+    ui.stats.data = s.stats;
+    ui.selectionTree.data = s.selection.tree;
+});
 const times: number[] = [];
 let fps: number;
 function loop() {

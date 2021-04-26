@@ -1,5 +1,4 @@
-import { connect } from './../store/store-connector';
-import store from "../store";
+import { IStatsState } from './../store/stats';
 import { IPerformanceStatistics, IIntersectionStatistics } from "../store/stats";
 
 const template = document.createElement('template');
@@ -14,6 +13,9 @@ template.innerHTML =  /*html*/`
 
 export class StatsElement extends HTMLElement {
     
+    private element: HTMLDivElement;
+    private _stats: IStatsState;
+
     constructor() {
         super();
         // attach Shadow DOM to the parent element.
@@ -22,28 +24,38 @@ export class StatsElement extends HTMLElement {
         const shadowRoot = this.attachShadow({mode: 'closed'});
         // clone template content nodes to the shadow DOM
         shadowRoot.appendChild(template.content.cloneNode(true));
-        const element = shadowRoot.querySelector('div');
         
-        connect( state => {
-            element.innerHTML = `<ul>
-            <li>FPS: ${state.stats.performance.fps}</li>
-            ${this.calculateTiming(state.stats.performance.timing)}
-            ${this.calculateIntersections(state.stats.intersections)}
-            </ul>`;
-        });        
+        this.element = shadowRoot.querySelector('div');
     }
 
-    connectedCallback() {     
-    }   
     
-    calculateTiming(timing: IPerformanceStatistics) {        
+    set data(value) {
+        if (value !== this._stats) {
+            this._stats = value;
+            this.render();
+        }
+    }
+      
+    get data() {
+        return this._stats;
+    }
+
+
+    private render() {        
+        this.element.innerHTML = `<ul>
+        <li>FPS: ${this._stats.performance.fps}</li>
+        ${this.calculateTiming(this._stats.performance.timing)}
+        ${this.calculateIntersections(this._stats.intersections)}
+        </ul>`;
+    }
+    private calculateTiming(timing: IPerformanceStatistics) {        
         return `<li>Casting: ${this.displayMs(timing.casting, timing.total)}</li>
         <li>ZBuffering: ${this.displayMs(timing.zbuffering, timing.total)}</li>
         <li>Drawing: ${this.displayMs(timing.drawing, timing.total)}</li>`;
     }
-    displayMs = (ms: number, total: number) => `${ms.toFixed(0)}ms (${(ms/total*100).toFixed(0)}%)`;
+    private displayMs = (ms: number, total: number) => `${ms.toFixed(0)}ms (${(ms/total*100).toFixed(0)}%)`;
 
-    calculateIntersections(i: IIntersectionStatistics) {        
+    private calculateIntersections(i: IIntersectionStatistics) {        
         
         let t = i.rayIntersectionStats.reduce(
             (acc, cur) => ({

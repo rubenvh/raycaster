@@ -12,6 +12,7 @@ export type SelectedPolygon = {kind: 'polygon', polygon: IPolygon};
 export const isVertex = (_: SelectableElement): _ is SelectedVertex => _.kind === 'vertex';
 export const isEdge = (_: SelectableElement): _ is SelectedEdge => _.kind === 'edge';
 export const isPolygon = (_: SelectableElement): _ is SelectedPolygon => _.kind === 'polygon';
+export const selectedId = (_ : SelectableElement) => isVertex(_) ? _.vertex.id : isEdge(_) ? _.edge.id : _.polygon.id;
 export const selectVertex = (vertex: IVertex, polygon: IPolygon): SelectedVertex => ({kind: 'vertex', vertex, polygon});
 export const selectEdge = (edge: IEdge, polygon: IPolygon): SelectedEdge => ({kind: 'edge', edge, polygon});
 export const selectPolygon = (polygon: IPolygon): SelectedPolygon => ({kind: 'polygon', polygon});
