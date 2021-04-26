@@ -23,19 +23,17 @@ export class GeometrySelectionComponent extends HTMLElement {
 
         this.tree = shadowRoot.getElementById('tree') as SelectionTreeNodeComponent;
 
-        shadowRoot.addEventListener('selected', (event) => {                    
-          //event.stopPropagation();                          
-          console.log(event);
-          //this.tree.deselect();
-          
+        this.tree.addEventListener('selected', (event) => {                    
+          event.stopPropagation();                                    
+          this.tree.deselect();
+          // TODO: send selection to edit component   
+          // TODO: dispatch tree selection changed (to highlight selection in 2d view)       
         }, {capture: true, once: false, passive: false});
     } 
 
     set data (value) {
         this.tree.data = value;
     }
-    
-    
 }
 
 window.customElements.define('geometry-selection', GeometrySelectionComponent);

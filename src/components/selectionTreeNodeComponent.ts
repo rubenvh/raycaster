@@ -54,8 +54,7 @@ export class SelectionTreeNodeComponent extends HTMLElement {
     private listElement: HTMLUListElement;
     private _node: ISelectionTreeNode;
     private titleElement: HTMLElement;
-    private _isRoot: boolean = true;
-    private _root: SelectionTreeNodeComponent;
+    private _isRoot: boolean = true;    
     private _children: SelectionTreeNodeComponent[] = [];
 
     constructor() {
@@ -63,27 +62,21 @@ export class SelectionTreeNodeComponent extends HTMLElement {
         // attach Shadow DOM to the parent element.
         // save the shadowRoot in a property because, if you create your shadow DOM in closed mode, 
         // you have no access from outside
-        const shadowRoot = this.attachShadow({mode: 'closed'});
+        const shadowRoot = this.attachShadow({mode: 'open'});
         // clone template content nodes to the shadow DOM
         shadowRoot.appendChild(template.content.cloneNode(true));
-        //document.createElement('selection-tree-node')
-
+        
         this.titleElement = shadowRoot.getElementById('title');
         this.listElement = shadowRoot.getElementById('children') as HTMLUListElement;
         this.isRoot = true;
-        this.root = this;
 
         this.titleElement.addEventListener('click', (event) => {                    
-          event.stopPropagation();                          
-          this._root.deselect();
-          this.titleElement.classList.add("selected");
-          this.dispatchEvent(new CustomEvent('selected', { detail: this._node.element, bubbles: true }));          
+          event.stopPropagation();   
+          this.dispatchEvent(new CustomEvent('selected', { detail: this._node.element, bubbles: true, composed: true}));          
+          this.titleElement.classList.add('selected');
         });
     }
-
-    set root ( value) {
-      this._root = value;
-    }
+    
     set isRoot(value) {
         this.titleElement.hidden = value;
         if (value) {
@@ -145,10 +138,7 @@ export class SelectionTreeNodeComponent extends HTMLElement {
                 li.setAttribute('data-id', selectedId(c.element));
                 const subTreeNode = document.createElement('selection-tree-node') as SelectionTreeNodeComponent;                
                 subTreeNode.isRoot = false;
-                subTreeNode.root = this._root;
-                subTreeNode.data = c;                
-                //subTreeNode.addEventListener('selected', (event) => console.log(event));
-               
+                subTreeNode.data = c;                                               
                 this._children.push(subTreeNode);
                 li.appendChild(subTreeNode);
 
@@ -156,8 +146,6 @@ export class SelectionTreeNodeComponent extends HTMLElement {
             });        
         this.listElement.append(...items);        
     }   
-    
-    
 }
 
 window.customElements.define('selection-tree-node', SelectionTreeNodeComponent);
