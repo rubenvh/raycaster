@@ -58,12 +58,8 @@ export class SelectionTreeNodeComponent extends HTMLElement {
     private _children: SelectionTreeNodeComponent[] = [];
 
     constructor() {
-        super();
-        // attach Shadow DOM to the parent element.
-        // save the shadowRoot in a property because, if you create your shadow DOM in closed mode, 
-        // you have no access from outside
-        const shadowRoot = this.attachShadow({mode: 'open'});
-        // clone template content nodes to the shadow DOM
+        super();        
+        const shadowRoot = this.attachShadow({mode: 'closed'});        
         shadowRoot.appendChild(template.content.cloneNode(true));
         
         this.titleElement = shadowRoot.getElementById('title');
@@ -111,6 +107,7 @@ export class SelectionTreeNodeComponent extends HTMLElement {
       this.titleElement.classList.remove('selected');
       this._children.forEach(c => c.deselect());
     }
+    
     private render() {    
 
         if (this._node.element) {            

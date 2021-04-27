@@ -3,7 +3,7 @@ import { ICamera, makeRays, DEFAULT_CAMERA } from './camera';
 import { drawSegment, drawVector, drawBoundingBox } from './drawing/drawing';
 import { IEdge } from './geometry/edge';
 import { EMPTY_GEOMETRY, IGeometry } from './geometry/geometry';
-import { isSelectedEdge, isSelectedPolygon, isSelectedVertex, SelectableElement } from './selection/selectable';
+import { isSelectedEdge, isSelectedPolygon, isSelectedVertex, SelectableElement, isVertex } from './selection/selectable';
 import { IVertex } from './geometry/vertex';
 
 export class Renderer2d {
@@ -12,6 +12,7 @@ export class Renderer2d {
     private selectedElements: SelectableElement[] = [];
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
+    private selectedTreeNode: SelectableElement;
     
     constructor(private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');
@@ -23,6 +24,7 @@ export class Renderer2d {
         });
         connect(s => {
             this.selectedElements = s.selection.elements;
+            this.selectedTreeNode = s.selection.treeSelection;
             this.camera = s.player.camera;
             this.wallGeometry = s.walls.geometry;
         });
@@ -64,7 +66,7 @@ export class Renderer2d {
     private drawGeometry = (context: CanvasRenderingContext2D, geometry: IGeometry) => {
         
         geometry.polygons.forEach(p => {
-            const selected = isSelectedPolygon(p.id, this.selectedElements);
+            const selected = isSelectedPolygon(p.id, this.selectedElements);            
             drawBoundingBox(context, p.boundingBox, selected ? 'rgb(255,100,0,0.8)' : 'rgb(150,100,50,0.8)');
             p.vertices.forEach(e => this.drawVertex(context, e, selected));
             p.edges.forEach(e => this.drawEdge(context, e, selected));
@@ -81,7 +83,8 @@ export class Renderer2d {
 
     private drawVertex = (context: CanvasRenderingContext2D, vertex: IVertex, selected: boolean = false) => {
         selected = selected || isSelectedVertex(vertex.id, this.selectedElements);
-        drawVector(context, vertex.vector, selected ? 'rgb(250,100,0)' : 'rgb(100,100,0)');
+        const highlighted = this.selectedTreeNode && isVertex(this.selectedTreeNode) && this.selectedTreeNode.vertex.id === vertex.id;
+        drawVector(context, vertex.vector, highlighted ? 'rgb(0,250,100)' : selected ? 'rgb(250,100,0)' : 'rgb(100,100,0)');
     };    
 
     private initGrid = () => {        
