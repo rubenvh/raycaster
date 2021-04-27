@@ -119,6 +119,6 @@ enum Colors {
     POLYGON_HIGHLIGHTED = 'rgba(0,250,100,0.8)',
     VERTEX = 'rgb(200,200,200)',
     VERTEX_SELECTED = 'rgb(255,100,0)',
-    EDGE = 'rgb(150,150,150)',
-    EDGE_SELECTED = 'rgb(210,100,0)',
+    EDGE = 'rgb(175,175,125)',
+    EDGE_SELECTED = 'rgb(210,80,10)',
 }
