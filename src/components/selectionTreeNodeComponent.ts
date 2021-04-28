@@ -44,28 +44,32 @@ ul {
   background-color: blue;
 }
 </style>
-<span id="title" class="caret"></span>
+<span id="expander" class="caret"></span>
+<span id="title"></span>
 <ul id="children">
 </ul>
 `;
 
 export class SelectionTreeNodeComponent extends HTMLElement {
     
-    private listElement: HTMLUListElement;
-    private _node: ISelectionTreeNode;
+    private listElement: HTMLUListElement;    
     private titleElement: HTMLElement;
+    private expanderElement: HTMLElement;
+
+    private _node: ISelectionTreeNode;
     private _isRoot: boolean = true;    
-    private _children: SelectionTreeNodeComponent[] = [];
+    private _children: SelectionTreeNodeComponent[] = [];    
 
     constructor() {
         super();        
         const shadowRoot = this.attachShadow({mode: 'closed'});        
         shadowRoot.appendChild(template.content.cloneNode(true));
         
+        this.expanderElement = shadowRoot.getElementById('expander');
         this.titleElement = shadowRoot.getElementById('title');
         this.listElement = shadowRoot.getElementById('children') as HTMLUListElement;
         this.isRoot = true;
-
+        
         this.titleElement.addEventListener('click', (event) => {                    
           event.stopPropagation();   
           this.dispatchEvent(new CustomEvent('selected', { detail: this._node.element, bubbles: true, composed: true}));          
@@ -88,12 +92,12 @@ export class SelectionTreeNodeComponent extends HTMLElement {
             this._node = value;
 
             if (value.children.length > 0) {                   
-              this.titleElement.addEventListener('click', (event) => {                    
+              this.expanderElement.addEventListener('click', (event) => {                    
                 event.stopPropagation();                
                 this.listElement.classList.toggle('active');
-                this.titleElement.classList.toggle("caret-down");
+                this.expanderElement.classList.toggle("caret-down");
               });
-            } else {this.titleElement.classList.remove('caret'); }
+            } else {this.expanderElement.classList.remove('caret'); }
 
             this.render();
         }
@@ -121,11 +125,7 @@ export class SelectionTreeNodeComponent extends HTMLElement {
             ? [[...acc[0], e], acc[1]]
             : [acc[0], [...acc[1], e]], [[],[]] as [HTMLElement[], HTMLElement[]]);
 
-            remove.forEach(_ => {
-              //TODO: remove _.querySelector('selection-tree-node')
-              _.remove();
-            } );                
-
+            remove.forEach(_ => _.remove());                
             children = children.filter(c => !keep.some(e => e.getAttribute('data-id') == selectedId(c.element)));            
         }
                 
@@ -135,13 +135,13 @@ export class SelectionTreeNodeComponent extends HTMLElement {
                 li.setAttribute('data-id', selectedId(c.element));
                 const subTreeNode = document.createElement('selection-tree-node') as SelectionTreeNodeComponent;                
                 subTreeNode.isRoot = false;
-                subTreeNode.data = c;                                               
-                this._children.push(subTreeNode);
+                subTreeNode.data = c;                                                               
                 li.appendChild(subTreeNode);
-
                 return li;
             });        
-        this.listElement.append(...items);        
+        this.listElement.append(...items);   
+        this._children = Array.from(this.listElement.querySelectorAll('selection-tree-node')).map(x => x as SelectionTreeNodeComponent);
+
     }   
 }
 
