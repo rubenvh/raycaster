@@ -211,3 +211,7 @@ export const reversePolygon = (polygonIds: IEntityKey[], geometry: IGeometry): I
             .map(_ => ({..._.newEdge, immaterial: _.basedOn?.immaterial ?? false, material: _.basedOn && cloneMaterial(_.basedOn.material) || _.newEdge.material }));;
     });
 }
+
+export const queryVertex = (vertexId : IEntityKey, polygonId: IEntityKey, geometry: IGeometry): IVertex => {
+    return geometry.polygons.find(_ => _.id === polygonId).vertices.find(_ => _.id === vertexId);
+}

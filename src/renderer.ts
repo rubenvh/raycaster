@@ -11,6 +11,7 @@ import { UndoService } from './actions/undoService';
 import { StatsElement } from './components/statsComponent';
 import { connect } from './store/store-connector';
 import { GeometrySelectionComponent } from './components/geometrySelectionComponent';
+import { GeometryEditorComponent } from './components/geometryEditorComponent';
 
 const ui = {        
     view_2d: {
@@ -20,7 +21,8 @@ const ui = {
         canvas: document.getElementById('view_3d') as HTMLCanvasElement,
     },
     stats: document.getElementById('stats') as StatsElement,
-    selectionTree: document.getElementById('geometry-selection') as GeometrySelectionComponent
+    selectionTree: document.getElementById('geometry-selection') as GeometrySelectionComponent,
+    geometryEditor: document.getElementById('geometry-editor') as GeometryEditorComponent,
 };
 
 let worldLoader = new WorldLoader();
@@ -32,6 +34,7 @@ let renderer2d = new Renderer2d(ui.view_2d.canvas);
 connect(s => {
     ui.stats.data = s.stats;
     ui.selectionTree.data = s.selection.tree;
+    ui.geometryEditor.updateEditor(s.selection.treeSelection, s.walls.geometry);
 });
 const times: number[] = [];
 let fps: number;
