@@ -72,8 +72,7 @@ export class SelectionTreeNodeComponent extends HTMLElement {
         
         this.titleElement.addEventListener('click', (event) => {                    
           event.stopPropagation();   
-          this.dispatchEvent(new CustomEvent('selected', { detail: this._node.element, bubbles: true, composed: true}));          
-          this.titleElement.classList.add('selected');
+          this.select();
         });
     }
     
@@ -100,6 +99,12 @@ export class SelectionTreeNodeComponent extends HTMLElement {
             } else {this.expanderElement.classList.remove('caret'); }
 
             this.render();
+
+            if (this._isRoot && this._children.length === 1) {
+              // TODO: this triggers a new dispatch inside the handler of a previous dispatch
+              // figure a way to remove the need for setTimeout
+              setTimeout(()=>this._children[0].select());
+            }
         }
     }
       
@@ -107,6 +112,11 @@ export class SelectionTreeNodeComponent extends HTMLElement {
         return this._node;
     }
 
+    select() {
+      this.dispatchEvent(new CustomEvent('selected', { detail: this._node.element, bubbles: true, composed: true}));          
+      this.titleElement.classList.add('selected');
+    }
+        
     deselect() {
       this.titleElement.classList.remove('selected');
       this._children.forEach(c => c.deselect());
@@ -140,7 +150,7 @@ export class SelectionTreeNodeComponent extends HTMLElement {
                 return li;
             });        
         this.listElement.append(...items);   
-        this._children = Array.from(this.listElement.querySelectorAll('selection-tree-node')).map(x => x as SelectionTreeNodeComponent);
+        this._children = Array.from(this.listElement.querySelectorAll('selection-tree-node')).map(x => x as SelectionTreeNodeComponent);        
 
     }   
 }

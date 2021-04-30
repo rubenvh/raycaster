@@ -14,6 +14,7 @@ const dispatch = useAppDispatch();
 
 export class GeometryEditorComponent extends HTMLElement {
     private vertexEditor: VertexEditorComponent;
+    private _selectedElement: SelectableElement;
         
     
     constructor() {
@@ -26,12 +27,15 @@ export class GeometryEditorComponent extends HTMLElement {
     } 
 
     updateEditor(selectedElement: SelectableElement, geometry: IGeometry) {
-        this.vertexEditor.hidden = true;
         if (isVertex(selectedElement))
-        {
-            this.vertexEditor.hidden = false;
-            this.vertexEditor.selectedVertex = queryVertex(selectedElement.vertex.id, selectedElement.polygon.id, geometry);
-        }
+            this.vertexEditor.updateVertex(
+                queryVertex(selectedElement.vertex.id, selectedElement.polygon.id, geometry),
+                selectedElement.polygon.id);
+
+        if (this._selectedElement !== selectedElement) {
+            this._selectedElement = selectedElement;
+            this.vertexEditor.hidden = !isVertex(selectedElement);
+        }        
     }
 }
 

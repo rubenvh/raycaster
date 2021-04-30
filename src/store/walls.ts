@@ -86,6 +86,11 @@ const slice = createSlice({
     rotatePolygon: (state, action: PayloadAction<{polygons: IEntityKey[], rotation: Vector}>) => {
       const {polygons, rotation} = action.payload;
       undoableUpdate(state, doRotatePolygon(polygons, rotation, state.geometry));
+    },    
+    editVertex: (state, action: PayloadAction<{direction: Vector, vertex: IVertex, polygonId: IEntityKey}>) => {
+      const {vertex, polygonId, direction} = action.payload;
+      const vertexMap = new Map<string, IVertex[]>([[polygonId, [vertex]]]);
+      undoableUpdate(state, moveVertices(false, direction, vertexMap, state.geometry));
     }
   },
 });
@@ -102,4 +107,5 @@ const undoableUpdate = (state: IWallState, geometry: IGeometry) => {
 
 export default slice.reducer
 // Actions
-export const { undo, redo, loadWalls, updateWalls, adaptEdges, splitEdge, move, remove, createPolygon, clonePolygon, expandPolygon, reversePolygon, splitPolygon, rotatePolygon } = slice.actions
+export const { undo, redo, loadWalls, updateWalls, adaptEdges, splitEdge, move, remove, createPolygon, clonePolygon, 
+              expandPolygon, reversePolygon, splitPolygon, rotatePolygon, editVertex } = slice.actions

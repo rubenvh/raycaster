@@ -26,8 +26,7 @@ const slice = createSlice({
                 state.elements.splice(i, 1);
             }    
         });  
-        state.tree = buildSelectionTree(state.elements, geometry );         
-        state.treeSelection = undefined; // TODO: only reset treeSelection if element not selected anymore
+        state.tree = buildSelectionTree(state.elements, geometry );        
     },
     startNewSelection: (state, action: PayloadAction<{elements: SelectableElement[], geometry: IGeometry}>) => {
         const {elements, geometry} = action.payload;
