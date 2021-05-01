@@ -1,4 +1,4 @@
-import { IGeometry, queryVertex } from './../geometry/geometry';
+import { connect } from './../store/store-connector';
 import { VertexEditorComponent } from './vertexEditorComponent';
 import { SelectableElement, isVertex } from '../selection/selectable';
 
@@ -20,20 +20,14 @@ export class GeometryEditorComponent extends HTMLElement {
 
         this.vertexEditor = shadowRoot.getElementById('vertex') as VertexEditorComponent;
         this.vertexEditor.hidden = true;
-    } 
 
-    updateComponent(selectedElement: SelectableElement, geometry: IGeometry) {
-        // TODO: consider using connect on the different components so we can move this code inside the VertexEditorComponent (but add dependency on the store's connect function)
-        if (isVertex(selectedElement))
-            this.vertexEditor.updateVertex(
-                queryVertex(selectedElement.vertex.id, selectedElement.polygon.id, geometry),
-                selectedElement.polygon.id);
-
-        if (this._selectedElement !== selectedElement) {
-            this._selectedElement = selectedElement;
-            this.vertexEditor.hidden = !isVertex(selectedElement);
-        }        
-    }
+        connect(state => {
+            if (this._selectedElement !== state.selection.treeSelection) {
+                this._selectedElement = state.selection.treeSelection;
+                this.vertexEditor.hidden = !isVertex(state.selection.treeSelection);
+            }     
+        });
+    }     
 }
 
 window.customElements.define('geometry-editor', GeometryEditorComponent);

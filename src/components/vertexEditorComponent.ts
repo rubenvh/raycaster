@@ -1,8 +1,11 @@
+import { connect } from './../store/store-connector';
 import { IEntityKey } from './../geometry/entity';
 import { useAppDispatch } from '../store';
 import { IVertex } from '../geometry/vertex';
-import { editVertex, move } from '../store/walls';
+import { editVertex } from '../store/walls';
 import { Vector } from '../math/vector';
+import { isVertex } from '../selection/selectable';
+import { queryVertex } from '../geometry/geometry';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
@@ -40,6 +43,14 @@ export class VertexEditorComponent extends HTMLElement {
             const y = +(<HTMLInputElement>event.target).value;
             const direction: Vector = [0, y-this._vertex.vector[1]];
             dispatch(editVertex({direction, vertex: this._vertex, polygonId: this._polygonId }));
+        });
+
+        connect(state => {
+            const selectedElement = state.selection.treeSelection;            
+            if (isVertex(selectedElement))
+                this.updateVertex(
+                    queryVertex(selectedElement.vertex.id, selectedElement.polygon.id, state.walls.geometry),
+                    selectedElement.polygon.id);
         });
     } 
 

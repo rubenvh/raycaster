@@ -1,5 +1,6 @@
 import { useAppDispatch } from '../store';
-import { ISelectionState, selectTreeNode } from '../store/selection';
+import { selectTreeNode } from '../store/selection';
+import { connect } from '../store/store-connector';
 import { SelectionTreeNodeComponent } from './selectionTreeNodeComponent';
 
 const template = document.createElement('template');
@@ -27,12 +28,12 @@ export class GeometrySelectionComponent extends HTMLElement {
           // dispatch tree selection changed (to highlight selection in 2d view)       
           dispatch(selectTreeNode(event.detail));
         });
-    } 
 
-    updateComponent(selection: ISelectionState) {
-        this.tree.data = selection.tree;
-        this.tree.select(selection.treeSelection);
-    }    
+        connect(state => {
+            this.tree.data = state.selection.tree;
+            this.tree.select(state.selection.treeSelection);
+        });
+    }     
 }
 
 window.customElements.define('geometry-selection', GeometrySelectionComponent);
