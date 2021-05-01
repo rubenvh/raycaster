@@ -1,7 +1,7 @@
 import { IGeometry } from './../geometry/geometry';
 import { buildSelectionTree, ISelectionTreeNode } from './../selection/selection-tree';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { isEdge, isPolygon, isVertex, SelectableElement } from '../selection/selectable';
+import { findSelectedIndex, isEdge, isPolygon, isSelected, isVertex, SelectableElement } from '../selection/selectable';
 
 export type ISelectionState = {elements: SelectableElement[], tree: ISelectionTreeNode, treeSelection?: SelectableElement }
 
@@ -14,25 +14,25 @@ const slice = createSlice({
   reducers: {
     addSelectedElement: (state, action: PayloadAction<{elements: SelectableElement[], geometry: IGeometry}>) => {        
         const {elements, geometry } = action.payload;        
+        let treeSelection = state.treeSelection;
         elements.forEach(s => {                                    
-            let i = state.elements.findIndex(_ => 
-                _.kind=='polygon' && isPolygon(s) && _.polygon.id === s.polygon.id
-                || _.kind == 'vertex' && isVertex(s) && _.vertex.id === s.vertex.id
-                || _.kind == 'edge' && isEdge(s) && _.edge.id === s.edge.id)
+            let i = findSelectedIndex(s, state.elements);
         
             if (i === -1) {            
+                treeSelection = s;
                 state.elements.push(s);
             } else {
                 state.elements.splice(i, 1);
             }    
         });  
-        state.tree = buildSelectionTree(state.elements, geometry );        
+        state.tree = buildSelectionTree(state.elements, geometry );   
+        state.treeSelection = isSelected(treeSelection, state.elements) ? treeSelection : undefined;
     },
     startNewSelection: (state, action: PayloadAction<{elements: SelectableElement[], geometry: IGeometry}>) => {
         const {elements, geometry} = action.payload;
         state.elements = elements;
         state.tree = buildSelectionTree(elements, geometry );
-        state.treeSelection = undefined;
+        state.treeSelection = elements.length > 0 ? elements[0] : undefined;
     },    
     clearSelection: (state) => {
         state.elements = [];

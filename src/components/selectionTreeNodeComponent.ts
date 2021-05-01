@@ -1,3 +1,4 @@
+import { SelectableElement } from './../selection/selectable';
 import { ISelectionTreeNode } from '../selection/selection-tree';
 import { selectedId } from '../selection/selectable';
 
@@ -72,7 +73,7 @@ export class SelectionTreeNodeComponent extends HTMLElement {
         
         this.titleElement.addEventListener('click', (event) => {                    
           event.stopPropagation();   
-          this.select();
+          this.dispatchEvent(new CustomEvent('selected', { detail: this._node.element, bubbles: true, composed: true}));             
         });
     }
     
@@ -98,13 +99,7 @@ export class SelectionTreeNodeComponent extends HTMLElement {
               });
             } else {this.expanderElement.classList.remove('caret'); }
 
-            this.render();
-
-            if (this._isRoot && this._children.length === 1) {
-              // TODO: this triggers a new dispatch inside the handler of a previous dispatch
-              // figure a way to remove the need for setTimeout
-              setTimeout(()=>this._children[0].select());
-            }
+            this.render();           
         }
     }
       
@@ -112,15 +107,17 @@ export class SelectionTreeNodeComponent extends HTMLElement {
         return this._node;
     }
 
-    select() {
-      this.dispatchEvent(new CustomEvent('selected', { detail: this._node.element, bubbles: true, composed: true}));          
-      this.titleElement.classList.add('selected');
-    }
-        
-    deselect() {
-      this.titleElement.classList.remove('selected');
-      this._children.forEach(c => c.deselect());
-    }
+    select(e : SelectableElement): void {
+      if (!e) { 
+        this.titleElement.classList.remove('selected');        
+      }
+      if (this._node.element === e) {
+        this.titleElement.classList.add('selected');        
+      } else {
+        this.titleElement.classList.remove('selected');
+        this._children.map(c => c.select(e));
+      }
+    }            
     
     private render() {    
 

@@ -32,9 +32,9 @@ let renderer3d = new Renderer3d(ui.view_3d.canvas, textureLib);
 let renderer2d = new Renderer2d(ui.view_2d.canvas);
 
 connect(s => {
-    ui.stats.data = s.stats;
-    ui.selectionTree.data = s.selection.tree;
-    ui.geometryEditor.updateEditor(s.selection.treeSelection, s.walls.geometry);
+    ui.stats.data = s.stats;    
+    ui.selectionTree.updateComponent(s.selection);
+    ui.geometryEditor.updateComponent(s.selection.treeSelection, s.walls.geometry);
 });
 const times: number[] = [];
 let fps: number;

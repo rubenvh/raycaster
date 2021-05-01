@@ -27,7 +27,13 @@ export const isSelectedEdge = (id: IEntityKey, selection: SelectableElement[]): 
 export const isSelectedVertex = (id: IEntityKey, selection: SelectableElement[]): boolean => {
     return selection.some(_=>_.kind === 'vertex' && _.vertex.id === id);
 }
-
+export const isSelected = (s: SelectableElement, elements: SelectableElement[]): boolean => findSelectedIndex(s, elements) !== -1;
+export const findSelectedIndex = (s: SelectableElement, elements: SelectableElement[]): number => {
+    return elements.findIndex(_ => 
+        _.kind=='polygon' && isPolygon(s) && _.polygon.id === s.polygon.id
+        || _.kind == 'vertex' && isVertex(s) && _.vertex.id === s.vertex.id
+        || _.kind == 'edge' && isEdge(s) && _.edge.id === s.edge.id)
+}
 export const isCloseToSelected = (v: Vector, element: SelectableElement) => {
     const epsilon = 5;
     return isVertex(element)
