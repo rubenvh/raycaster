@@ -129,7 +129,14 @@ const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
         accelerator: 'Control+Shift+F',
         click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_config_fadeOut'); }}
       },
-
+      {
+        type: 'separator'
+      },
+      {
+        label: 'Recalculate BSP',
+        accelerator: 'Control+R',
+        click: (item, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('bsp_generate'); }}
+      },   
     ]
   },
   {

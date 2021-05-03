@@ -12,6 +12,7 @@ import { StatsElement } from './components/statsComponent';
 import { connect } from './store/store-connector';
 import { GeometrySelectionComponent } from './components/geometrySelectionComponent';
 import { GeometryEditorComponent } from './components/geometryEditorComponent';
+import { BspGenerator } from './geometry/bsp/bspGenerator';
 
 const ui = {        
     view_2d: {
@@ -30,6 +31,7 @@ let undoRegistrations = new UndoService();
 let handlers = [...createGlobalActionHandlers(), ...createCanvasHandlers(ui.view_2d.canvas, textureLib)];
 let renderer3d = new Renderer3d(ui.view_3d.canvas, textureLib);
 let renderer2d = new Renderer2d(ui.view_2d.canvas);
+let bspGenerator = new BspGenerator();
 
 connect(s => {
     ui.stats.data = s.stats;        
