@@ -215,3 +215,6 @@ export const reversePolygon = (polygonIds: IEntityKey[], geometry: IGeometry): I
 export const queryVertex = (vertexId : IEntityKey, polygonId: IEntityKey, geometry: IGeometry): IVertex => {
     return geometry.polygons.find(_ => _.id === polygonId).vertices.find(_ => _.id === vertexId);
 }
+export const queryEdge = (edgeId : IEntityKey, polygonId: IEntityKey, geometry: IGeometry): IEdge => {
+    return geometry.polygons.find(_ => _.id === polygonId).edges.find(_ => _.id === edgeId);
+}

@@ -13,11 +13,15 @@ export class BspGenerator {
     }
     
 
-    calculate = () =>{         
+    calculate = () =>{     
+        if (this.worker) { this.worker.terminate(); }
         this.worker = new Worker("../dist/geometry/bsp/worker.js");
         this.worker.postMessage(this.geometry);
-        this.worker.onmessage = function(e) {            
-            console.log('Message received from worker:', e);
-          }
+        this.worker.addEventListener('message', (e) => {
+            //console.log('Message received from worker:', e);
+            // TODO: dispatch updated BSP to redux store
+            this.worker.terminate();
+            this.worker = null;
+        });
     }
 }

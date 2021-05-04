@@ -1,5 +1,5 @@
-import { connect } from './../store/store-connector';
-import { IEntityKey } from './../geometry/entity';
+import { connect } from '../store/store-connector';
+import { IEntityKey } from '../geometry/entity';
 import { useAppDispatch } from '../store';
 import { IVertex } from '../geometry/vertex';
 import { editVertex } from '../store/walls';
