@@ -111,12 +111,13 @@ export class SelectionTreeNodeComponent extends HTMLElement {
       if (!e) { 
         this.titleElement.classList.remove('selected');        
       }
+      this._children.map(c => c.select(e));
       if (this._node.element === e) {
         this.titleElement.classList.add('selected');        
       } else {
-        this.titleElement.classList.remove('selected');
-        this._children.map(c => c.select(e));
+        this.titleElement.classList.remove('selected');        
       }
+      
     }            
     
     private render() {    
