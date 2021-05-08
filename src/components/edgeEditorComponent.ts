@@ -7,7 +7,7 @@ import { isEdge } from '../selection/selectable';
 import { IEdge } from '../geometry/edge';
 import { queryEdge } from '../geometry/geometry';
 import { adaptEdges } from '../store/walls';
-import { Color } from '../geometry/properties';
+import { Color, IMaterial } from '../geometry/properties';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
@@ -49,11 +49,12 @@ export class EdgeEditorComponent extends HTMLElement {
             });
         });        
 
-        this.materialElement.addEventListener('change', (event: CustomEvent) => {
+        this.materialElement.addEventListener('change', (event: CustomEvent<IMaterial>) => {
             this.adaptEdge(_ => {
                 // TODO handle directed materials:
-                const m = Array.isArray(_.material) ? _.material[0] : _.material;                    
-                m.color = (<Color>event.detail);
+                const m = Array.isArray(_.material) ? _.material[0] : _.material;
+                m.color = event.detail.color;
+                m.luminosity = event.detail.luminosity;
                 return _;
             });
         });
@@ -79,7 +80,7 @@ export class EdgeEditorComponent extends HTMLElement {
             this.startElement.updateVertex(edge.start, poligonId);
             this.endElement.updateVertex(edge.end, poligonId);
             // TODO: directed material
-            this.materialElement.updateMaterial(Array.isArray(edge.material) ? edge.material[0] : edge.material);
+            this.materialElement.material = Array.isArray(edge.material) ? edge.material[0] : edge.material;            
             this.render();
         }
     }

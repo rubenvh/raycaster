@@ -45,17 +45,11 @@ export class ColorEditorComponent extends HTMLElement {
         this.alphaElement.addEventListener('change', this.eventHandler);
     } 
 
-    private eventHandler = (_: Event) => {        
+    private eventHandler = (_: Event) => {   
+        this._color = this.color;     
         this.dispatchEvent(new CustomEvent('change', { detail: this.color, bubbles: true, composed: true }));
     };
-
-    public update (color: Color) {
-        if (this._color !== color) {
-            this._color = color;
-            this.render();
-        }
-    }
-
+   
     private render() {                
         const [r, g, b, a] = this._color;
         this.redElement.value = r.toString();
@@ -65,6 +59,12 @@ export class ColorEditorComponent extends HTMLElement {
         this.tileElement.style.backgroundColor = `rgb(${r},${g},${b})`;
     }
 
+    set color(c: Color) {
+        if (this._color !== c) {
+            this._color = c;
+            this.render();
+        }
+    }
     get color(): Color {
         return [
             +this.redElement.value,
