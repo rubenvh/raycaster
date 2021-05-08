@@ -64,15 +64,15 @@ export class VertexEditorComponent extends HTMLElement {
 
     get hideIdentifier() {
         return this.hasAttribute('hideId');
-      }
+    }
       
     set hideIdentifier(isHidden) {
-    if (isHidden) {
-        this.setAttribute('hideId', '');
-    } else {
-        this.removeAttribute('hideId');
-    }
-    }
+        if (isHidden) {
+            this.setAttribute('hideId', '');
+        } else {
+            this.removeAttribute('hideId');
+        }
+    }    
 
     private render() {
         this.idElement.innerText = this._vertex.id;
