@@ -1,3 +1,4 @@
+import { distanceToMidPoint } from './../math/lineSegment';
 import { MaterialEditorComponent } from './materialEditorComponent';
 import { VertexEditorComponent } from './vertexEditorComponent';
 import { connect } from '../store/store-connector';
@@ -18,6 +19,10 @@ template.innerHTML =  /*html*/`
 <div><span id="label_start">start:</span><vertex-editor id="start" hideId></vertex-editor></div>
 <div><span id="label_end">end:</span><vertex-editor id="end" hideId></vertex-editor></div>
 <div><span id="label_material">material:</span><material-editor id="material"></material-editor></div>
+<div><span id="label_stats">stats:</span>
+<ul id="stats">    
+</ul>
+</div>
 `;
 
 const dispatch = useAppDispatch();
@@ -30,6 +35,9 @@ export class EdgeEditorComponent extends HTMLElement {
     private startElement: VertexEditorComponent;
     private endElement: VertexEditorComponent;
     private materialElement: MaterialEditorComponent;
+    private statsElement: HTMLUListElement;
+    private distanceToCamera: (edge: IEdge) => number;
+    
 
     constructor() {
         super();
@@ -41,6 +49,7 @@ export class EdgeEditorComponent extends HTMLElement {
         this.startElement = shadowRoot.querySelector('#start');
         this.endElement = shadowRoot.querySelector('#end');
         this.materialElement = shadowRoot.querySelector('#material');
+        this.statsElement = shadowRoot.querySelector('#stats');
 
         this.immaterialElement.addEventListener('change', (event) => {                       
             this.adaptEdge(_ => {
@@ -60,11 +69,12 @@ export class EdgeEditorComponent extends HTMLElement {
         });
 
         connect(state => {
-            const selectedElement = state.selection.treeSelection;            
-            if (isEdge(selectedElement)) 
-                this.updateEdge(
-                    queryEdge(selectedElement.edge.id, selectedElement.polygon.id, state.walls.geometry),
-                    selectedElement.polygon.id);
+            const selectedElement = state.selection.treeSelection;                        
+            this.distanceToCamera = (edge: IEdge): number => distanceToMidPoint(state.player.camera.position, edge.segment);
+            if (isEdge(selectedElement)) {
+                let edge = queryEdge(selectedElement.edge.id, selectedElement.polygon.id, state.walls.geometry);                
+                this.updateEdge(edge, selectedElement.polygon.id);
+            }            
         });
     } 
 
@@ -82,12 +92,26 @@ export class EdgeEditorComponent extends HTMLElement {
             // TODO: directed material
             this.materialElement.material = Array.isArray(edge.material) ? edge.material[0] : edge.material;            
             this.render();
+        } else {
+            this.renderStats();
         }
     }
 
     private render() {
         this.idElement.innerText = this._edge.id;
-        this.immaterialElement.checked = this._edge.immaterial ?? false;
+        this.immaterialElement.checked = this._edge.immaterial ?? false;        
+        this.renderStats();
+    }
+
+    private renderStats() {
+        this.statsElement.textContent = '';
+        let automaticLuminosity = document.createElement('li');
+        automaticLuminosity.textContent = `auto-lumen: ${this._edge.luminosity.toFixed(2)}`;
+        let length = document.createElement('li');
+        length.textContent = `length: ${this._edge.length.toFixed(2)}`;
+        let distance = document.createElement('li');
+        distance.textContent = `distance: ${this.distanceToCamera(this._edge).toFixed(2)}`;
+        this.statsElement.append(automaticLuminosity, length, distance);
     }
 }
 

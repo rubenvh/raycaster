@@ -9,7 +9,6 @@ import { Guid } from 'guid-typescript';
 import { lookupMaterialFor, RayHit } from './geometry/collision';
 import { Vector } from './math/vector';
 import { IMaterial } from './geometry/properties';
-import { isSelectedEdge, SelectableElement } from './selection/selectable';
 import { statisticsUpdated } from './store/stats';
 import { useAppDispatch } from './store';
 import { connect } from './store/store-connector';
@@ -36,7 +35,6 @@ export class Renderer3d {
     private height: number;        
     private resolution = 1280;
     private horizonDistance = 300;
-    private selectedElements: SelectableElement[] = [];
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
     private worldConfig: IWorldConfigState = {};
@@ -51,7 +49,6 @@ export class Renderer3d {
         this.width = this.canvas.width;
         this.height = this.canvas.height;
         connect(s => {
-            this.selectedElements = s.selection.elements;
             this.camera = s.player.camera;
             this.wallGeometry = s.walls.geometry;
             this.worldConfig = s.worldConfig;
@@ -187,9 +184,7 @@ export class Renderer3d {
         // apply fading    
         if (this.worldConfig.fadeOn != null) {
             this.applyFading(wallProps);
-        }   
-        
-        this.drawStats(wallProps);        
+        }                 
     };
 
     private drawTexture = (texture: Texture, wallProps: WallProps[]) => {
@@ -210,46 +205,22 @@ export class Renderer3d {
         let color: string | CanvasGradient;
 
         if (start.material.luminosity != null) {
-            // luminosity is overidden:
-            let override = start.material.luminosity;
-            color = `rgba(${shade},${shade},${shade},${( 1-override).toFixed(2)})`;
-            
+            // luminosity is overidden on the wall's material definition:            
+            color = `rgba(${shade},${shade},${shade},${( 1 - start.material.luminosity).toFixed(2)})`;
         } else {
-            let gradient = this.context.createLinearGradient(trapezoid[0][0], 0, trapezoid[3][0], 0);        
-            const addGradient = (step: number, w: WallProps) => {            
+            // automatically decide fading amount based on the wall's distance to the camera
+            const addGradient = (step: number, w: WallProps, gradient: CanvasGradient): CanvasGradient => {            
                 const fadeFactor = Math.min(this.horizonDistance, w.distance)/(this.horizonDistance+10);
                 const fadeColor = `rgba(${shade},${shade},${shade},${fadeFactor.toFixed(2)})`;
                 gradient.addColorStop(step, fadeColor);            
+                return gradient;
             }
-            addGradient(0, start);
-            addGradient(1, end);            
-            color = gradient;
+            color = addGradient(1, end, 
+                addGradient(0, start, 
+                    this.context.createLinearGradient(trapezoid[0][0], 0, trapezoid[3][0], 0)))
         }
         drawTrapezoid(this.context, trapezoid, color);        
     }
-
-    // TODO remove this: send info to statsComponent via store instead        
-    private drawStats = (wallProps: WallProps[]) => {        
-        const start = wallProps[wallProps.length-1];
-        const end = wallProps[0];
-        if (isSelectedEdge(start.edgeId, this.selectedElements)) {
-                       
-            const texts = [
-                `edgeId: ${JSON.stringify(start.edgeId)}`,
-                `distance: ${start.distance.toFixed(2)}`,                
-                `lumen: ${this.getLumen(start).toFixed(2)}`,
-                `translucency: ${start.material.color[3].toFixed(2)}`,
-                `length: ${start.length.toFixed(2)}`
-            ];
-            const widest = texts.map(_ => this.context.measureText(_)).reduce((acc, m) => Math.max(acc, m.width), 0);
-                        
-            const center = [start.colRange[0] + (end.colRange[1]-start.colRange[0])/2 - widest/2,
-                            start.rowRange[0] + (start.rowRange[1]-start.rowRange[0])/2];
-
-            this.context.fillStyle = 'rgb(0,0,0)';                        
-            texts.forEach((t, i) => this.context.fillText(t, center[0], (i-(texts.length/2))*10+center[1]));            
-        }
-    }    
 
     private getLumen = (wall: WallProps) => wall.material.luminosity || wall.edgeLuminosity;
 }
