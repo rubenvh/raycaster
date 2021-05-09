@@ -203,19 +203,29 @@ export class Renderer3d {
     }   
     
     private applyFading = (wallProps: WallProps[]) => {
-        const start = wallProps[wallProps.length-1];
+        const start = wallProps[wallProps.length-1];        
         const end = wallProps[0];
         const trapezoid = getTrapezoid(start, end);
         const shade = this.worldConfig.fadeOn;
-        var gradient = this.context.createLinearGradient(trapezoid[0][0], 0, trapezoid[3][0], 0);        
-        const addGradient = (step: number, w: WallProps) => {            
-            const fadeFactor = Math.min(this.horizonDistance, w.distance)/(this.horizonDistance+10);
-            const fadeColor = `rgba(${shade},${shade},${shade},${fadeFactor.toFixed(2)})`;
-            gradient.addColorStop(step, fadeColor);            
+        let color: string | CanvasGradient;
+
+        if (start.material.luminosity != null) {
+            // luminosity is overidden:
+            let override = start.material.luminosity;
+            color = `rgba(${shade},${shade},${shade},${( 1-override).toFixed(2)})`;
+            
+        } else {
+            let gradient = this.context.createLinearGradient(trapezoid[0][0], 0, trapezoid[3][0], 0);        
+            const addGradient = (step: number, w: WallProps) => {            
+                const fadeFactor = Math.min(this.horizonDistance, w.distance)/(this.horizonDistance+10);
+                const fadeColor = `rgba(${shade},${shade},${shade},${fadeFactor.toFixed(2)})`;
+                gradient.addColorStop(step, fadeColor);            
+            }
+            addGradient(0, start);
+            addGradient(1, end);            
+            color = gradient;
         }
-        addGradient(0, start);
-        addGradient(1, end);
-        drawTrapezoid(this.context, trapezoid, gradient);
+        drawTrapezoid(this.context, trapezoid, color);        
     }
 
     // TODO remove this: send info to statsComponent via store instead        
