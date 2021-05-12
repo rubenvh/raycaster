@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Raycaster map editor</title>
+    <!-- <link rel="stylesheet" href="css/main.css" type="text/css"> -->
+    <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
+    <script src="./dist/renderer-bundle.js" type="text/javascript"></script>
+    <script>if (window.module) module = window.module;</script>
+  </head>
+  <body> 
+    <div class="container">
+    <div class="views">
+      <div class="dim2">
+        <canvas id="view_2d"></canvas> 
+      </div> 
+      <div class="dim3">
+        <canvas id="view_3d"></canvas>      
+      </div>    
+    </div>  
+    <div class="tools">
+      <render-stats id="stats"></render-stats>
+      <geometry-selection id="geometry-selection"></geometry-selection>
+      <geometry-editor id="geometry-editor"></geometry-editor>
+    </div>  
+  </div>
+  </body>
+  <script>    
+    // require('../renderer/dist/renderer-bundle.js')
+    // require("../dist/components/statsComponent.js")    
+    // require("../dist/components/geometrySelectionComponent.js")    
+    // require("../dist/components/selectionTreeNodeComponent.js")    
+    // require("../dist/components/geometryEditorComponent.js")    
+    // require("../dist/components/vertexEditorComponent.js")    
+    // require("../dist/components/edgeEditorComponent.js")    
+    // require("../dist/components/materialEditorComponent.js")    
+    // require("../dist/components/colorEditorComponent.js")    
+  </script>
+</html>
