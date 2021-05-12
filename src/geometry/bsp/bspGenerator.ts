@@ -18,7 +18,7 @@ export class BspGenerator {
         this.worker = new Worker("../dist/geometry/bsp/worker.js");
         this.worker.postMessage(this.geometry);
         this.worker.addEventListener('message', (e) => {
-            //console.log('Message received from worker:', e);
+            console.log('Message received from worker:', e);
             // TODO: dispatch updated BSP to redux store
             this.worker.terminate();
             this.worker = null;

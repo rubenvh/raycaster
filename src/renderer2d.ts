@@ -5,6 +5,8 @@ import { IEdge } from './geometry/edge';
 import { EMPTY_GEOMETRY, IGeometry } from './geometry/geometry';
 import { isSelectedEdge, isSelectedPolygon, isSelectedVertex, SelectableElement, selectedId } from './selection/selectable';
 import { IVertex } from './geometry/vertex';
+import { add, perpendicular, subtract } from './math/vector';
+import { midpoint, normal } from './math/lineSegment';
 
 export class Renderer2d {
     private context: CanvasRenderingContext2D;
@@ -78,6 +80,11 @@ export class Renderer2d {
         const highlighted = this.selectedTreeNode && selectedId(this.selectedTreeNode) === edge.id;    
         const color = highlighted ? Colors.HIGHLIGHTED : selected ? Colors.EDGE_SELECTED : edge.immaterial ? Colors.IMMATERIAL : Colors.EDGE;
         const width = selected||highlighted ? 2 : 1;
+        
+        if (selected) {
+            // draw normal to selected edge:
+            drawSegment(context, normal(edge.segment, 10), 'rgb(0,100,255)', 1);
+        }
         drawSegment(context, [edge.start.vector, edge.end.vector], color, width);
     };
        

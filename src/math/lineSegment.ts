@@ -18,6 +18,12 @@ export const lineAngle = (a: ILineSegment, b: ILineSegment): number => {
     subtract(a[1], a[0]),
     subtract(b[1], b[0]));
 }
+
+export const normal = (a: ILineSegment, s: number = 1): ILineSegment => {
+  const mp = midpoint(a);
+  return [mp, add(mp, scale(s, normalize(perpendicular(subtract(a[1], a[0])))))];
+}
+
 const intersectSegments = (a: ILineSegment, b: ILineSegment): Vector => {
     const p0_x = a[0][0];
     const p0_y = a[0][1];
