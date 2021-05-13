@@ -11,7 +11,7 @@ template.innerHTML =  /*html*/`
 `;
 /// …
 
-export class StatsElement extends HTMLElement {
+export default class StatsElement extends HTMLElement {
     
     private element: HTMLDivElement;
     private _stats: IStatsState;

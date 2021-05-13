@@ -15,7 +15,7 @@ export class BspGenerator {
 
     calculate = () =>{     
         if (this.worker) { this.worker.terminate(); }
-        this.worker = new Worker("../dist/geometry/bsp/worker.js");
+        this.worker = new Worker("../workers/dist/worker-bundle.js");
         this.worker.postMessage(this.geometry);
         this.worker.addEventListener('message', (e) => {
             console.log('Message received from worker:', e);

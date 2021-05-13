@@ -18,7 +18,7 @@ template.innerHTML =  /*html*/`
 
 const dispatch = useAppDispatch();
 
-export class VertexEditorComponent extends HTMLElement {
+export default class VertexEditorComponent extends HTMLElement {
     private _vertex: IVertex;
     private _polygonId: IEntityKey;
     private idElement: HTMLElement;

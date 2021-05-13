@@ -1,4 +1,4 @@
-import { ColorEditorComponent } from './colorEditorComponent';
+import ColorEditorComponent from './colorEditorComponent';
 import { IMaterial } from '../../common/geometry/properties';
 
 const template = document.createElement('template');
@@ -9,7 +9,7 @@ template.innerHTML =  /*html*/`
 <div><span id="label_lumen">lumen override</span><input type="number" id="lumen" min="0" max="1" /></div>
 `;
 
-export class MaterialEditorComponent extends HTMLElement {
+export default class MaterialEditorComponent extends HTMLElement {
     private _material: IMaterial;
     private colorElement: ColorEditorComponent;
     private lumenElement: HTMLInputElement;

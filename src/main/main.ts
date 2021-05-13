@@ -13,8 +13,9 @@ function createWindow () {
   // Create the browser window.
   mainWindow = new BrowserWindow({width: 2000, height: 1000, show: false,  webPreferences: {
     nodeIntegration: true,
+      contextIsolation: false,
+      enableRemoteModule: true,
     //nodeIntegrationInWorker: true,
-    enableRemoteModule: true
   } });
 
   // and load the index.html of the app.

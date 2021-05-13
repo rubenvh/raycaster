@@ -1,6 +1,6 @@
 import { distanceToMidPoint } from '../../common/math/lineSegment';
-import { MaterialEditorComponent } from './materialEditorComponent';
-import { VertexEditorComponent } from './vertexEditorComponent';
+import MaterialEditorComponent from './materialEditorComponent';
+import VertexEditorComponent from './vertexEditorComponent';
 import { connect } from '../../common/store/store-connector';
 import { IEntityKey } from '../../common/geometry/entity';
 import { useAppDispatch } from '../../common/store';
@@ -27,7 +27,7 @@ template.innerHTML =  /*html*/`
 
 const dispatch = useAppDispatch();
 
-export class EdgeEditorComponent extends HTMLElement {
+export default class EdgeEditorComponent extends HTMLElement {
     private _edge: IEdge;
     private _polygonId: IEntityKey;
     private idElement: HTMLElement;

@@ -1,7 +1,7 @@
 import { connect } from '../../common/store/store-connector';
-import { VertexEditorComponent } from './vertexEditorComponent';
+import VertexEditorComponent from './vertexEditorComponent';
 import { SelectableElement, isVertex, isEdge } from '../../common/selection/selectable';
-import { EdgeEditorComponent } from './edgeEditorComponent';
+import EdgeEditorComponent from './edgeEditorComponent';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
@@ -10,7 +10,7 @@ template.innerHTML =  /*html*/`
 <vertex-editor id="vertex"></vertex-editor>
 <edge-editor id="edge"></edge-editor>
 `;
-export class GeometryEditorComponent extends HTMLElement {
+export default class GeometryEditorComponent extends HTMLElement {
     private vertexEditor: VertexEditorComponent;
     private edgeEditor: EdgeEditorComponent;
     private _selectedElement: SelectableElement;

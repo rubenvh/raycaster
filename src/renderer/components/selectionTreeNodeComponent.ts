@@ -51,7 +51,7 @@ ul {
 </ul>
 `;
 
-export class SelectionTreeNodeComponent extends HTMLElement {
+export default class SelectionTreeNodeComponent extends HTMLElement {
     
     private listElement: HTMLUListElement;    
     private titleElement: HTMLElement;

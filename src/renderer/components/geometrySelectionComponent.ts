@@ -1,7 +1,7 @@
 import { useAppDispatch } from '../../common/store';
 import { selectTreeNode } from '../../common/store/selection';
 import { connect } from '../../common/store/store-connector';
-import { SelectionTreeNodeComponent } from './selectionTreeNodeComponent';
+import SelectionTreeNodeComponent from './selectionTreeNodeComponent';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
@@ -12,7 +12,7 @@ template.innerHTML =  /*html*/`
 
 const dispatch = useAppDispatch();
 
-export class GeometrySelectionComponent extends HTMLElement {
+export default class GeometrySelectionComponent extends HTMLElement {
     
     
     private tree: SelectionTreeNodeComponent;

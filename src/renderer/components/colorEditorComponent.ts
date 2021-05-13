@@ -20,7 +20,7 @@ template.innerHTML =  /*html*/`
 `;
 
 
-export class ColorEditorComponent extends HTMLElement {
+export default class ColorEditorComponent extends HTMLElement {
     private _color: Color = [0,0,0,0];
     private tileElement: HTMLSpanElement;
     private redElement: HTMLInputElement;
