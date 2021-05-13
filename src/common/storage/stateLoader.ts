@@ -47,9 +47,8 @@ export class WorldLoader {
     private save = () => {
         if (this.loadedFile){
             this.saveFile(this.loadedFile);
-        } else {
-            //TODO FIX: broken in this branch
-            // saveFile(remote.dialog, remote.getCurrentWindow());
+        } else {            
+            ipcRenderer.send('saveNew');
         }
     };
 

@@ -1,8 +1,9 @@
-import {app, BrowserWindow, Menu} from 'electron'
+import {app, BrowserWindow, dialog, ipcMain, Menu} from 'electron'
 import { menu } from './mainmenu';
 import * as path from "path";
 import * as url from "url";
 import __basedir from '../basepath';
+import { saveFile } from './dialogs';
 // import installExtension, { REDUX_DEVTOOLS } from 'electron-devtools-installer';
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -37,6 +38,10 @@ function createWindow () {
     // when you should delete the corresponding element.
     mainWindow = null as any;
   })
+
+  ipcMain.on('saveNew', () => {
+    saveFile(dialog, mainWindow); 
+  });
 
   Menu.setApplicationMenu(menu);
 }
