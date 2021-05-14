@@ -1,4 +1,4 @@
-import { createGeometry, IStoredGeometry, loadGeometry, removeVertex, IGeometry } from './geometry';
+import { createGeometry, splitPolygon, IStoredGeometry, loadGeometry, removeVertex, IGeometry } from './geometry';
 import { Vector } from '../math/vector';
 
 describe('geometry tests', () => {
@@ -102,6 +102,21 @@ describe('geometry tests', () => {
                 
             });                      
         });
+    });
+
+    describe('splitting polygon', () => {
+        // create 1 polygons
+        const geometry: IGeometry = createGeometry([[[0, 0],[0,1], [1,1],[1,0]]]);
+
+        describe('split polygon using 2 opposing vertices', () => {
+            it('then 2 polygons present with different ids', () => {
+                const polygon = geometry.polygons[0];
+                polygon.vertices[0]
+                const actual = splitPolygon(polygon.vertices[0], polygon.vertices[1], polygon.id, geometry);
+                expect(actual.polygons.length).toBe(2);
+                expect(actual.polygons[0].id).not.toBe(actual.polygons[1].id);
+            });                      
+        });       
     });
     describe('perf test', () => {
         // it('running intersections for all rays', () => {

@@ -8,6 +8,7 @@ import { drawSegment, drawVector } from '../drawing/drawing';
 import { connect } from '../store/store-connector';
 import { useAppDispatch } from '../store';
 import * as actions from '../store/walls';
+import { clearSelection } from '../store/selection';
 
 const dispatch = useAppDispatch();
 export class PolygonExpander implements IActionHandler {
@@ -61,8 +62,10 @@ export class PolygonExpander implements IActionHandler {
     private finalizeExpansion = (event: MouseEvent): boolean => {
         if (event.button !== 0) { return false; }
         if (!this.isActive()) { return false; }
-        event.stopImmediatePropagation();        
-        dispatch(actions.expandPolygon({edge: this.selectedEdge.edge, polygon: this.selectedEdge.polygon.id, direction: this.calculateTarget(event)}))        
+        event.stopImmediatePropagation();                
+        const expansionRequest = {edge: this.selectedEdge.edge, polygon: this.selectedEdge.polygon.id, direction: this.calculateTarget(event)};
+        dispatch(clearSelection());
+        dispatch(actions.expandPolygon(expansionRequest));        
         this.cancel();
         return true;
     };

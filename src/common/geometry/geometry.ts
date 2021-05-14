@@ -32,9 +32,14 @@ const forkPolygons = (ids: IEntityKey[], geometry: IGeometry, polygonSplitter: (
         return acc;
     }, [[],[]]);
 
+    let polygonIdsUsed = [];
     let adaptedPolygons = adapted
         .map(p => ({p, edgeSets: polygonSplitter(p)}))        
-        .reduce((acc, _, i) => acc.concat(..._.edgeSets.map(s => loadPolygon({id: acc.some(p => p.id === _.p.id) ? createEntityKey(): cloneKey(_.p.id), edges: s}))), [] as IPolygon[]);
+        .reduce((acc, _) => acc.concat(..._.edgeSets.map(s => {
+            const key = (acc.some(p => p.id === _.p.id) || polygonIdsUsed.includes(_.p.id)) ? createEntityKey() : cloneKey(_.p.id);
+            polygonIdsUsed.push(key);
+            return loadPolygon({ id: key, edges: s});
+        })), [] as IPolygon[]);
 
     return ({...geometry, polygons: [...unchanged, ...adaptedPolygons]});
 };

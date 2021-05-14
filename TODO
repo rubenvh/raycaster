@@ -4,8 +4,6 @@
 - luminosity on edge as a function of time to implement flickering 
 - store texture library inside map as base64 string
 - BUG: completely translucent (invisible) edge is being drawn as fading shadow
-- BUG: split polygon broken due to selection component
-- BUG: expand polygon broken due to selection component
 - disable menu items when not appropriate
 - highlight edges that are being tested for intersection
 - implement scrolling in 2d view
