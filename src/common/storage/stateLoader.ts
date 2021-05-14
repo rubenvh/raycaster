@@ -10,6 +10,7 @@ import { makeCamera } from "../camera";
 import * as cameraActions from '../store/player';
 import * as wallActions  from '../store/walls';
 import * as worldActions  from '../store/world-config';
+import * as selectionActions  from '../store/selection';
 
 const dispatch = useAppDispatch();
 export class WorldLoader {
@@ -73,6 +74,7 @@ export class WorldLoader {
     }
 
     private loadWorld = (w: any) => {
+        dispatch(selectionActions.clearSelection());
         dispatch(cameraActions.initializeCamera(w.camera ? makeCamera(w.camera): DEFAULT_CAMERA));
         dispatch(wallActions.loadWalls(w.geometry || EMPTY_GEOMETRY));
         dispatch(worldActions.initialize(w.config || {fadeOn: null})); 

@@ -17,6 +17,7 @@
     "exclude": [
       "node_modules",
       "src/main",
-      "src/workers"
+      "src/workers",
+      "src/renderer/dist"
     ]
 }

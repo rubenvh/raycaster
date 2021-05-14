@@ -1,4 +1,4 @@
-import { createGeometry, IStoredGeometry, loadGeometry } from './geometry';
+import { createGeometry, IStoredGeometry, loadGeometry, removeVertex, IGeometry } from './geometry';
 import { Vector } from '../math/vector';
 
 describe('geometry tests', () => {
@@ -74,6 +74,33 @@ describe('geometry tests', () => {
                     return p;
                 });                
             }); 
+        });
+    });
+    describe('removing geometry', () => {
+        // create 2 polygons
+        const geometry: IGeometry = createGeometry([
+            [[0, 0],[0,1], [1,1],[1,0]],
+            [[5, 5],[5,6], [6,6],[6,5]]
+        ]);
+
+        describe('removing entire polygon', () => {
+            it('then polygon is not present anymore', () => {
+                const polygon = geometry.polygons[0];
+                const actual = polygon.vertices.reduce((acc, cur) => removeVertex(cur, polygon.id, acc), geometry);                
+                expect(actual.polygons.find(_ => _.id === polygon.id)).toBeUndefined();                
+            });                      
+        });
+        describe('removing vertex', () => {
+            it('then polygon still exists without deleted vertex', () => {
+                const polygon = geometry.polygons[0];
+                const vertexToDelete = polygon.vertices[0];
+                const actual = removeVertex(vertexToDelete, polygon.id, geometry);                
+                expect(actual.polygons.some(_ => _.id === polygon.id)).toBeTruthy();
+                const changedPoly = actual.polygons.find(_=>_.id === polygon.id);
+                expect(changedPoly.vertices.length).toBe(3);
+                expect(changedPoly.vertices.find(_=>_.id === vertexToDelete.id)).toBeUndefined();
+                
+            });                      
         });
     });
     describe('perf test', () => {

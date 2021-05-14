@@ -31,8 +31,8 @@ export class GeometryRemover implements IActionHandler {
     private deleteSelection = () => {        
         if (this.isActive()) {
             const map = createVertexMap(this.selectedElements);            
-            dispatch(remove(map));
             dispatch(clearSelection());
+            dispatch(remove(map));            
         }        
     }
 }

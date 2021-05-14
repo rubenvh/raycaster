@@ -77,9 +77,11 @@ export const moveVertices = (isSnapping: boolean, delta: vector.Vector, map: IVe
 };
 
 export const removeVertex = (vertex: IVertex, poligon: IEntityKey, geometry: IGeometry) => {    
-    return adaptPolygons([poligon], geometry, (selectedPolygon) => {
+    const result = adaptPolygons([poligon], geometry, (selectedPolygon) => {
         const {edges} = selectedPolygon.edges.map(cloneEdge).reduce((acc, e)=> {                
-            if (e.end.id === vertex.id && acc.lastEnd) { // first vertex in polygon was removed and we arrive at the last edge
+            if (vertex.id === e.start.id && vertex.id === e.end.id) { // removing last vertex in an empty polygon
+                return acc;
+            } else if (e.end.id === vertex.id && acc.lastEnd) { // first vertex in polygon was removed and we arrive at the last edge
                 e.end = acc.lastEnd;
                 acc.edges.push(e);
             }
@@ -98,6 +100,8 @@ export const removeVertex = (vertex: IVertex, poligon: IEntityKey, geometry: IGe
             {edges: [], previous: null as IEdge, lastEnd: null as IVertex})
         return edges;
     });
+
+    return {...result, polygons: result.polygons.filter(_=>_.edgeCount > 0) };
 };
 
 export const selectRegion = (region: BoundingBox, geometry: IGeometry): SelectableElement[] => {
