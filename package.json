@@ -2,11 +2,11 @@
   "name": "raycaster",
   "version": "0.0.1",
   "description": "electron raycaster experiments",
-  "main": "dist/main.js",
+  "main": "src/main/dist/main-bundle.js",
   "scripts": {
-    "build": "tsc",
-    "prestart": "npm run build",
-    "start": "electron .",
+    "start": "npm-run-all build run-electron",
+    "build": "webpack --config webpack.config.js",
+    "run-electron": "electron .",
     "test": "jest"
   },
   "repository": "https://github.com/rubenvh/raycaster",
@@ -20,29 +20,24 @@
   "license": "MIT",
   "dependencies": {
     "@reduxjs/toolkit": "^1.5.1",
-    "electron": "^11.4.2",
+    "electron": "^12.0.7",
+    "typescript": "^4.2.4",
+    "webpack": "^5.37.0",
     "guid-typescript": "^1.0.9",
     "image-size": "^0.9.7",
-    "mathjs": "^9.3.1",
-    "promise-worker": "^2.0.1",
-    "ramda": "^0.27.1",
     "redux-logger": "^3.0.6",
     "ts-node": "^9.1.1"
   },
   "devDependencies": {
-    "@babel/core": "^7.13.15",
-    "@babel/preset-env": "^7.13.15",
-    "@babel/preset-typescript": "^7.13.0",
+    "@types/electron": "^1.6.10",
     "@types/image-size": "^0.8.0",
-    "@types/jest": "^26.0.22",
-    "@types/mathjs": "^6.0.11",
+    "@types/jest": "^26.0.23",
     "@types/node": "^14.14.37",
-    "babel-jest": "^26.6.3",
-    "electron-devtools-installer": "^3.1.1",
     "jest": "^26.6.3",
     "jest-canvas-mock": "^2.3.1",
-    "redux-devtools-extension": "^2.13.9",
+    "npm-run-all": "^4.1.5",
     "ts-jest": "^26.5.4",
-    "typescript": "^4.2.4"
+    "ts-loader": "^9.1.2",
+    "webpack-cli": "^4.7.0"
   }
 }
