@@ -24,30 +24,30 @@ export const normal = (a: ILineSegment, s: number = 1): ILineSegment => {
   return [mp, add(mp, scale(s, normalize(perpendicular(subtract(a[1], a[0])))))];
 }
 
-const intersectSegments = (a: ILineSegment, b: ILineSegment): Vector => {
-    const p0_x = a[0][0];
-    const p0_y = a[0][1];
-    const p1_x = a[1][0];
-    const p1_y = a[1][1];
-    const p2_x = b[0][0];
-    const p2_y = b[0][1];
-    const p3_x = b[1][0];
-    const p3_y = b[1][1];
+// const intersectSegments = (a: ILineSegment, b: ILineSegment): Vector => {
+//     const p0_x = a[0][0];
+//     const p0_y = a[0][1];
+//     const p1_x = a[1][0];
+//     const p1_y = a[1][1];
+//     const p2_x = b[0][0];
+//     const p2_y = b[0][1];
+//     const p3_x = b[1][0];
+//     const p3_y = b[1][1];
    
-    const s1_x = p1_x - p0_x;
-    const s1_y = p1_y - p0_y;
-    const s2_x = p3_x - p2_x;
-    const s2_y = p3_y - p2_y;
+//     const s1_x = p1_x - p0_x;
+//     const s1_y = p1_y - p0_y;
+//     const s2_x = p3_x - p2_x;
+//     const s2_y = p3_y - p2_y;
     
-    const s = (-s1_y * (p0_x - p2_x) + s1_x * (p0_y - p2_y)) / (-s2_x * s1_y + s1_x * s2_y);
-    const t = ( s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / (-s2_x * s1_y + s1_x * s2_y);
+//     const s = (-s1_y * (p0_x - p2_x) + s1_x * (p0_y - p2_y)) / (-s2_x * s1_y + s1_x * s2_y);
+//     const t = ( s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / (-s2_x * s1_y + s1_x * s2_y);
 
-    if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
-    {  
-        return [p0_x + (t * s1_x), p0_y + (t * s1_y)];
-    }
-    return null;    
-};
+//     if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
+//     {  
+//         return [p0_x + (t * s1_x), p0_y + (t * s1_y)];
+//     }
+//     return null;    
+// };
 
 export const lineIntersect = (a: ILine, b: ILine): Vector => {
   let A1 = a[1][1]-a[0][1], //p1y - p0y,
