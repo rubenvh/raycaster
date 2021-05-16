@@ -9,7 +9,7 @@ import { textureLib } from '../common/textures/textureLibrary';
 import { WorldLoader } from '../common/storage/stateLoader';
 import { UndoService } from '../common/actions/undoService';
 import { connect } from '../common/store/store-connector';
-import { BspGenerator } from '../common/geometry/bsp/bspGenerator';
+import { BspGenerationStarter } from '../common/geometry/bsp/BspGenerationStarter';
 import { loadComponents } from './components';
 import GeometrySelectionComponent from './components/geometrySelectionComponent';
 import GeometryEditorComponent from './components/geometryEditorComponent';
@@ -35,7 +35,7 @@ window.addEventListener('load', (event) => {
     let handlers = [...createGlobalActionHandlers(), ...createCanvasHandlers(ui.view_2d.canvas, textureLib)];
     let renderer3d = new Renderer3d(ui.view_3d.canvas, textureLib);
     let renderer2d = new Renderer2d(ui.view_2d.canvas);
-    new BspGenerator();
+    new BspGenerationStarter();
     
     connect(s => {
         ui.stats.data = s.stats;        

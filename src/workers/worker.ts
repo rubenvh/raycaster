@@ -1,10 +1,9 @@
-import { IBSPNode } from '../common/geometry/bsp/model'
+import { buildBspTree } from '../common/geometry/bsp/creation'
+import { IPolygon } from '../common/geometry/polygon';
 
 self.addEventListener('message', (e: Event) => {
-    console.log('Message received from main script: ', e);        
-    // TODO: start BSP calculation
-    const x: IBSPNode = {};
-
-
-    postMessage({bsp: x});
+    console.log('Starting bsp construction: ', e);    
+    const polygons = (<MessageEvent<Array<IPolygon>>> e).data;
+    const tree = buildBspTree(polygons);
+    postMessage({bsp: tree});
 });

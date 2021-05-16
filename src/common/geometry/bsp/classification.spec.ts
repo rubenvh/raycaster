@@ -1,5 +1,7 @@
-import { createPolygon } from './../polygon';
-import { classifyPointToPlane, classifyPolygonToPlane, createPlane, PointToPlaneRelation, PolygonToPlaneRelation } from "./model";
+import { createPlane } from '../../math/plane';
+import { createPolygon } from '../polygon';
+import { classifyPointToPlane, classifyPolygonToPlane } from './classification';
+import { PointToPlaneRelation, PolygonToPlaneRelation } from "./model";
 
 describe('classification of point in relation to plane', () => {
     const plane =  createPlane([[0,0], [1,1]]);
