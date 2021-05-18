@@ -1,3 +1,4 @@
+import { IBSPNode } from './../geometry/bsp/model';
 import { createPolygon as doCreatePolygon, IPolygon } from './../geometry/polygon';
 import { IEntityKey } from './../geometry/entity';
 import { IEdge } from './../geometry/edge';
@@ -91,6 +92,9 @@ const slice = createSlice({
       const {vertex, polygonId, direction} = action.payload;
       const vertexMap = new Map<string, IVertex[]>([[polygonId, [vertex]]]);
       undoableUpdate(state, moveVertices(false, direction, vertexMap, state.geometry));
+    },
+    updateBsp: (state, action: PayloadAction<IBSPNode>) => {
+      state.geometry.bsp = action.payload;
     }
   },
 });
@@ -108,4 +112,4 @@ const undoableUpdate = (state: IWallState, geometry: IGeometry) => {
 export default slice.reducer
 // Actions
 export const { undo, redo, loadWalls, updateWalls, adaptEdges, splitEdge, move, remove, createPolygon, clonePolygon, 
-              expandPolygon, reversePolygon, splitPolygon, rotatePolygon, editVertex } = slice.actions
+              expandPolygon, reversePolygon, splitPolygon, rotatePolygon, editVertex, updateBsp } = slice.actions

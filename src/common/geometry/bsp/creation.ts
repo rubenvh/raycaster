@@ -16,10 +16,13 @@ export function buildBspTree(polygons: IPolygon[], depth: number = 0): IBSPNode 
     const splitPlane = pickSplittingPlane(polygons);
     const frontList: IPolygon[] = [];
     const backList: IPolygon[] = [];
+    const coplanarList: IPolygon[] = [];
 
     for (const polygon of polygons) {
         switch (classifyPolygonToPlane(polygon, splitPlane)) {
             case PolygonToPlaneRelation.Coplanar:
+                coplanarList.push(polygon);
+                break;
             case PolygonToPlaneRelation.InFront:
                 frontList.push(polygon);
                 break;
@@ -36,5 +39,5 @@ export function buildBspTree(polygons: IPolygon[], depth: number = 0): IBSPNode 
 
     const frontTree = buildBspTree(frontList, depth + 1);
     const backTree = buildBspTree(backList, depth + 1);
-    return createNode(splitPlane, frontTree, backTree);
+    return createNode(splitPlane, frontTree, backTree, coplanarList);
 }

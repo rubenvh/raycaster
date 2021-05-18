@@ -8,16 +8,21 @@ import { IVertex } from './geometry/vertex';
 import { add, perpendicular, subtract } from './math/vector';
 import { midpoint, normal } from './math/lineSegment';
 
-export class Renderer2d {
-    private context: CanvasRenderingContext2D;
+export class MapEditorRenderer {
+    private _context: CanvasRenderingContext2D;
     private background: HTMLCanvasElement;
     private selectedElements: SelectableElement[] = [];
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
     private selectedTreeNode: SelectableElement;
+    private active: boolean = false;
+    
+    get context(): CanvasRenderingContext2D {
+        return this._context;
+    }
     
     constructor(private canvas: HTMLCanvasElement) {
-        this.context = canvas.getContext('2d');
+        this._context = canvas.getContext('2d');
         this.background = document.createElement('canvas') as HTMLCanvasElement;
         this.resizeCanvas();        
         window.addEventListener('resize', e => {
@@ -29,6 +34,7 @@ export class Renderer2d {
             this.selectedTreeNode = s.selection.treeSelection;
             this.camera = s.player.camera;
             this.wallGeometry = s.walls.geometry;
+            this.active = !s.uiConfig.enableTestCanvas;            
         });
     }
    
@@ -41,10 +47,12 @@ export class Renderer2d {
     }
 
     public render = (fps: number) => {
-        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);        
-        this.drawGrid();
-        this.drawCamera(this.context, this.camera);
-        this.drawGeometry(this.context, this.wallGeometry);
+        if (this.active) {
+            this._context.clearRect(0, 0, this.canvas.width, this.canvas.height);        
+            this.drawGrid();
+            this.drawCamera(this._context, this.camera);
+            this.drawGeometry(this._context, this.wallGeometry);
+        }       
                 
         // if (this.world.rays?.length > 0) {
         //     this.world.rays.forEach((c, rayIndex) => {
@@ -113,7 +121,7 @@ export class Renderer2d {
         backgroundContext.stroke();
     };
         
-    private drawGrid = () => this.context.drawImage(this.background, 0, 0);
+    private drawGrid = () => this._context.drawImage(this.background, 0, 0);
 }
 
 enum Colors {

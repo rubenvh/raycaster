@@ -6,15 +6,16 @@ import selection from './selection'
 import player from './player'
 import walls from './walls'
 import worldConfig from './world-config'
+import uiConfig from './ui-config'
 
 const reducer = combineReducers({
   stats,
   selection,
   player,
   walls,
-  worldConfig
-})
-
+  worldConfig, 
+  uiConfig
+});
 
 const store = configureStore({
   reducer,  

@@ -1,13 +1,13 @@
 import { ILineSegment, distanceTo, projectOn } from './lineSegment';
 import { Vector } from '../math/vector';
-import { intersectRay, IRay, makeRay } from '../geometry/collision';
+import { intersectRaySegment, IRay, makeRay } from '../geometry/collision';
 import { Face } from '../geometry/properties';
 
 describe('line segment tests', () => {
     describe('ray intersection tests', () => {  
         let ray: IRay;
         const test = (s: ILineSegment, expected: Vector, face?: Face)=> {
-            let actual = intersectRay(ray, s);            
+            let actual = intersectRaySegment(ray, s);            
             if (expected) expect(actual?.point).toEqual(expected);
             else expect(actual).toBeNull();
             if (face) expect(actual?.face).toEqual(face);

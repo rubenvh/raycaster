@@ -1,3 +1,4 @@
+import { IBSPNode } from './bsp/model';
 import { selectPolygon } from './../selection/selectable';
 
 import * as vector from '../math/vector';
@@ -10,7 +11,7 @@ import { areEqual, IVertex, IVertexMap, makeVertex } from './vertex';
 import { cloneMaterial } from './properties';
 
 export type IStoredGeometry = IEntity & { polygons: IStoredPolygon[]};
-export type IGeometry = IEntity & { polygons: IPolygon[]};
+export type IGeometry = IEntity & { polygons: IPolygon[], bsp?: IBSPNode};
 export const EMPTY_GEOMETRY: IGeometry = {polygons: []};
 export const storeGeometry = (g: IGeometry): IStoredGeometry => ({id: g.id, polygons: g.polygons.map(storePolygon)});
 export const loadGeometry = (g : IStoredGeometry): IGeometry => ({id: g.id, polygons: g.polygons.map(loadPolygon)});
@@ -22,7 +23,7 @@ export const detectCollisionAt = (vector: vector.Vector, geometry: IGeometry): c
 }
 
 export const detectCollisions = (ray: collision.IRay, geometry: IGeometry): collision.RayCollisions => {
-    return collision.detectCollisions(ray, geometry.polygons);
+    return collision.detectCollisions(ray, geometry);
 }
 
 const forkPolygons = (ids: IEntityKey[], geometry: IGeometry, polygonSplitter: (poligon: IPolygon)=>IEdge[][]) : IGeometry => {
@@ -41,7 +42,7 @@ const forkPolygons = (ids: IEntityKey[], geometry: IGeometry, polygonSplitter: (
             return loadPolygon({ id: key, edges: s});
         })), [] as IPolygon[]);
 
-    return ({...geometry, polygons: [...unchanged, ...adaptedPolygons]});
+    return ({...geometry, bsp: null, polygons: [...unchanged, ...adaptedPolygons]});
 };
 
 const adaptPolygons = (ids: IEntityKey[], geometry: IGeometry, edgeTransformer: (poligon: IPolygon)=>IEdge[]) => {    

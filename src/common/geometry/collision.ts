@@ -1,3 +1,5 @@
+import { IGeometry } from './geometry';
+import { Plane } from './../math/plane';
 import { ILineSegment } from './../math/lineSegment';
 import { distanceToMidPoint, ILine } from "../math/lineSegment";
 import { add, cross, dot, normalize, perpendicular, scale, subtract, Vector } from "../math/vector";
@@ -5,6 +7,7 @@ import { IEdge } from "./edge";
 import { BoundingBox, IPolygon } from "./polygon";
 import { distance, IVertex } from "./vertex";
 import { Face, getMaterial, IMaterial } from './properties';
+import { intersectRay } from './bsp/querying';
 
 export type Collision = VertexCollision | EdgeCollision;
 type BaseCollision = {polygon: IPolygon, distance: number, kind: string};
@@ -77,19 +80,21 @@ export const detectCollisionAt = (vector: Vector, polygons: IPolygon[]): VertexC
     .sort(distanceComparer)[0];
 } 
 
-export const detectCollisions = (ray: IRay, polygons: IPolygon[]): RayCollisions => {
+export const detectCollisions = (ray: IRay, geometry: IGeometry): RayCollisions => {
     const result: RayCollisions = {ray, stats: {amount: 0, edgeCount: 0}, hits: []};
     let intersectionCalculations = 0;
     
+    const polygonsToCheck = geometry.bsp ? intersectRay(geometry.bsp, ray) : geometry.polygons;
+
     // TODO: replace this naive implementation with something more efficient:
     //  * BSP, quadtrees, ...
     // ...
-    for (const polygon of polygons){
+    for (const polygon of polygonsToCheck){
         result.stats.edgeCount += polygon.edgeCount;
         if (polygon.edgeCount > 4 && !hasIntersect(ray, polygon.boundingBox)) continue;
         for (const edge of polygon.edges) {            
             intersectionCalculations += 1;
-            const intersection = intersectRay(ray, edge.segment);                                    
+            const intersection = intersectRaySegment(ray, edge.segment);                                    
             if (intersection) {
                 result.hits.push({polygon, ray, edge, intersection,
                     distance: distance(intersection.point, ray.line[0]) * ray.cosAngle
@@ -102,7 +107,7 @@ export const detectCollisions = (ray: IRay, polygons: IPolygon[]): RayCollisions
     return result;
 }
 
-export const intersectRay = (ray: IRay, s: ILineSegment): Intersection => {    
+export const intersectRaySegment = (ray: IRay, s: ILineSegment): Intersection => {    
     let v1 = subtract(ray.position, s[0]);
     let v2 = subtract(s[1], s[0]);    
     let c = cross(v2, v1);    
@@ -115,6 +120,19 @@ export const intersectRay = (ray: IRay, s: ILineSegment): Intersection => {
         face: c < 0 ? Face.exterior : Face.interior
     });
     return null;
-  }
+};
+
+export const intersectRayPlane = (ray: IRay, plane: Plane): Intersection => {    
+    const denom = dot(plane.n, ray.direction);
+    const dist = plane.d - dot(plane.n, ray.position);
+    if (denom === 0) { return null;  }
+    const t = dist / denom;
+    
+    if (t >=  0) return ({
+        point: add(ray.position, scale(t, ray.direction)),
+        face: denom < 0 ? Face.exterior : Face.interior
+    });
+    return null;
+}
 
   export const lookupMaterialFor = (hit: RayHit): IMaterial => hit.intersection && getMaterial(hit.intersection.face, hit.edge?.material);

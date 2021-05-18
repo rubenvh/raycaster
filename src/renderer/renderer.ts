@@ -1,10 +1,11 @@
+import { TestCanvasRenderer } from './testCanvas';
 // This file is required by the index.html file and will
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
 
 import { createCanvasHandlers, createGlobalActionHandlers } from '../common/actions/actionHandlerFactory';
 import { Renderer3d } from '../common/renderer3d';
-import { Renderer2d } from "../common/renderer2d";
+import { MapEditorRenderer } from '../common/mapEditor';
 import { textureLib } from '../common/textures/textureLibrary';
 import { WorldLoader } from '../common/storage/stateLoader';
 import { UndoService } from '../common/actions/undoService';
@@ -34,7 +35,8 @@ window.addEventListener('load', (event) => {
     new UndoService();
     let handlers = [...createGlobalActionHandlers(), ...createCanvasHandlers(ui.view_2d.canvas, textureLib)];
     let renderer3d = new Renderer3d(ui.view_3d.canvas, textureLib);
-    let renderer2d = new Renderer2d(ui.view_2d.canvas);
+    let mapEditor = new MapEditorRenderer(ui.view_2d.canvas);
+    let testCanvas = new TestCanvasRenderer(ui.view_2d.canvas);//, mapEditor.context);
     new BspGenerationStarter();
     
     connect(s => {
@@ -55,8 +57,9 @@ window.addEventListener('load', (event) => {
     window.requestAnimationFrame(loop);
 
     function redraw() {      
-        renderer2d.render(fps);
-        renderer3d.render(fps);
+        testCanvas.render(fps);
+        mapEditor.render(fps);
+        renderer3d.render(fps);        
     }
 
     function update() {    
