@@ -1,6 +1,7 @@
 import { BoundingBox } from "../geometry/polygon";
 import { ILineSegment } from "../math/lineSegment";
-import { Vector } from "../math/vector";
+import { Plane } from "../math/plane";
+import { dot, Vector } from "../math/vector";
 
 export const drawVector = (context: CanvasRenderingContext2D, vector: Vector, color: string = 'rgb(100,100,0)') => {
     context.beginPath();
@@ -49,3 +50,41 @@ export const drawTrapezoid = (context: CanvasRenderingContext2D, p: [Vector, Vec
     context.fillStyle = color;
     context.fill();
 };
+
+export const drawPlane = (context: CanvasRenderingContext2D, plane: Plane, color: string='green'): void => {
+
+    context.beginPath();
+	context.strokeStyle = color;;
+	context.lineWidth = 2;
+
+    if (plane.n[1] !== 0) {
+        const max = context.canvas.width;
+        for (var i=0; i<max; i++)
+        {		
+            let x = i;
+            let y = (plane.d - plane.n[0]*i)/plane.n[1];
+    
+            if(i===0) {
+                context.moveTo(x,y);
+            } else {
+                context.lineTo(x,y);
+            }
+        }
+    } else if (plane.n[0] !== 0) {
+        const max = context.canvas.height;
+        for (var i=0; i<max; i++)
+        {		
+            let y = i;
+            let x = (plane.d - plane.n[1]*i)/plane.n[0];
+    
+            if(i===0) {
+                context.moveTo(x,y);
+            } else {
+                context.lineTo(x,y);
+            }
+        }
+    }
+
+    
+	context.stroke();    
+}

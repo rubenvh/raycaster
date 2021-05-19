@@ -5,7 +5,7 @@ import { isTranslucent } from "./geometry/properties";
 export type CastedRay = {hits: RayHit[], stats: IntersectionStats};
 const makeInfinity = (ray: IRay): CastedRay => ({
     hits: [{ray, edge: null, intersection: null, polygon: null, distance: Number.POSITIVE_INFINITY}],
-    stats: {edgeCount: 0, amount: 0}
+    stats: {totalEdges: 0, testedEdges: 0, testedPolygons: 0, totalPolygons: 0}
 });
 
 /**

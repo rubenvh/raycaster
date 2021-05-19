@@ -11,13 +11,20 @@ import { areEqual, IVertex, IVertexMap, makeVertex } from './vertex';
 import { cloneMaterial } from './properties';
 
 export type IStoredGeometry = IEntity & { polygons: IStoredPolygon[]};
-export type IGeometry = IEntity & { polygons: IPolygon[], bsp?: IBSPNode};
-export const EMPTY_GEOMETRY: IGeometry = {polygons: []};
+export type IGeometry = IEntity & { polygons: IPolygon[], bsp?: IBSPNode, edgeCount: number};
+export const EMPTY_GEOMETRY: IGeometry = {polygons: [], edgeCount: 0};
 export const storeGeometry = (g: IGeometry): IStoredGeometry => ({id: g.id, polygons: g.polygons.map(storePolygon)});
-export const loadGeometry = (g : IStoredGeometry): IGeometry => ({id: g.id, polygons: g.polygons.map(loadPolygon)});
-export const createGeometry = (polygonCollection: vector.Vector[][]): IGeometry => ({polygons: polygonCollection.map(createPolygon)});
-export const addPolygon = (p: IPolygon, geometry: IGeometry): IGeometry => ({polygons: [...geometry.polygons, p]});
-
+export const loadGeometry = (g : IStoredGeometry): IGeometry => {
+    const polygons = g.polygons.map(loadPolygon);
+    return ({id: g.id, polygons, edgeCount: countEdges(polygons)});
+};
+export const createGeometry = (polygonCollection: vector.Vector[][]): IGeometry => {
+    const polygons = polygonCollection.map(createPolygon);
+    return ({polygons, edgeCount: countEdges(polygons)});
+};
+export const addPolygon = (p: IPolygon, geometry: IGeometry): IGeometry => ({...geometry, 
+    polygons: [...geometry.polygons, p], edgeCount: geometry.edgeCount+1});
+const countEdges = (p : IPolygon[]) => p.reduce((acc, p) => acc + p.edgeCount, 0);
 export const detectCollisionAt = (vector: vector.Vector, geometry: IGeometry): collision.Collision => {
     return collision.detectCollisionAt(vector, geometry.polygons);    
 }
@@ -42,7 +49,8 @@ const forkPolygons = (ids: IEntityKey[], geometry: IGeometry, polygonSplitter: (
             return loadPolygon({ id: key, edges: s});
         })), [] as IPolygon[]);
 
-    return ({...geometry, bsp: null, polygons: [...unchanged, ...adaptedPolygons]});
+    const polygons = [...unchanged, ...adaptedPolygons];
+    return ({...geometry, bsp: null, polygons, edgeCount: countEdges(polygons)});
 };
 
 const adaptPolygons = (ids: IEntityKey[], geometry: IGeometry, edgeTransformer: (poligon: IPolygon)=>IEdge[]) => {    

@@ -1,6 +1,7 @@
+import { IBSPNode, isLeafNode, isSplitNode } from './geometry/bsp/model';
 import { connect } from './store/store-connector';
 import { ICamera, makeRays, DEFAULT_CAMERA } from './camera';
-import { drawSegment, drawVector, drawBoundingBox } from './drawing/drawing';
+import { drawSegment, drawVector, drawBoundingBox, drawPlane } from './drawing/drawing';
 import { IEdge } from './geometry/edge';
 import { EMPTY_GEOMETRY, IGeometry } from './geometry/geometry';
 import { isSelectedEdge, isSelectedPolygon, isSelectedVertex, SelectableElement, selectedId } from './selection/selectable';
@@ -52,6 +53,10 @@ export class MapEditorRenderer {
             this.drawGrid();
             this.drawCamera(this._context, this.camera);
             this.drawGeometry(this._context, this.wallGeometry);
+
+            if (this.wallGeometry.bsp) {
+                this.drawBsp(this.wallGeometry.bsp);
+            }
         }       
                 
         // if (this.world.rays?.length > 0) {
@@ -119,6 +124,17 @@ export class MapEditorRenderer {
             }
         }
         backgroundContext.stroke();
+    };
+
+    private colors: string[] = ['white', 'yellow', 'orange', 'red', 'purple', 'blue', 'cyan', 'green'];
+    private drawBsp = (tree: IBSPNode, depth: number = 0) => {
+        if (isSplitNode(tree)) {
+            
+            drawPlane(this._context, tree.plane, this.colors[depth]);
+
+            this.drawBsp(tree.front, depth +1);
+            this.drawBsp(tree.back, depth + 1 );
+        }
     };
         
     private drawGrid = () => this._context.drawImage(this.background, 0, 0);

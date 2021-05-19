@@ -15,7 +15,7 @@ export type VertexCollision = BaseCollision & { vertex: IVertex, kind: "vertex"}
 export type EdgeCollision = BaseCollision & {edge: IEdge, kind: "edge" };
 export type Intersection = {point: Vector, face: Face};
 export type RayHit = {polygon: IPolygon, edge: IEdge, intersection: Intersection, ray: IRay, distance: number};
-export type IntersectionStats = {edgeCount: number, amount: number };
+export type IntersectionStats = {totalEdges: number, testedEdges: number, totalPolygons: number, testedPolygons: number };
 export type RayCollisions = {hits: RayHit[], stats: IntersectionStats, ray: IRay};
 export type IRay = {position: Vector, direction: Vector, dn: Vector, dperp: Vector, line: ILine, ood: Vector, angle: number, cosAngle: number}; 
 
@@ -81,17 +81,14 @@ export const detectCollisionAt = (vector: Vector, polygons: IPolygon[]): VertexC
 } 
 
 export const detectCollisions = (ray: IRay, geometry: IGeometry): RayCollisions => {
-    const result: RayCollisions = {ray, stats: {amount: 0, edgeCount: 0}, hits: []};
+    const result: RayCollisions = {ray, stats: {testedEdges: 0, totalEdges: geometry.edgeCount, totalPolygons: geometry.polygons.length, testedPolygons: 0}, hits: []};
     let intersectionCalculations = 0;
     
     const polygonsToCheck = geometry.bsp ? intersectRay(geometry.bsp, ray) : geometry.polygons;
-
-    // TODO: replace this naive implementation with something more efficient:
-    //  * BSP, quadtrees, ...
-    // ...
-    for (const polygon of polygonsToCheck){
-        result.stats.edgeCount += polygon.edgeCount;
-        if (polygon.edgeCount > 4 && !hasIntersect(ray, polygon.boundingBox)) continue;
+    result.stats.testedPolygons = polygonsToCheck.length;
+    
+    for (const polygon of polygonsToCheck){        
+        if (polygon.edgeCount > 5 && !hasIntersect(ray, polygon.boundingBox)) continue;
         for (const edge of polygon.edges) {            
             intersectionCalculations += 1;
             const intersection = intersectRaySegment(ray, edge.segment);                                    
@@ -103,7 +100,7 @@ export const detectCollisions = (ray: IRay, geometry: IGeometry): RayCollisions 
         }
     }
     
-    result.stats.amount = intersectionCalculations;
+    result.stats.testedEdges = intersectionCalculations;
     return result;
 }
 

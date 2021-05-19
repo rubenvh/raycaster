@@ -3,7 +3,7 @@ import { IPolygon } from './../polygon';
 import { pickSplittingPlane, splitPolygon } from './splitting';
 import { classifyPolygonToPlane } from './classification';
 
-const MAX_DEPTH = 5;
+const MAX_DEPTH = 6;
 const MIN_LEAF_SIZE = 1;
 export function buildBspTree(polygons: IPolygon[], depth: number = 0): IBSPNode {
     

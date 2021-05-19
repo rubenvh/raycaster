@@ -59,14 +59,19 @@ export default class StatsElement extends HTMLElement {
         
         let t = i.rayIntersectionStats.reduce(
             (acc, cur) => ({
-                edgePercentage: Math.max(acc.edgePercentage, cur.edgeCount/cur.amount), 
-                max: Math.max(acc.max, cur.amount),
-                edgeCount: Math.max(acc.edgeCount, cur.edgeCount)}), 
-            {edgePercentage: -Infinity, max: -Infinity, edgeCount: 0 });
+                edgePercentage: Math.max(acc.edgePercentage, cur.testedEdges/cur.totalEdges), 
+                maxEdgesTested: Math.max(acc.maxEdgesTested, cur.testedEdges),
+                edgeCount: Math.max(acc.edgeCount, cur.totalEdges),
+                maxPolygonsTested: Math.max(acc.maxPolygonsTested, cur.testedPolygons),
+                polygonCount: Math.max(acc.polygonCount, cur.totalPolygons),
+            }), 
+            {edgePercentage: -Infinity, maxEdgesTested: -Infinity, maxPolygonsTested: -Infinity, edgeCount: 0, polygonCount: 0 });
         
         return `<li>Max % intersection tests: ${(100*t.edgePercentage).toFixed(2)}</li>
-                <li>Max # edges tested: ${t.max.toFixed(0)}</li>
-                <li>Total # edges: ${t.edgeCount.toFixed(0)}</li>`;
+                <li>Max # edges tested: ${t.maxEdgesTested.toFixed(0)}</li>
+                <li>Total # edges: ${t.edgeCount.toFixed(0)}</li>
+                <li>Max # polygons tested: ${t.maxPolygonsTested.toFixed(0)}</li>
+                <li>Total # polygons: ${t.polygonCount.toFixed(0)}</li>`;
     }
 }
 
