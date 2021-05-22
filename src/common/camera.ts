@@ -1,6 +1,6 @@
 import * as vector from './math/vector';
 import { ILine, ILineSegment, lineAngle } from "./math/lineSegment";
-import { castRays, passThroughImmaterialEdges } from './raycaster';
+import { castCameraRay } from './raycaster';
 import { IGeometry } from './geometry/geometry';
 import { IRay, makeRay } from './geometry/collision';
 
@@ -58,7 +58,7 @@ const constrainedMove = (direction: 1|-1, cam: ICamera,
     geometry: IGeometry): ICamera => {
     
     let movementRatio = direction * 0.15;
-    const hit = castRays([raymaker(direction, cam)], geometry, passThroughImmaterialEdges)[0].hits[0];    
+    const hit = castCameraRay(raymaker(direction, cam), geometry);
     if (hit.distance >= 2) { // magic number 2 should actually depend on size of direction/plane vector and 0.15 scale increment above (prevent overshooting the wall)        
         // distance large enough: safe to move
         return mover(movementRatio, cam);

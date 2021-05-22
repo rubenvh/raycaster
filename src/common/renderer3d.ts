@@ -79,7 +79,7 @@ export class Renderer3d {
     public render = (fps: number) => {                           
         // initiate raycasting
         const startCasting = performance.now();
-        const rays = raycaster.castRays(makeRays(this.resolution, this.camera), this.wallGeometry, raycaster.passTroughTranslucentEdges);
+        const rays = raycaster.castCollisionRays(makeRays(this.resolution, this.camera), this.wallGeometry);
         // construct a z-index buffer: 
         const startZBuffering = performance.now();
         const zbuffer = this.constructZBuffer(rays);        
@@ -93,7 +93,7 @@ export class Renderer3d {
 
         const endDrawing = performance.now();
 
-        if (!this.lastUpdated || endDrawing-this.lastUpdated > 2000){
+        if (!this.lastUpdated || endDrawing-this.lastUpdated > 1000){
             this.lastUpdated= endDrawing;
             dispatch(statisticsUpdated({
                 performance: { 

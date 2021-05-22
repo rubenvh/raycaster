@@ -1,5 +1,5 @@
-import { intersectRay, intersectRayPolygons } from "./geometry/bsp/querying";
-import { IntersectionStats, IRay, lookupMaterialFor, RayCollisions, RayHit } from "./geometry/collision";
+import { intersectRay } from "./geometry/bsp/querying";
+import { IntersectionStats, intersectRayPolygons, IRay, lookupMaterialFor, RayCollisions, RayHit } from "./geometry/collision";
 import { IGeometry } from "./geometry/geometry";
 import { isTranslucent } from "./geometry/properties";
 
@@ -9,43 +9,57 @@ const makeInfinity = (ray: IRay): CastedRay => ({
     stats: {totalEdges: 0, testedEdges: 0, testedPolygons: 0, totalPolygons: 0}
 });
 
+export const castCameraRay = (ray: IRay, geometry: IGeometry): RayHit =>  {
+    const stopOnImpassableEdge: (hit: RayHit)=> boolean = hit => !hit.edge.immaterial;
+    return castRays([ray], geometry, passThroughImmaterialEdges, stopOnImpassableEdge)[0].hits[0];    
+}
+export const castCollisionRays = (rays: IRay[], geometry: IGeometry): CastedRay[] => {    
+    const stopOnNonTranslucentEdge: (hit: RayHit)=>boolean = hit => !isTranslucent(hit.intersection.face, hit.edge.material);
+    return castRays(rays, geometry, passTroughTranslucentEdges, stopOnNonTranslucentEdge);
+}
+
 /**
  * A filter function for ray hits where only material edges are kept. Can be used for collision 
  * detection for blocking an actor's movement .
  * @param hits The collection of actual ray hits
  * @returns a collection of ray hits where immaterial edges are filtered out
  */
-export const passThroughImmaterialEdges: (hits: RayHit[])=>RayHit[] = hits => hits.filter(_=>!_.edge.immaterial);
+const passThroughImmaterialEdges: (hits: RayHit[])=>RayHit[] = hits => hits.filter(_=>!_.edge.immaterial);
 
 /**
  * A filter function for ray hits where hits are kept until the first non-translucent edge. 
  * @param hits The collection of actual ray hits
  * @returns a collection of ray hits for translucent edges and the first solid edge in the collection
  */
-export const passTroughTranslucentEdges: (hits: RayHit[])=>RayHit[] = hits => {    
+const passTroughTranslucentEdges: (hits: RayHit[])=>RayHit[] = hits => {    
     let i = 0;    
-    while (i < hits.length && isTranslucentEdge(hits[i++]));    
+    while (i < hits.length && isTranslucentEdge(hits[i++]));      
     return hits.slice(0, i);
 };
 
-export const castRays = (rays: IRay[], geometry: IGeometry, hitFilter: (hits: RayHit[])=>RayHit[] = null): CastedRay[] => {    
+const castRays = (rays: IRay[], geometry: IGeometry, 
+    hitFilter: (hits: RayHit[])=>RayHit[],
+    earlyExitPredicate: (hit: RayHit)=>boolean): CastedRay[] => {    
     if (!hitFilter) { hitFilter = x => x.slice(0,1);}
     return rays
         .map(_ => {
-            const collisions = detectCollisions(_, geometry);                                    
+            const collisions = detectCollisions(_, geometry, earlyExitPredicate);                                    
             const hits = collisions.hits
                 .filter(needsRendering)
                 .sort((a,b)=> a.distance - b.distance);
 
-            const result = hitFilter(hits);
+            const result = hitFilter(hits);        
             if (!result || result.length < 1) { return makeInfinity(_); }                                    
             return { stats: collisions.stats, hits: result };
         });
 };
 
-const detectCollisions = (ray: IRay, geometry: IGeometry)  => {
+const detectCollisions = (ray: IRay, geometry: IGeometry, earlyExitPredicate: (hit: RayHit)=>boolean)  => {
     const result: RayCollisions = {ray, stats: {testedEdges: 0, totalEdges: geometry.edgeCount, totalPolygons: geometry.polygons.length, testedPolygons: 0}, hits: []};
-    const polygonIntersections = geometry.bsp ? intersectRay(geometry.bsp, ray) : intersectRayPolygons(geometry.polygons, ray);
+        const polygonIntersections = geometry.bsp 
+        ? intersectRay(geometry.bsp, ray, earlyExitPredicate)
+        : intersectRayPolygons(geometry.polygons, ray, earlyExitPredicate);
+
     result.hits = polygonIntersections.hits;
     result.stats.testedEdges = polygonIntersections.edgeCount;
     result.stats.testedPolygons = polygonIntersections.polygonCount;

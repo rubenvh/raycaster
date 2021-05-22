@@ -1,4 +1,3 @@
-import { IGeometry } from './geometry';
 import { Plane } from './../math/plane';
 import { ILineSegment } from './../math/lineSegment';
 import { distanceToMidPoint, ILine } from "../math/lineSegment";
@@ -6,8 +5,7 @@ import { add, cross, dot, normalize, perpendicular, scale, subtract, Vector } fr
 import { IEdge } from "./edge";
 import { BoundingBox, IPolygon } from "./polygon";
 import { distance, IVertex } from "./vertex";
-import { Face, getMaterial, IMaterial } from './properties';
-import { intersectRay } from './bsp/querying';
+import { Face, getMaterial, IMaterial, isTranslucent } from './properties';
 
 export type Collision = VertexCollision | EdgeCollision;
 type BaseCollision = {polygon: IPolygon, distance: number, kind: string};
@@ -17,6 +15,8 @@ export type Intersection = {point: Vector, face: Face};
 export type RayHit = {polygon: IPolygon, edge: IEdge, intersection: Intersection, ray: IRay, distance: number};
 export type IntersectionStats = {totalEdges: number, testedEdges: number, totalPolygons: number, testedPolygons: number };
 export type RayCollisions = {hits: RayHit[], stats: IntersectionStats, ray: IRay};
+export type PolygonIntersections = {hits: RayHit[], stop: boolean, edgeCount: number, polygonCount: number};
+export const EMPTY_INTERSECTION: PolygonIntersections = {hits: [], stop: false, edgeCount: 0, polygonCount: 0};
 export type IRay = {position: Vector, direction: Vector, dn: Vector, dperp: Vector, line: ILine, ood: Vector, angle: number, cosAngle: number}; 
 
 export const makeRay = (p: Vector, d: Vector, angle: number = 0): IRay => {
@@ -80,30 +80,6 @@ export const detectCollisionAt = (vector: Vector, polygons: IPolygon[]): VertexC
     .sort(distanceComparer)[0];
 } 
 
-// export const detectCollisions = (ray: IRay, geometry: IGeometry): RayCollisions => {
-//     const result: RayCollisions = {ray, stats: {testedEdges: 0, totalEdges: geometry.edgeCount, totalPolygons: geometry.polygons.length, testedPolygons: 0}, hits: []};
-//     let intersectionCalculations = 0;
-    
-//     const polygonsToCheck = geometry.bsp ? intersectRay(geometry.bsp, ray) : geometry.polygons;
-//     result.stats.testedPolygons = polygonsToCheck.length;
-    
-//     for (const polygon of polygonsToCheck){        
-//         if (polygon.edgeCount > 5 && !hasIntersect(ray, polygon.boundingBox)) continue;
-//         for (const edge of polygon.edges) {            
-//             intersectionCalculations += 1;
-//             const intersection = intersectRaySegment(ray, edge.segment);                                    
-//             if (intersection) {
-//                 result.hits.push({polygon, ray, edge, intersection,
-//                     distance: distance(intersection.point, ray.line[0]) * ray.cosAngle
-//                 })
-//             }
-//         }
-//     }
-    
-//     result.stats.testedEdges = intersectionCalculations;
-//     return result;
-// }
-
 export const intersectRaySegment = (ray: IRay, s: ILineSegment): Intersection => {    
     let v1 = subtract(ray.position, s[0]);
     let v2 = subtract(s[1], s[0]);    
@@ -130,6 +106,25 @@ export const intersectRayPlane = (ray: IRay, plane: Plane): Intersection => {
         face: denom < 0 ? Face.exterior : Face.interior
     });
     return null;
+}
+
+export function intersectRayPolygons(polygons: IPolygon[], ray: IRay, earlyExitPredicate: (hit: RayHit)=>boolean): PolygonIntersections {    
+    const result: PolygonIntersections = {hits: [], stop: false, edgeCount: 0, polygonCount: polygons.length};
+    for (const polygon of polygons){        
+        if (polygon.edgeCount > 5 && !hasIntersect(ray, polygon.boundingBox)) continue;
+        for (const edge of polygon.edges) {            
+            result.edgeCount += 1;
+            const intersection = intersectRaySegment(ray, edge.segment);                                    
+            if (intersection) {
+                const hit = {polygon, ray, edge, intersection,
+                    distance: distance(intersection.point, ray.line[0]) * ray.cosAngle
+                };
+                result.stop = result.stop || earlyExitPredicate(hit);//!isTranslucent(intersection.face, edge.material);
+                result.hits.push(hit)
+            }
+        }
+    }
+    return result;
 }
 
   export const lookupMaterialFor = (hit: RayHit): IMaterial => hit.intersection && getMaterial(hit.intersection.face, hit.edge?.material);

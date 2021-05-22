@@ -1,7 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { combineReducers } from 'redux'
 import stats from './stats'
-import logger from 'redux-logger'
+import {createLogger} from 'redux-logger'
 import selection from './selection'
 import player from './player'
 import walls from './walls'
@@ -17,6 +17,9 @@ const reducer = combineReducers({
   uiConfig
 });
 
+const logger = createLogger({
+  predicate: (getState, action) => !action.type.startsWith('stats') && !action.type.startsWith('player')
+})
 const store = configureStore({
   reducer,  
   middleware: (getDefaultMiddleware) => getDefaultMiddleware({
