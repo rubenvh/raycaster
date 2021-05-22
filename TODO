@@ -5,8 +5,9 @@
 - store texture library inside map as base64 string
 - BUG: completely translucent (invisible) edge is being drawn as fading shadow
 - BUG: when selecting multiple adjacent polygons, the highlighted edge (green) might be overdrawn by 1 of the polygon's edges
+- BSP: splitting polygon should keep existing materials
+- BSP: try different split plane selection strategy (e.g. alternating horizontal/vertical split on center of combined bounding box)
 - disable menu items when not appropriate
-- highlight edges that are being tested for intersection
 - implement scrolling in 2d view
 - implement zooming in 2d view (+ impact on distance threshold for selection?)
 - implement mirror walls
@@ -14,6 +15,5 @@
 - expand polygon: AS IS: push out walls from center => TO BE would be nice to stay parallel to existing edges
 - slower fps slows down movement => normalize this
 - implement sprites
-- implement BSP or quadtree structure to further reduce intersection tests
 - collision detection for moving camera should include distance (only detect collisions with geometry close to camera position)
 
