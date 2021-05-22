@@ -1,5 +1,6 @@
+import { intersectRay, intersectRayPolygons } from "./geometry/bsp/querying";
 import { IntersectionStats, IRay, lookupMaterialFor, RayCollisions, RayHit } from "./geometry/collision";
-import { detectCollisions, IGeometry } from "./geometry/geometry";
+import { IGeometry } from "./geometry/geometry";
 import { isTranslucent } from "./geometry/properties";
 
 export type CastedRay = {hits: RayHit[], stats: IntersectionStats};
@@ -40,6 +41,15 @@ export const castRays = (rays: IRay[], geometry: IGeometry, hitFilter: (hits: Ra
             if (!result || result.length < 1) { return makeInfinity(_); }                                    
             return { stats: collisions.stats, hits: result };
         });
+};
+
+const detectCollisions = (ray: IRay, geometry: IGeometry)  => {
+    const result: RayCollisions = {ray, stats: {testedEdges: 0, totalEdges: geometry.edgeCount, totalPolygons: geometry.polygons.length, testedPolygons: 0}, hits: []};
+    const polygonIntersections = geometry.bsp ? intersectRay(geometry.bsp, ray) : intersectRayPolygons(geometry.polygons, ray);
+    result.hits = polygonIntersections.hits;
+    result.stats.testedEdges = polygonIntersections.edgeCount;
+    result.stats.testedPolygons = polygonIntersections.polygonCount;
+    return result;
 };
 
 const isTranslucentEdge = (hit: RayHit): boolean => isTranslucent(hit.intersection.face, hit.edge.material);

@@ -29,10 +29,6 @@ export const detectCollisionAt = (vector: vector.Vector, geometry: IGeometry): c
     return collision.detectCollisionAt(vector, geometry.polygons);    
 }
 
-export const detectCollisions = (ray: collision.IRay, geometry: IGeometry): collision.RayCollisions => {
-    return collision.detectCollisions(ray, geometry);
-}
-
 const forkPolygons = (ids: IEntityKey[], geometry: IGeometry, polygonSplitter: (poligon: IPolygon)=>IEdge[][]) : IGeometry => {
     
     let [unchanged, adapted]: [IPolygon[], IPolygon[]] = geometry.polygons.reduce((acc, p) => {

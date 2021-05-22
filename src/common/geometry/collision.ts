@@ -80,29 +80,29 @@ export const detectCollisionAt = (vector: Vector, polygons: IPolygon[]): VertexC
     .sort(distanceComparer)[0];
 } 
 
-export const detectCollisions = (ray: IRay, geometry: IGeometry): RayCollisions => {
-    const result: RayCollisions = {ray, stats: {testedEdges: 0, totalEdges: geometry.edgeCount, totalPolygons: geometry.polygons.length, testedPolygons: 0}, hits: []};
-    let intersectionCalculations = 0;
+// export const detectCollisions = (ray: IRay, geometry: IGeometry): RayCollisions => {
+//     const result: RayCollisions = {ray, stats: {testedEdges: 0, totalEdges: geometry.edgeCount, totalPolygons: geometry.polygons.length, testedPolygons: 0}, hits: []};
+//     let intersectionCalculations = 0;
     
-    const polygonsToCheck = geometry.bsp ? intersectRay(geometry.bsp, ray) : geometry.polygons;
-    result.stats.testedPolygons = polygonsToCheck.length;
+//     const polygonsToCheck = geometry.bsp ? intersectRay(geometry.bsp, ray) : geometry.polygons;
+//     result.stats.testedPolygons = polygonsToCheck.length;
     
-    for (const polygon of polygonsToCheck){        
-        if (polygon.edgeCount > 5 && !hasIntersect(ray, polygon.boundingBox)) continue;
-        for (const edge of polygon.edges) {            
-            intersectionCalculations += 1;
-            const intersection = intersectRaySegment(ray, edge.segment);                                    
-            if (intersection) {
-                result.hits.push({polygon, ray, edge, intersection,
-                    distance: distance(intersection.point, ray.line[0]) * ray.cosAngle
-                })
-            }
-        }
-    }
+//     for (const polygon of polygonsToCheck){        
+//         if (polygon.edgeCount > 5 && !hasIntersect(ray, polygon.boundingBox)) continue;
+//         for (const edge of polygon.edges) {            
+//             intersectionCalculations += 1;
+//             const intersection = intersectRaySegment(ray, edge.segment);                                    
+//             if (intersection) {
+//                 result.hits.push({polygon, ray, edge, intersection,
+//                     distance: distance(intersection.point, ray.line[0]) * ray.cosAngle
+//                 })
+//             }
+//         }
+//     }
     
-    result.stats.testedEdges = intersectionCalculations;
-    return result;
-}
+//     result.stats.testedEdges = intersectionCalculations;
+//     return result;
+// }
 
 export const intersectRaySegment = (ray: IRay, s: ILineSegment): Intersection => {    
     let v1 = subtract(ray.position, s[0]);

@@ -55,7 +55,8 @@ export class MapEditorRenderer {
             this.drawGeometry(this._context, this.wallGeometry);
 
             if (this.wallGeometry.bsp) {
-                this.drawBsp(this.wallGeometry.bsp);
+                // TODO: create bps drawing toggle
+                //this.drawBsp(this.wallGeometry.bsp);
             }
         }       
                 

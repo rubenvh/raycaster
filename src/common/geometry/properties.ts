@@ -19,7 +19,7 @@ const cloneSingleMaterial = (m: IMaterial): IMaterial => m == null ? null : ({
     luminosity: m.luminosity});
 
 export const isTranslucent = (face: Face, m: IDirectedMaterial): boolean => 
-    getMaterial(face, m)?.color[3] < 1;
+    (getMaterial(face, m)?.color[3] || 0) < 1;
 export const getMaterial = (face: Face, m: IDirectedMaterial): IMaterial =>  
     m == null ? null : Array.isArray(m) ? m[face] : m;
 
