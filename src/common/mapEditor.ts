@@ -1,4 +1,4 @@
-import { IBSPNode, isLeafNode, isSplitNode } from './geometry/bsp/model';
+import { IBSPNode, isSplitNode } from './geometry/bsp/model';
 import { connect } from './store/store-connector';
 import { ICamera, makeRays, DEFAULT_CAMERA } from './camera';
 import { drawSegment, drawVector, drawBoundingBox, drawPlane } from './drawing/drawing';
@@ -6,8 +6,8 @@ import { IEdge } from './geometry/edge';
 import { EMPTY_GEOMETRY, IGeometry } from './geometry/geometry';
 import { isSelectedEdge, isSelectedPolygon, isSelectedVertex, SelectableElement, selectedId } from './selection/selectable';
 import { IVertex } from './geometry/vertex';
-import { add, perpendicular, subtract } from './math/vector';
-import { midpoint, normal } from './math/lineSegment';
+import { normal } from './math/lineSegment';
+import { CastingStats, EMPTY_STATS } from './raycaster';
 
 export class MapEditorRenderer {
     private _context: CanvasRenderingContext2D;
@@ -17,6 +17,7 @@ export class MapEditorRenderer {
     private wallGeometry = EMPTY_GEOMETRY;
     private selectedTreeNode: SelectableElement;
     private active: boolean = false;
+    private castingStats: CastingStats = EMPTY_STATS;
     
     get context(): CanvasRenderingContext2D {
         return this._context;
@@ -35,7 +36,8 @@ export class MapEditorRenderer {
             this.selectedTreeNode = s.selection.treeSelection;
             this.camera = s.player.camera;
             this.wallGeometry = s.walls.geometry;
-            this.active = !s.uiConfig.enableTestCanvas;            
+            this.active = !s.uiConfig.enableTestCanvas;  
+            this.castingStats = s.stats.intersections.stats;            
         });
     }
    
@@ -80,11 +82,12 @@ export class MapEditorRenderer {
     };
 
     private drawGeometry = (context: CanvasRenderingContext2D, geometry: IGeometry) => {        
-        geometry.polygons.forEach(p => {
+        geometry.polygons.forEach(p => {            
+            const tested = this.castingStats.polygons.has(p.id);
             const selected = isSelectedPolygon(p.id, this.selectedElements);            
             const highlighted = this.selectedTreeNode && selectedId(this.selectedTreeNode) === p.id;    
-            drawBoundingBox(context, p.boundingBox,  highlighted ? Colors.POLYGON_HIGHLIGHTED : selected ? Colors.POLYGON_SELECTED : Colors.POLYGON);            
-            p.edges.forEach(e => this.drawEdge(context, e, selected));
+            drawBoundingBox(context, p.boundingBox, tested ? Colors.POLYGON_TESTED : highlighted ? Colors.POLYGON_HIGHLIGHTED : selected ? Colors.POLYGON_SELECTED : Colors.POLYGON);            
+            p.edges.forEach(e => this.drawEdge(context, e, selected));            
             p.vertices.forEach(e => this.drawVertex(context, e, selected));
         });
     };
@@ -149,6 +152,7 @@ enum Colors {
     POLYGON = 'rgba(150,100,50,0.8)',
     POLYGON_SELECTED = 'rgba(255,100,0,0.8)',
     POLYGON_HIGHLIGHTED = 'rgba(0,250,100,0.8)',
+    POLYGON_TESTED = 'rgba(250,250,10,0.8)',
     VERTEX = 'rgb(200,200,200)',
     VERTEX_SELECTED = 'rgb(255,100,0)',
     EDGE = 'rgb(175,175,125)',

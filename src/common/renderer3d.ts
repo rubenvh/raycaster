@@ -82,7 +82,7 @@ export class Renderer3d {
         const rays = raycaster.castCollisionRays(makeRays(this.resolution, this.camera), this.wallGeometry);
         // construct a z-index buffer: 
         const startZBuffering = performance.now();
-        const zbuffer = this.constructZBuffer(rays);        
+        const zbuffer = this.constructZBuffer(rays.castedRays);        
 
         // draw floor + sky
         const startDrawing = performance.now();
@@ -104,7 +104,7 @@ export class Renderer3d {
                         total: endDrawing - startCasting
                     }, 
                     fps}, 
-                intersections: {rayIntersectionStats: rays?.map(x => x.stats)}}));
+                intersections: {stats: rays.stats}}));
         }        
     };
 

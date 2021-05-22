@@ -35,7 +35,8 @@ export function intersectUntilBlocked(tree: SplitBspNode, ray: IRay, face: Face,
 }
 
 const addIntersections = (target: PolygonIntersections, source: PolygonIntersections): PolygonIntersections => {
-    target.hits.push(...source.hits);
+    target.hits.push(...source.hits);    
+    source.polygonIds.forEach(_ => target.polygonIds.add(_));
     target.edgeCount += source.edgeCount;
     target.polygonCount += source.polygonCount;
     target.stop = target.stop || source.stop;

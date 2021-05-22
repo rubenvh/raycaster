@@ -1,8 +1,8 @@
-import { IntersectionStats } from './../geometry/collision';
+import { CastingStats, EMPTY_STATS } from './../raycaster';
 import { createSlice } from '@reduxjs/toolkit'
 // Slice
 export type IPerformanceStatistics = {drawing:number, casting: number, zbuffering: number, total: number}
-export type IIntersectionStatistics = {rayIntersectionStats: IntersectionStats[] }
+export type IIntersectionStatistics = {stats: CastingStats }
 export type IStatsState = { performance: {timing: IPerformanceStatistics, fps: number}, intersections:IIntersectionStatistics}
 const slice = createSlice({
   name: 'stats',
@@ -11,7 +11,7 @@ const slice = createSlice({
         timing: {drawing:0, casting: 0, zbuffering: 0, total: 0},
         fps: 0
     },
-    intersections: {rayIntersectionStats: []},
+    intersections: {stats: EMPTY_STATS},
   } as IStatsState,
   reducers: {
     statisticsUpdated: (state, action) => {

@@ -13,10 +13,10 @@ export type VertexCollision = BaseCollision & { vertex: IVertex, kind: "vertex"}
 export type EdgeCollision = BaseCollision & {edge: IEdge, kind: "edge" };
 export type Intersection = {point: Vector, face: Face};
 export type RayHit = {polygon: IPolygon, edge: IEdge, intersection: Intersection, ray: IRay, distance: number};
-export type IntersectionStats = {totalEdges: number, testedEdges: number, totalPolygons: number, testedPolygons: number };
+export type IntersectionStats = {totalEdges: number, testedEdges: number, totalPolygons: number, testedPolygons: number, polygons: Set<string> };
 export type RayCollisions = {hits: RayHit[], stats: IntersectionStats, ray: IRay};
-export type PolygonIntersections = {hits: RayHit[], stop: boolean, edgeCount: number, polygonCount: number};
-export const EMPTY_INTERSECTION: PolygonIntersections = {hits: [], stop: false, edgeCount: 0, polygonCount: 0};
+export type PolygonIntersections = {hits: RayHit[], stop: boolean, edgeCount: number, polygonCount: number, polygonIds: Set<string>};
+export const EMPTY_INTERSECTION: PolygonIntersections = {hits: [], stop: false, edgeCount: 0, polygonCount: 0, polygonIds: new Set<string>()};
 export type IRay = {position: Vector, direction: Vector, dn: Vector, dperp: Vector, line: ILine, ood: Vector, angle: number, cosAngle: number}; 
 
 export const makeRay = (p: Vector, d: Vector, angle: number = 0): IRay => {
@@ -109,9 +109,10 @@ export const intersectRayPlane = (ray: IRay, plane: Plane): Intersection => {
 }
 
 export function intersectRayPolygons(polygons: IPolygon[], ray: IRay, earlyExitPredicate: (hit: RayHit)=>boolean): PolygonIntersections {    
-    const result: PolygonIntersections = {hits: [], stop: false, edgeCount: 0, polygonCount: polygons.length};
+    const result: PolygonIntersections = {hits: [], stop: false, edgeCount: 0, polygonCount: polygons.length, polygonIds: new Set<string>()};
     for (const polygon of polygons){        
         if (polygon.edgeCount > 5 && !hasIntersect(ray, polygon.boundingBox)) continue;
+        result.polygonIds.add(polygon.id);
         for (const edge of polygon.edges) {            
             result.edgeCount += 1;
             const intersection = intersectRaySegment(ray, edge.segment);                                    
@@ -119,7 +120,7 @@ export function intersectRayPolygons(polygons: IPolygon[], ray: IRay, earlyExitP
                 const hit = {polygon, ray, edge, intersection,
                     distance: distance(intersection.point, ray.line[0]) * ray.cosAngle
                 };
-                result.stop = result.stop || earlyExitPredicate(hit);//!isTranslucent(intersection.face, edge.material);
+                result.stop = result.stop || earlyExitPredicate(hit);
                 result.hits.push(hit)
             }
         }
