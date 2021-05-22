@@ -3,7 +3,7 @@ import { IPolygon } from './../polygon';
 import { pickSplittingPlane, splitPolygon } from './splitting';
 import { classifyPolygonToPlane } from './classification';
 
-const MAX_DEPTH = 6;
+const MAX_DEPTH = 10;
 const MIN_LEAF_SIZE = 1;
 export function buildBspTree(polygons: IPolygon[], depth: number = 0): IBSPNode {
     
@@ -13,7 +13,7 @@ export function buildBspTree(polygons: IPolygon[], depth: number = 0): IBSPNode 
         return createLeaf(polygons);
     }
 
-    const splitPlane = pickSplittingPlane(polygons);
+    const splitPlane = pickSplittingPlane(polygons, depth);
     const frontList: IPolygon[] = [];
     const backList: IPolygon[] = [];
     const coplanarList: IPolygon[] = [];

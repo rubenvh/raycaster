@@ -1,45 +1,18 @@
-import { createPlane, intersectSegmentPlane, Plane } from '../../math/plane';
+import { searchSplitPlane, randomEdgeToPlane, randomBoundingSideToPlane } from './splitting-strategies';
+import { intersectSegmentPlane, Plane } from '../../math/plane';
 import { Vector } from '../../math/vector';
 import { IPolygon, createPolygon } from './../polygon';
-import { classifyPointToPlane, classifyPolygonToPlane } from './classification';
-import { PointToPlaneRelation, PolygonToPlaneRelation } from "./model";
+import { classifyPointToPlane } from './classification';
+import { PointToPlaneRelation } from "./model";
 
 /**
  * Given a list of polygons, attempts to compute a good splitting plane.
  */
-export function pickSplittingPlane(polygons: IPolygon[]): Plane {
-    // Blend factor for optimizing for balance or splits
-    const k: number = 0.8;
-    // variables for tracking best splitting plane seen so far
-    let bestPlane: Plane | null = null;
-    let bestScore = Number.MAX_VALUE;
+export function pickSplittingPlane(polygons: IPolygon[], depth: number): Plane {
 
-    for (const polygon of polygons) {
-        let counts = new Map<PolygonToPlaneRelation, number>();
-        const plane = getPlaneFromPolygon(polygon);
-
-        for (const testPolygon of polygons.filter(_ => _ !== polygon)) {
-            let relation = classifyPolygonToPlane(testPolygon, plane);
-            if (relation === PolygonToPlaneRelation.Coplanar) relation = PolygonToPlaneRelation.InFront;
-            counts.set(relation, (counts.get(relation) || 0) + 1);
-        }
-
-        const score = k * (counts.get(PolygonToPlaneRelation.Straddling) || 0) + 
-            (1 - k) * Math.abs((counts.get(PolygonToPlaneRelation.InFront) || 0) - (counts.get(PolygonToPlaneRelation.Behind) || 0));
-        if (score < bestScore) {
-            bestScore = score;
-            bestPlane = plane;
-        }
-    }
-
-    return bestPlane || {d: 0, n: [0,0]};
+    return searchSplitPlane(polygons, depth, randomEdgeToPlane);
 }
 
-function getPlaneFromPolygon(polygon: IPolygon): Plane {
-    // TODO: smarter plane selection ?
-    const index = Math.floor(Math.random() * polygon.edges.length);
-    return createPlane(polygon.edges[index].segment);
-}
 
 export function splitPolygon(polygon: IPolygon, plane: Plane): [IPolygon, IPolygon] {    
     const numVerts = polygon.vertices.length;

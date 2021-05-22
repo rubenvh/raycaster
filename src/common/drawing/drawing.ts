@@ -59,7 +59,7 @@ export const drawPlane = (context: CanvasRenderingContext2D, plane: Plane, color
 
     if (plane.n[1] !== 0) {
         const max = context.canvas.width;
-        for (var i=0; i<max; i++)
+        for (var i=0; i<=max; i+=max)
         {		
             let x = i;
             let y = (plane.d - plane.n[0]*i)/plane.n[1];
@@ -72,7 +72,7 @@ export const drawPlane = (context: CanvasRenderingContext2D, plane: Plane, color
         }
     } else if (plane.n[0] !== 0) {
         const max = context.canvas.height;
-        for (var i=0; i<max; i++)
+        for (var i=0; i<=max; i+=max)
         {		
             let y = i;
             let x = (plane.d - plane.n[1]*i)/plane.n[0];

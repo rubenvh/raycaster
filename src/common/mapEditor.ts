@@ -58,7 +58,7 @@ export class MapEditorRenderer {
 
             if (this.wallGeometry.bsp) {
                 // TODO: create bps drawing toggle
-                //this.drawBsp(this.wallGeometry.bsp);
+                this.drawBsp(this.wallGeometry.bsp);
             }
         }       
                 
@@ -132,6 +132,7 @@ export class MapEditorRenderer {
 
     private colors: string[] = ['white', 'yellow', 'orange', 'red', 'purple', 'blue', 'cyan', 'green'];
     private drawBsp = (tree: IBSPNode, depth: number = 0) => {
+        if (depth > 2) return;
         if (isSplitNode(tree)) {
             
             drawPlane(this._context, tree.plane, this.colors[depth]);
