@@ -1,21 +1,33 @@
-import { classifyPointToPlane, classifyPolygonToPlane } from './classification';
-import { PointToPlaneRelation, PolygonToPlaneRelation } from "./model";
+import { classifyPolygonToPlane } from './classification';
+import { PolygonToPlaneRelation } from "./model";
 import { createPlane, Plane } from './../../math/plane';
 import { IPolygon } from './../polygon';
 import { ILineSegment } from '../../math/lineSegment';
+import { IEdge } from '../edge';
 
 export const randomEdgeToPlane = (polygon: IPolygon, depth: number): Plane => {
     const index = Math.floor(Math.random() * polygon.edges.length);
     return createPlane(polygon.edges[index].segment);
 };
-
+export const randomAlternatingHorVerEdgeToPlane = (polygon: IPolygon, depth: number): Plane => {    
+    const hor = depth %2 === 0;
+    let selectedEdge: IEdge = polygon.edges[0];
+    for (const e of polygon.edges) {
+        if (hor && Math.abs(e.slope) < Math.abs(selectedEdge.slope)) {
+            selectedEdge = e;
+        } else if (!hor && Math.abs(e.slope) > Math.abs(selectedEdge.slope)) {
+            selectedEdge = e;
+        }
+    }
+    return createPlane(selectedEdge.segment);
+};
 export const randomBoundingSideToPlane = (polygon: IPolygon, depth: number): Plane => {
     const [[x1, y1], [x2, y2]] = polygon.boundingBox;
     const sides: ILineSegment[] = depth % 2 === 0 ? [
-        [[x1,y1],[x1,y2]],
+        [[x1,y1],[x1,y2]], // TOP + BOTTOM lines (horizontal)
         [[x2,y2],[x2,y1]],
     ] : [
-        [[x1,y1],[x2,y1]],
+        [[x1,y1],[x2,y1]], // LEFT + RIGHT lines (vertical)
         [[x2,y2],[x1,y2]],        
     ];
     const index = Math.floor(Math.random() * 2);
@@ -25,7 +37,7 @@ export const randomBoundingSideToPlane = (polygon: IPolygon, depth: number): Pla
 export const searchSplitPlane = (polygons: IPolygon[], depth: number, planeCreator: (polygon: IPolygon, depth: number) => Plane): Plane => {
 
     // Blend factor for optimizing for balance or splits
-    const k: number = 0.8;
+    const k: number = 0.7;
     // variables for tracking best splitting plane seen so far
     let bestPlane: Plane | null = null;
     let bestScore = Number.MAX_VALUE;

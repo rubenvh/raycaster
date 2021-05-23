@@ -9,7 +9,7 @@ import { buildBspTree } from './creation'
 const dispatch = useAppDispatch();
 
 export class BspGenerationStarter {
-    private worker: Worker|null = null;
+    // private worker: Worker|null = null;
     private geometry: IGeometry = EMPTY_GEOMETRY;
     constructor() {         
         ipcRenderer.on('bsp_generate', this.generateLocal);       
@@ -23,16 +23,17 @@ export class BspGenerationStarter {
         dispatch(updateBsp(tree))
     }
 
-    private generate = () =>{     
-        if (this.worker) { this.worker.terminate(); }
-        this.worker = new Worker("../workers/dist/worker-bundle.js");
-        this.worker.postMessage(this.geometry.polygons);
-        this.worker.addEventListener('message', (e) => {
-            console.log('Finished bsp construction', e);            
-            const bsp = (<MessageEvent<IBSPNode>>e).data;
-            dispatch(updateBsp(bsp))
-            this.worker?.terminate();
-            this.worker = null;
-        });
-    }
+    // TODO: this can be used for web worker based bsp generation (for now not needed)
+    // private generate = () =>{     
+    //     if (this.worker) { this.worker.terminate(); }
+    //     this.worker = new Worker("../workers/dist/worker-bundle.js");
+    //     this.worker.postMessage(this.geometry.polygons);
+    //     this.worker.addEventListener('message', (e) => {
+    //         console.log('Finished bsp construction', e);            
+    //         const bsp = (<MessageEvent<IBSPNode>>e).data;
+    //         dispatch(updateBsp(bsp))
+    //         this.worker?.terminate();
+    //         this.worker = null;
+    //     });
+    // }
 }

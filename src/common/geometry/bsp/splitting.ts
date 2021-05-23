@@ -1,4 +1,4 @@
-import { searchSplitPlane, randomEdgeToPlane, randomBoundingSideToPlane } from './splitting-strategies';
+import { searchSplitPlane, randomEdgeToPlane, randomBoundingSideToPlane, randomAlternatingHorVerEdgeToPlane } from './splitting-strategies';
 import { intersectSegmentPlane, Plane } from '../../math/plane';
 import { Vector } from '../../math/vector';
 import { IPolygon, createPolygon } from './../polygon';
@@ -10,7 +10,7 @@ import { PointToPlaneRelation } from "./model";
  */
 export function pickSplittingPlane(polygons: IPolygon[], depth: number): Plane {
 
-    return searchSplitPlane(polygons, depth, randomEdgeToPlane);
+    return searchSplitPlane(polygons, depth, randomAlternatingHorVerEdgeToPlane);
 }
 
 
@@ -26,9 +26,9 @@ export function splitPolygon(polygon: IPolygon, plane: Plane): [IPolygon, IPolyg
         if (bSide == PointToPlaneRelation.InFront) {
             if (aSide == PointToPlaneRelation.Behind) {
                 const {t, q} = intersectSegmentPlane([a.vector, b.vector], plane);                  
-                if (q == null) { throw new Error('fuck'); }
+                if (q == null) { throw new Error('Floating point error: expected intersection. Increase error margin.'); }
                 const shouldBeOnPlane = classifyPointToPlane(q, plane);
-                if (shouldBeOnPlane !== PointToPlaneRelation.On) {throw new Error('fuck2'); }
+                if (shouldBeOnPlane !== PointToPlaneRelation.On) {throw new Error('Floating point error: expected intersection. Increase error margin.'); }
                 frontVerts.push(q!);
                 backVerts.push(q!);
             }
@@ -37,9 +37,9 @@ export function splitPolygon(polygon: IPolygon, plane: Plane): [IPolygon, IPolyg
         } else if (bSide == PointToPlaneRelation.Behind) {
             if (aSide == PointToPlaneRelation.InFront) {
                 const {t, q} = intersectSegmentPlane([a.vector, b.vector], plane);                  
-                if (q == null) { throw new Error('fuck'); }
+                if (q == null) { throw new Error('Floating point error: expected intersection. Increase error margin.'); }
                 const shouldBeOnPlane = classifyPointToPlane(q, plane);
-                if (shouldBeOnPlane !== PointToPlaneRelation.On) {throw new Error('fuck2'); }
+                if (shouldBeOnPlane !== PointToPlaneRelation.On) {throw new Error('Floating point error: expected intersection. Increase error margin.'); }
                 frontVerts.push(q!);
                 backVerts.push(q!);
             } else if (aSide == PointToPlaneRelation.On) {
