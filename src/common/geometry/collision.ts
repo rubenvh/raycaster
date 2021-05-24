@@ -97,11 +97,10 @@ export const intersectRaySegment = (ray: IRay, s: ILineSegment): Intersection =>
 
 export const intersectRayPlane = (ray: IRay, plane: Plane): Intersection => {    
     const denom = dot(plane.n, ray.direction);
-    const dist = plane.d - dot(plane.n, ray.position);
     if (denom === 0) { return null;  }
-    const t = dist / denom;
-    
-    if (t >=  0) return ({
+    const dist = plane.d - dot(plane.n, ray.position);
+    const t = dist / denom;    
+    if (t >= 0) return ({
         point: add(ray.position, scale(t, ray.direction)),
         face: denom < 0 ? Face.exterior : Face.interior
     });
@@ -114,8 +113,9 @@ export function intersectRayPolygons(polygons: IPolygon[], ray: IRay, earlyExitP
         if (polygon.edgeCount > 5 && !hasIntersect(ray, polygon.boundingBox)) continue;
         result.polygonIds.add(polygon.id);
         for (const edge of polygon.edges) {            
+            //if (!edge.material) continue;
             result.edgeCount += 1;
-            const intersection = intersectRaySegment(ray, edge.segment);                                    
+            const intersection = intersectRaySegment(ray, edge.segment);
             if (intersection) {
                 const hit = {polygon, ray, edge, intersection,
                     distance: distance(intersection.point, ray.line[0]) * ray.cosAngle

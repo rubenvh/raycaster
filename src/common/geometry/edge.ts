@@ -69,7 +69,7 @@ export const createEdges = (vectors: Vector[]): IEdge[] =>  {
                                 edges: [...acc.edges, loadEdge({
                                     start: acc.previous, 
                                     end: v,
-                                    material: {color: [20, 20, 255, 1] as Color},
+                                    material: {color: [255, 20, 20, 0.2] as Color},
                                     immaterial: false
                                 })],
                                 previous: v,

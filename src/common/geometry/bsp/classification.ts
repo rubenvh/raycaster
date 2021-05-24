@@ -3,7 +3,7 @@ import { dot, Vector } from '../../math/vector';
 import { IPolygon } from '../polygon';
 import { PointToPlaneRelation, PolygonToPlaneRelation } from './model';
 
-const PLANE_THICKNESS_EPSILON = 0.000001;//Number.EPSILON;
+export const PLANE_THICKNESS_EPSILON = 0.000000000001;//Number.EPSILON;
 export function classifyPointToPlane(p: Vector, plane: Plane): PointToPlaneRelation {
     const dist = dot(plane.n, p) - plane.d;
     return dist > PLANE_THICKNESS_EPSILON ? PointToPlaneRelation.InFront

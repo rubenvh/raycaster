@@ -91,6 +91,15 @@ export class Renderer3d {
         // draw the z-buffer => farthest to closest 
         this.drawZBuffer(zbuffer);
 
+        // // dray column per column (no zbuffer needed): less efficient when handling lots of texture less walls
+        // let rayIndex = 0;
+        // for (const ray of rays.castedRays) {
+        //     for (let i = ray.hits.length-1; i >= 0; i--) {
+        //         this.drawWall([this.createWall(ray.hits[i], rayIndex)]);
+        //     }
+        //     rayIndex++;
+        // }
+        
         const endDrawing = performance.now();
 
         if (!this.lastUpdated || endDrawing-this.lastUpdated > 1000){

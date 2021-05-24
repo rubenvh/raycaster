@@ -5,8 +5,8 @@
 - store texture library inside map as base64 string
 - BUG: completely translucent (invisible) edge is being drawn as fading shadow
 - BUG: when selecting multiple adjacent polygons, the highlighted edge (green) might be overdrawn by 1 of the polygon's edges
-- BSP: splitting polygon should keep existing materials
 - BSP: try different split plane selection strategy (e.g. alternating horizontal/vertical split on center of combined bounding box)
+- BSP: allow adding hinting split planes drawn by the user
 - disable menu items when not appropriate
 - implement scrolling in 2d view
 - implement zooming in 2d view (+ impact on distance threshold for selection?)

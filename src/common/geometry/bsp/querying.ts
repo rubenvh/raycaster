@@ -9,13 +9,15 @@ export function intersectRay(tree: IBSPNode, ray: IRay, earlyExitPredicate: (hit
         
     } else if (isSplitNode(tree)) {
         
-        const i = intersectRayPlane(ray, tree.plane);
+        const i = intersectRayPlane(ray, tree.plane);       
                 
         if (i) {
             return intersectUntilBlocked(tree, ray, i.face, earlyExitPredicate);
         } else {
+            let result = intersectRayPolygons(tree.coplanar, ray, earlyExitPredicate);
             const c = classifyPointToPlane(ray.position, tree.plane);
-            return intersectRay(c === PointToPlaneRelation.InFront ? tree.front : tree.back, ray, earlyExitPredicate);
+            addIntersections(result, intersectRay(c === PointToPlaneRelation.InFront ? tree.front : tree.back, ray, earlyExitPredicate));
+            return result;
         }
     }
     return EMPTY_INTERSECTION;    
@@ -23,12 +25,18 @@ export function intersectRay(tree: IBSPNode, ray: IRay, earlyExitPredicate: (hit
 
 export function intersectUntilBlocked(tree: SplitBspNode, ray: IRay, face: Face, earlyExitPredicate: (hit: RayHit)=>boolean): PolygonIntersections {
     const [closest, farthest] = face === Face.interior ? [tree.back, tree.front] : [tree.front, tree.back];
-
+    
     let result = intersectRay(closest, ray, earlyExitPredicate);    
     if (result.stop) return result;
 
     addIntersections(result, intersectRayPolygons(tree.coplanar, ray, earlyExitPredicate));
     if (result.stop) return result;
+
+    // let result = intersectRayPolygons(tree.coplanar, ray, earlyExitPredicate);    
+    // if (result.stop) return result;
+
+    // addIntersections(result, intersectRay(closest, ray, earlyExitPredicate));
+    // if (result.stop) return result;
     
     addIntersections(result, intersectRay(farthest, ray, earlyExitPredicate));
     return result;

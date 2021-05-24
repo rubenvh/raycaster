@@ -52,6 +52,7 @@ const castRays = (rays: IRay[], geometry: IGeometry,
                 .filter(needsRendering)
                 .sort((a,b)=> a.distance - b.distance);
                 
+            // TODO: should pass hitFilter into detectCollisions above
             const result = hitFilter(hits);  
 
             stats = accumulateStats(stats, collisions.stats);
@@ -76,7 +77,8 @@ const accumulateStats = (stats: CastingStats, iStats: IntersectionStats): Castin
 }
 
 const detectCollisions = (ray: IRay, geometry: IGeometry, earlyExitPredicate: (hit: RayHit)=>boolean): RayCollisions  => {
-    const result: RayCollisions = {ray, stats: {testedEdges: 0, totalEdges: geometry.edgeCount, totalPolygons: geometry.polygons.length, testedPolygons: 0, polygons: new Set<string>()}, hits: []};
+    const totalPolygons = geometry.bsp ? geometry.bsp.count : geometry.polygons.length;
+    const result: RayCollisions = {ray, stats: {testedEdges: 0, totalEdges: geometry.edgeCount, totalPolygons, testedPolygons: 0, polygons: new Set<string>()}, hits: []};
         const polygonIntersections = geometry.bsp 
         ? intersectRay(geometry.bsp, ray, earlyExitPredicate)
         : intersectRayPolygons(geometry.polygons, ray, earlyExitPredicate);
