@@ -50,16 +50,11 @@ export const splitPolygon = (polygon: IPolygon, plane: Plane): [IPolygon, IPolyg
             }
 
         } else {
-            if (aSide == PointToPlaneRelation.Behind) {
-                addEdge(backEdges, cloneEdge(edge));
-            } else {
-                addEdge(frontEdges, cloneEdge(edge));
-            }
+            addEdge(
+                aSide == PointToPlaneRelation.Behind ? backEdges : frontEdges, 
+                cloneEdge(edge));
         }
     }
-
-
-
     return [
         loadPolygon({id: polygon.id, edges: closeIfNeeded(frontEdges)}), 
         loadPolygon({id: polygon.id, edges: closeIfNeeded(backEdges)})];

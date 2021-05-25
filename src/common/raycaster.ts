@@ -1,5 +1,5 @@
 import { intersectRay } from "./geometry/bsp/querying";
-import { IntersectionStats, intersectRayPolygons, IRay, lookupMaterialFor, RayCollisions, RayHit } from "./geometry/collision";
+import { IntersectionStats, intersectRayPolygons, IRay, lookupMaterialFor, RayCastingOptions, RayCollisions, RayHit } from "./geometry/collision";
 import { IGeometry } from "./geometry/geometry";
 import { isTranslucent } from "./geometry/properties";
 
@@ -13,48 +13,34 @@ const makeInfinity = (ray: IRay, stats: IntersectionStats): CastedRay => ({
 });
 
 export const castCameraRay = (ray: IRay, geometry: IGeometry): RayHit =>  {
-    const stopOnImpassableEdge: (hit: RayHit)=> boolean = hit => !hit.edge.immaterial;
-    return castRays([ray], geometry, passThroughImmaterialEdges, stopOnImpassableEdge).castedRays[0].hits[0];    
+    const options: RayCastingOptions = {
+        // stop on closest non-immaterial edge
+        earlyExitPredicate: hit => !hit.edge.immaterial,
+        // ignore all non-immaterial edges
+        edgeFilter: edge => !edge.immaterial
+    };
+    return castRays([ray], geometry, options).castedRays[0].hits[0];    
 }
-export const castCollisionRays = (rays: IRay[], geometry: IGeometry): CastedRays => {    
-    const stopOnNonTranslucentEdge: (hit: RayHit)=>boolean = hit => !isTranslucent(hit.intersection.face, hit.edge.material);
-    return castRays(rays, geometry, passTroughTranslucentEdges, stopOnNonTranslucentEdge);
+export const castCollisionRays = (rays: IRay[], geometry: IGeometry): CastedRays => {        
+    const options: RayCastingOptions = {
+            // stop on closest non-translucent hit
+            earlyExitPredicate: hit => !isTranslucent(hit.intersection.face, hit.edge.material),
+            // ignore edges without material
+            edgeFilter: edge => !!edge.material,
+    };
+    return castRays(rays, geometry, options);
 }
 
-/**
- * A filter function for ray hits where only material edges are kept. Can be used for collision 
- * detection for blocking an actor's movement .
- * @param hits The collection of actual ray hits
- * @returns a collection of ray hits where immaterial edges are filtered out
- */
-const passThroughImmaterialEdges: (hits: RayHit[])=>RayHit[] = hits => hits.filter(_=>!_.edge.immaterial);
-
-/**
- * A filter function for ray hits where hits are kept until the first non-translucent edge. 
- * @param hits The collection of actual ray hits
- * @returns a collection of ray hits for translucent edges and the first solid edge in the collection
- */
-const passTroughTranslucentEdges: (hits: RayHit[])=>RayHit[] = hits => {    
-    let i = 0;    
-    while (i < hits.length && isTranslucentEdge(hits[i++]));      
-    return hits.slice(0, i);
-};
-
-const castRays = (rays: IRay[], geometry: IGeometry, 
-    hitFilter: (hits: RayHit[])=>RayHit[],
-    earlyExitPredicate: (hit: RayHit)=>boolean): CastedRays => {    
-    if (!hitFilter) { hitFilter = x => x.slice(0,1);}
+const castRays = (rays: IRay[], geometry: IGeometry,
+    options: RayCastingOptions): CastedRays => {        
     let stats = {...EMPTY_STATS, polygons: new Set<String>()};
     const castedRays = rays
         .map(_ => {
-            const collisions = detectCollisions(_, geometry, earlyExitPredicate);                                                
-            const hits = collisions.hits
+            const collisions = detectCollisions(_, geometry, options);
+            const result = collisions.hits
                 .filter(needsRendering)
                 .sort((a,b)=> a.distance - b.distance);
-                
-            // TODO: should pass hitFilter into detectCollisions above
-            const result = hitFilter(hits);  
-
+            
             stats = accumulateStats(stats, collisions.stats);
 
             if (!result || result.length < 1) { return makeInfinity(_, collisions.stats); }                                    
@@ -76,12 +62,12 @@ const accumulateStats = (stats: CastingStats, iStats: IntersectionStats): Castin
     });
 }
 
-const detectCollisions = (ray: IRay, geometry: IGeometry, earlyExitPredicate: (hit: RayHit)=>boolean): RayCollisions  => {
+const detectCollisions = (ray: IRay, geometry: IGeometry, options: RayCastingOptions): RayCollisions  => {
     const totalPolygons = geometry.bsp ? geometry.bsp.count : geometry.polygons.length;
     const result: RayCollisions = {ray, stats: {testedEdges: 0, totalEdges: geometry.edgeCount, totalPolygons, testedPolygons: 0, polygons: new Set<string>()}, hits: []};
         const polygonIntersections = geometry.bsp 
-        ? intersectRay(geometry.bsp, ray, earlyExitPredicate)
-        : intersectRayPolygons(geometry.polygons, ray, earlyExitPredicate);
+        ? intersectRay(geometry.bsp, ray, options)
+        : intersectRayPolygons(geometry.polygons, ray, options);
 
     result.hits = polygonIntersections.hits;
     result.stats.testedEdges = polygonIntersections.edgeCount;
@@ -90,5 +76,4 @@ const detectCollisions = (ray: IRay, geometry: IGeometry, earlyExitPredicate: (h
     return result;
 };
 
-const isTranslucentEdge = (hit: RayHit): boolean => isTranslucent(hit.intersection.face, hit.edge.material);
 const needsRendering = (hit: RayHit): boolean => !!lookupMaterialFor(hit);

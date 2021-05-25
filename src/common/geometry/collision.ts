@@ -5,7 +5,7 @@ import { add, cross, dot, normalize, perpendicular, scale, subtract, Vector } fr
 import { IEdge } from "./edge";
 import { BoundingBox, IPolygon } from "./polygon";
 import { distance, IVertex } from "./vertex";
-import { Face, getMaterial, IMaterial, isTranslucent } from './properties';
+import { Face, getMaterial, IMaterial } from './properties';
 
 export type Collision = VertexCollision | EdgeCollision;
 type BaseCollision = {polygon: IPolygon, distance: number, kind: string};
@@ -18,6 +18,7 @@ export type RayCollisions = {hits: RayHit[], stats: IntersectionStats, ray: IRay
 export type PolygonIntersections = {hits: RayHit[], stop: boolean, edgeCount: number, polygonCount: number, polygonIds: Set<string>};
 export const EMPTY_INTERSECTION: PolygonIntersections = {hits: [], stop: false, edgeCount: 0, polygonCount: 0, polygonIds: new Set<string>()};
 export type IRay = {position: Vector, direction: Vector, dn: Vector, dperp: Vector, line: ILine, ood: Vector, angle: number, cosAngle: number}; 
+export type RayCastingOptions = {earlyExitPredicate?: (hit: RayHit) => boolean, edgeFilter?: (e: IEdge) => boolean};
 
 export const makeRay = (p: Vector, d: Vector, angle: number = 0): IRay => {
     const line: ILine = [p, add(p, d)];
@@ -107,21 +108,21 @@ export const intersectRayPlane = (ray: IRay, plane: Plane): Intersection => {
     return null;
 }
 
-export function intersectRayPolygons(polygons: IPolygon[], ray: IRay, earlyExitPredicate: (hit: RayHit)=>boolean): PolygonIntersections {    
+export function intersectRayPolygons(polygons: IPolygon[], ray: IRay, options: RayCastingOptions): PolygonIntersections {    
     const result: PolygonIntersections = {hits: [], stop: false, edgeCount: 0, polygonCount: polygons.length, polygonIds: new Set<string>()};
     for (const polygon of polygons){        
         if (polygon.edgeCount > 5 && !hasIntersect(ray, polygon.boundingBox)) continue;
         result.polygonIds.add(polygon.id);
-        for (const edge of polygon.edges) {            
-            // TODO: receive hitFilter here instead of assuming to skip edges without material
-            if (!edge.material) continue;
+        for (const edge of polygon.edges) {                        
+            if (options.edgeFilter && !options.edgeFilter(edge)) { continue; }
+            // if (!edge.material) continue;
             result.edgeCount += 1;
             const intersection = intersectRaySegment(ray, edge.segment);
             if (intersection) {
                 const hit = {polygon, ray, edge, intersection,
                     distance: distance(intersection.point, ray.line[0]) * ray.cosAngle
                 };
-                result.stop = result.stop || earlyExitPredicate(hit);
+                result.stop = result.stop || (options.earlyExitPredicate && options.earlyExitPredicate(hit));
                 result.hits.push(hit)
             }
         }
