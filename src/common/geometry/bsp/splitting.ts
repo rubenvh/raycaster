@@ -1,4 +1,4 @@
-import { areClose, areEqual } from './../vertex';
+import { areClose, areEqual, IVertex } from './../vertex';
 import { cloneEdge, IEdge, loadEdge } from './../edge';
 import { searchSplitPlane, randomAlternatingHorVerEdgeToPlane } from './splitting-strategies';
 import { intersectSegmentPlane, Plane } from '../../math/plane';
@@ -50,16 +50,19 @@ export const splitPolygon = (polygon: IPolygon, plane: Plane): [IPolygon, IPolyg
             }
 
         } else {
-            addEdge(frontEdges, cloneEdge(edge));
             if (aSide == PointToPlaneRelation.Behind) {
                 addEdge(backEdges, cloneEdge(edge));
+            } else {
+                addEdge(frontEdges, cloneEdge(edge));
             }
         }
-
     }
+
+
+
     return [
-        loadPolygon({id: polygon.id, edges: frontEdges}), 
-        loadPolygon({id: polygon.id, edges: backEdges})];
+        loadPolygon({id: polygon.id, edges: closeIfNeeded(frontEdges)}), 
+        loadPolygon({id: polygon.id, edges: closeIfNeeded(backEdges)})];
 };
 
 /**
@@ -67,15 +70,28 @@ export const splitPolygon = (polygon: IPolygon, plane: Plane): [IPolygon, IPolyg
  * this function adds an invisible ghost edge in between
  */
 const addEdge = (edges: IEdge[], edge: IEdge) => {
+    addSplitEdge(edges, edge);
+    edges.push(edge);
+};
+const createSplitEdge = (start: IVertex, end: IVertex): IEdge => loadEdge({immaterial: true, start, end, material: undefined /*{color: [0,255,0,0.5]}*/ })
+const addSplitEdge = (edges: IEdge[], edge: IEdge): void => {
     if (edges.length > 0) {
         const previousEnd = edges[edges.length-1].end;
         if (!areClose(previousEnd, edge.start)) {
-            edges.push(loadEdge({immaterial: true, start: previousEnd, end: edge.start, material: {color: [0,255,0,0.5]}}));
+            edges.push(createSplitEdge(previousEnd, edge.start));
         }
     }    
-    edges.push(edge);
-};
+}
 
+const closeIfNeeded = (edges: IEdge[]): IEdge[] => {
+    if (edges.length < 1) { return edges; }
+    const start = edges[0].start;
+    const end = edges[edges.length-1].end;
+    if (!areEqual(start, end)) {
+        edges.push(createSplitEdge(end, start))
+    }
+    return edges;
+}
 
 export function oldSplitPolygon(polygon: IPolygon, plane: Plane): [IPolygon, IPolygon] {    
     const numVerts = polygon.vertices.length;

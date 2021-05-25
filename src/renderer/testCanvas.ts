@@ -1,3 +1,4 @@
+import { createPolygon } from './../common/geometry/polygon';
 import { intersectRayPlane, makeRay } from './../common/geometry/collision';
 import { add, scale, Vector } from './../common/math/vector';
 import { drawSegment, drawVector } from "../common/drawing/drawing";
@@ -6,6 +7,8 @@ import { connect } from "../common/store/store-connector";
 import { Face } from '../common/geometry/properties';
 import { classifyPointToPlane } from '../common/geometry/bsp/classification';
 import { PointToPlaneRelation } from '../common/geometry/bsp/model';
+import { normal } from '../common/math/lineSegment';
+import { splitPolygon } from '../common/geometry/bsp/splitting';
 
 export class TestCanvasRenderer {    
     private background: HTMLCanvasElement;
@@ -37,34 +40,23 @@ export class TestCanvasRenderer {
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);        
             this.drawGrid();
 
-            
-            const plane_segment: [Vector, Vector] = [[480,100],[500,150]];
+
+            const p = createPolygon([[100,100],[200,100],[200,200],[100,200]]);
+            const plane_segment: [Vector, Vector] = [[120,0],[130,80]];
             const plane = createPlane(plane_segment);            
             drawSegment(this.context, plane_segment);
 
-            const target_segment: [Vector, Vector] = [[480,105],[600,80]];
-            drawSegment(this.context, target_segment);
+            const [front, back] = splitPolygon(p, plane);
 
-            // const i = intersectSegmentPlane(target_segment, plane);
-
-            // if (i.q) {
-            //     drawVector(this.context, i.q, 'rgb(0,255,0)');
+            // for (const e of front.edges) {
+            //     // draw normal to selected edge:
+            //     drawSegment(this.context, normal(e.segment, 10), 'rgb(0,100,255)', 1);
+            //     drawSegment(this.context, [e.start.vector, e.end.vector], 'rgba(155,0,0,0.7)', 1);
             // }
-
-            // const ray = makeRay([100,500], [1,-0.1]);
-            // drawVector(this.context, ray.position);
-            // drawVector(this.context, ray.direction);
-            // drawSegment(this.context, [ray.position, add(ray.position, scale(100, ray.dn))]);
-            
-            const i = intersectSegmentPlane(target_segment, plane);
-
-            const c1 = classifyPointToPlane(target_segment[0], plane);
-            drawVector(this.context, target_segment[0], c1 === PointToPlaneRelation.Behind ? 'red' : c1 === PointToPlaneRelation.InFront ? 'blue' : 'green');
-            const c2 = classifyPointToPlane(target_segment[1], plane);
-            drawVector(this.context, target_segment[1], c2 === PointToPlaneRelation.Behind ? 'red' : c2 === PointToPlaneRelation.InFront ? 'blue' : 'green');
-            if (i.q) {
-                const c3 = classifyPointToPlane(i.q, plane);
-                drawVector(this.context, i.q, c3 === PointToPlaneRelation.Behind ? 'red' : c3 === PointToPlaneRelation.InFront ? 'blue' : 'green');
+            for (const e of back.edges) {
+                // draw normal to selected edge:
+                drawSegment(this.context, normal(e.segment, 10), 'rgb(0,100,255)', 1);
+                drawSegment(this.context, [e.start.vector, e.end.vector], 'rgba(0,0,155,0.7)', 1);
             }
         }
     };

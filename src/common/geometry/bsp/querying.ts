@@ -30,13 +30,7 @@ export function intersectUntilBlocked(tree: SplitBspNode, ray: IRay, face: Face,
     if (result.stop) return result;
 
     addIntersections(result, intersectRayPolygons(tree.coplanar, ray, earlyExitPredicate));
-    if (result.stop) return result;
-
-    // let result = intersectRayPolygons(tree.coplanar, ray, earlyExitPredicate);    
-    // if (result.stop) return result;
-
-    // addIntersections(result, intersectRay(closest, ray, earlyExitPredicate));
-    // if (result.stop) return result;
+    if (result.stop) return result;    
     
     addIntersections(result, intersectRay(farthest, ray, earlyExitPredicate));
     return result;

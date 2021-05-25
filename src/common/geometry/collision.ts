@@ -113,7 +113,8 @@ export function intersectRayPolygons(polygons: IPolygon[], ray: IRay, earlyExitP
         if (polygon.edgeCount > 5 && !hasIntersect(ray, polygon.boundingBox)) continue;
         result.polygonIds.add(polygon.id);
         for (const edge of polygon.edges) {            
-            //if (!edge.material) continue;
+            // TODO: receive hitFilter here instead of assuming to skip edges without material
+            if (!edge.material) continue;
             result.edgeCount += 1;
             const intersection = intersectRaySegment(ray, edge.segment);
             if (intersection) {
