@@ -16,7 +16,7 @@ export type RayHit = {polygon: IPolygon, edge: IEdge, intersection: Intersection
 export type IntersectionStats = {totalEdges: number, testedEdges: number, totalPolygons: number, testedPolygons: number, polygons: Set<string> };
 export type RayCollisions = {hits: RayHit[], stats: IntersectionStats, ray: IRay};
 export type PolygonIntersections = {hits: RayHit[], stop: boolean, edgeCount: number, polygonCount: number, polygonIds: Set<string>};
-export const EMPTY_INTERSECTION: PolygonIntersections = {hits: [], stop: false, edgeCount: 0, polygonCount: 0, polygonIds: new Set<string>()};
+export const createEmptyIntersection = (): PolygonIntersections => ({hits: [], stop: false, edgeCount: 0, polygonCount: 0, polygonIds: new Set<string>()});
 export type IRay = {position: Vector, direction: Vector, dn: Vector, dperp: Vector, line: ILine, ood: Vector, angle: number, cosAngle: number}; 
 export type RayCastingOptions = {earlyExitPredicate?: (hit: RayHit) => boolean, edgeFilter?: (e: IEdge) => boolean};
 

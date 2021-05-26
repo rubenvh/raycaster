@@ -1,3 +1,4 @@
+import { BoundingBox } from './geometry/polygon';
 import { IBSPNode, isSplitNode } from './geometry/bsp/model';
 import { connect } from './store/store-connector';
 import { ICamera, makeRays, DEFAULT_CAMERA } from './camera';
@@ -8,6 +9,7 @@ import { isSelectedEdge, isSelectedPolygon, isSelectedVertex, SelectableElement,
 import { IVertex } from './geometry/vertex';
 import { normal } from './math/lineSegment';
 import { CastingStats, EMPTY_STATS } from './raycaster';
+import { IUIConfigState } from './store/ui-config';
 
 export class MapEditorRenderer {
     private _context: CanvasRenderingContext2D;
@@ -15,9 +17,9 @@ export class MapEditorRenderer {
     private selectedElements: SelectableElement[] = [];
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
-    private selectedTreeNode: SelectableElement;
-    private active: boolean = false;
+    private selectedTreeNode: SelectableElement;    
     private castingStats: CastingStats = EMPTY_STATS;
+    private uiConfig: IUIConfigState = {};
     
     get context(): CanvasRenderingContext2D {
         return this._context;
@@ -36,11 +38,15 @@ export class MapEditorRenderer {
             this.selectedTreeNode = s.selection.treeSelection;
             this.camera = s.player.camera;
             this.wallGeometry = s.walls.geometry;
-            this.active = !s.uiConfig.enableTestCanvas;  
+            this.uiConfig = s.uiConfig;            
             this.castingStats = s.stats.intersections.stats;            
         });
     }
    
+    private get active() {
+        return !this.uiConfig.enableTestCanvas;
+    }
+
     private resizeCanvas = (): void => {
         this.canvas.width = this.canvas.clientWidth;
         this.canvas.height = this.canvas.clientHeight;
@@ -56,8 +62,7 @@ export class MapEditorRenderer {
             this.drawCamera(this._context, this.camera);
             this.drawGeometry(this._context, this.wallGeometry);
 
-            if (this.wallGeometry.bsp) {
-                // TODO: create bps drawing toggle
+            if (this.wallGeometry.bsp && this.uiConfig.drawBsp) {                
                 this.drawBsp(this.wallGeometry.bsp);
             }
         }       
@@ -83,7 +88,7 @@ export class MapEditorRenderer {
 
     private drawGeometry = (context: CanvasRenderingContext2D, geometry: IGeometry) => {        
         geometry.polygons.forEach(p => {            
-            const tested = this.castingStats.polygons.has(p.id);
+            const tested = this.uiConfig.drawBsp && this.castingStats.polygons.has(p.id);
             const selected = isSelectedPolygon(p.id, this.selectedElements);            
             const highlighted = this.selectedTreeNode && selectedId(this.selectedTreeNode) === p.id;    
             drawBoundingBox(context, p.boundingBox, tested ? Colors.POLYGON_TESTED : highlighted ? Colors.POLYGON_HIGHLIGHTED : selected ? Colors.POLYGON_SELECTED : Colors.POLYGON);            
@@ -131,14 +136,12 @@ export class MapEditorRenderer {
     };
 
     private colors: string[] = ['white', 'yellow', 'orange', 'red', 'purple', 'blue', 'cyan', 'green'];
-    private drawBsp = (tree: IBSPNode, depth: number = 0) => {
-        if (depth > 2) return;
+    private drawBsp = (tree: IBSPNode, depth: number = 0, clipRegion: Path2D[] = []) => {        
+        if (depth > 3) { return; }        
         if (isSplitNode(tree)) {
-            
-            drawPlane(this._context, tree.plane, this.colors[depth]);
-
-            this.drawBsp(tree.front, depth +1);
-            this.drawBsp(tree.back, depth + 1 );
+            const [frontClip, backClip] = drawPlane(this._context, tree.plane, this.colors[depth], clipRegion);
+            this.drawBsp(tree.front, depth +1, clipRegion.concat(frontClip));
+            this.drawBsp(tree.back, depth + 1, clipRegion.concat(backClip) );
         }
     };
         

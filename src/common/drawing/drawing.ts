@@ -1,7 +1,7 @@
 import { BoundingBox } from "../geometry/polygon";
 import { ILineSegment } from "../math/lineSegment";
-import { Plane } from "../math/plane";
-import { dot, Vector } from "../math/vector";
+import { getBounds, isPlaneSemiHorizontal, Plane } from "../math/plane";
+import { Vector } from "../math/vector";
 
 export const drawVector = (context: CanvasRenderingContext2D, vector: Vector, color: string = 'rgb(100,100,0)') => {
     context.beginPath();
@@ -51,40 +51,44 @@ export const drawTrapezoid = (context: CanvasRenderingContext2D, p: [Vector, Vec
     context.fill();
 };
 
-export const drawPlane = (context: CanvasRenderingContext2D, plane: Plane, color: string='green'): void => {
+export const drawPlane = (context: CanvasRenderingContext2D, plane: Plane, color: string='green', clipRegion: Path2D[]): [Path2D, Path2D] => {
 
-    context.beginPath();
-	context.strokeStyle = color;;
+    context.save();
+    for (const p of clipRegion) { context.clip(p); }
+
+    context.beginPath();    
+	context.strokeStyle = color;
 	context.lineWidth = 2;
 
-    if (plane.n[1] !== 0) {
-        const max = context.canvas.width;
-        for (var i=0; i<=max; i+=max)
-        {		
-            let x = i;
-            let y = (plane.d - plane.n[0]*i)/plane.n[1];
-    
-            if(i===0) {
-                context.moveTo(x,y);
-            } else {
-                context.lineTo(x,y);
-            }
-        }
-    } else if (plane.n[0] !== 0) {
-        const max = context.canvas.height;
-        for (var i=0; i<=max; i+=max)
-        {		
-            let y = i;
-            let x = (plane.d - plane.n[1]*i)/plane.n[0];
-    
-            if(i===0) {
-                context.moveTo(x,y);
-            } else {
-                context.lineTo(x,y);
-            }
-        }
-    }
-
-    
+    const [xMax, yMax] = [context.canvas.width, context.canvas.height];
+    const [[x1, y1],[x2, y2]] = getBounds(plane, xMax, yMax);
+    context.moveTo(x1, y1);
+    context.lineTo(x2, y2);    
 	context.stroke();    
+    context.closePath();    
+
+
+    context.restore();
+    
+    if (isPlaneSemiHorizontal(plane)) {
+        return [
+            createClipTrapezoid([0,0],[x1,y1],[x2,y2],[xMax, 0]),
+            createClipTrapezoid([0,yMax], [x1,y1],[x2,y2],[xMax,yMax])
+        ];
+    } else {        
+        return [
+            createClipTrapezoid([0,0],[x1,y1],[x2,y2],[0,yMax]),
+            createClipTrapezoid([xMax,0], [x1,y1],[x2,y2],[xMax,yMax])
+        ];
+    }
+}
+
+const createClipTrapezoid = (...p: [Vector, Vector, Vector, Vector]) => {
+    let result = new Path2D();
+    result.moveTo(p[0][0], p[0][1]);
+    result.lineTo(p[1][0], p[1][1]);
+    result.lineTo(p[2][0], p[2][1]);
+    result.lineTo(p[3][0], p[3][1]);
+    result.closePath();    
+    return result;
 }
