@@ -137,7 +137,7 @@ export class MapEditorRenderer {
 
     private colors: string[] = ['white', 'yellow', 'orange', 'red', 'purple', 'blue', 'cyan', 'green'];
     private drawBsp = (tree: IBSPNode, depth: number = 0, clipRegion: Path2D[] = []) => {        
-        if (depth > 3) { return; }        
+        if (depth > 5) { return; }        
         if (isSplitNode(tree)) {
             const [frontClip, backClip] = drawPlane(this._context, tree.plane, this.colors[depth], clipRegion);
             this.drawBsp(tree.front, depth +1, clipRegion.concat(frontClip));

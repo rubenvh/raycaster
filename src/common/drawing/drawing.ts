@@ -71,15 +71,17 @@ export const drawPlane = (context: CanvasRenderingContext2D, plane: Plane, color
     context.restore();
     
     if (isPlaneSemiHorizontal(plane)) {
-        return [
+        const [up, down] = [                        
             createClipTrapezoid([0,0],[x1,y1],[x2,y2],[xMax, 0]),
-            createClipTrapezoid([0,yMax], [x1,y1],[x2,y2],[xMax,yMax])
+            createClipTrapezoid([0,yMax], [x1,y1],[x2,y2],[xMax,yMax]),
         ];
+        return plane.n[0] < 0 ? [up, down] : [down, up];
     } else {        
-        return [
+        const [left, right] = [                        
             createClipTrapezoid([0,0],[x1,y1],[x2,y2],[0,yMax]),
-            createClipTrapezoid([xMax,0], [x1,y1],[x2,y2],[xMax,yMax])
+            createClipTrapezoid([xMax,0], [x1,y1],[x2,y2],[xMax,yMax]),
         ];
+        return plane.n[0] < 0 ? [left, right] : [right, left];
     }
 }
 
