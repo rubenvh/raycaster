@@ -11,8 +11,8 @@ import { statisticsUpdated } from './store/stats';
 import { useAppDispatch } from './store';
 import { connect } from './store/store-connector';
 import { IWorldConfigState } from './store/world-config';
-import { textureLib, TextureLibrary2 } from './textures/textureLibrary2';
-import { Texture2 } from './textures/texture2';
+import { textureLib, TextureLibrary } from './textures/textureLibrary';
+import { Texture } from './textures/texture';
 
 const dispatch = useAppDispatch();
 
@@ -38,7 +38,7 @@ export class Renderer3d {
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
     private worldConfig: IWorldConfigState = {};
-    private textureLibrary: TextureLibrary2 = textureLib;
+    private textureLibrary: TextureLibrary = textureLib;
 
     constructor(private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');
@@ -197,7 +197,7 @@ export class Renderer3d {
         }                 
     };
 
-    private drawTexture = (texture: Texture2, wallProps: WallProps[]) => {
+    private drawTexture = (texture: Texture, wallProps: WallProps[]) => {
         const start = wallProps[wallProps.length-1];
         const end = wallProps[0];
 

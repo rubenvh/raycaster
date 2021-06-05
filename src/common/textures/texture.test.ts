@@ -3,6 +3,7 @@ import 'jest-canvas-mock';
 
 describe('texture tests', () => {
     describe('rows and columns', () => {
+        //TODO load file and pass into data
         const sut = new Texture({path: './assets/textures/001.jpg', textureWidth: 192, textureHeight: 192});
 
         test('expect 16 parts inside texture', () => expect(sut.parts).toBe(16));

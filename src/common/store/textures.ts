@@ -1,4 +1,4 @@
-import { TextureLibrary2 } from './../textures/textureLibrary2';
+import { TextureLibrary } from '../textures/textureLibrary';
 import { ITextureSource } from './../textures/model';
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import sizeOf from 'image-size';       

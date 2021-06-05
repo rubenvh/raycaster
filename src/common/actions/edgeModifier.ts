@@ -1,4 +1,4 @@
-import { textureLib, TextureLibrary2 } from './../textures/textureLibrary2';
+import { textureLib, TextureLibrary } from './../textures/textureLibrary';
 import { useAppDispatch } from './../store/index';
 import { IEntityKey } from './../geometry/entity';
 import { getMaterial, setTexture } from './../geometry/properties';
@@ -15,7 +15,7 @@ const dispatch = useAppDispatch();
 export class EdgeModifier implements IActionHandler {
     
     private selectedElements: SelectableElement[] = [];
-    private texLib: TextureLibrary2 = textureLib;
+    private texLib: TextureLibrary = textureLib;
     constructor() {
         connect(s => {
             this.selectedElements = s.selection.elements;                

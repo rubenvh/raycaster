@@ -1,38 +1,23 @@
-import { IMaterial } from './../geometry/properties';
-import { ipcRenderer } from "electron";
-import { ITextureReference, ITextureSource } from "./model";
-import * as fs from "fs";
-import { Texture } from './texture';
+import { IMaterial } from '../geometry/properties';
 import { connect } from '../store/store-connector';
+import { ITextureReference, ITextureSource } from "./model";
+import { Texture } from './texture';
+
 
 export class TextureLibrary {
-    private _sources: ITextureSource[];
-    private _textures: Texture[];
+    private _sources: ITextureSource[] = [];
+    private _textures: Texture[] = [];
 
     public get textures() { return this._sources; }
 
-    constructor() {
-        ipcRenderer.on('importTexture', (_, arg) => this.importTexture(arg.filePaths[0]));
-        
-        const s = localStorage.getItem('textureSources');       
-        this._sources = JSON.parse(s || '[]');
-        this._textures = this._sources.map(x => new Texture(x));
+    constructor() {        
+        connect(state => {
+            if (this._sources !== state.textures.sources) {
+                this._sources = state.textures.sources;
+                this._textures = this._sources.map(s => new Texture(s));
+            }            
+        })        
     }
-
-    private importTexture = (path: string) => {    
-        fs.readFile(path, (_, __) => {
-            // TODO: error handling
-
-            if (!this._sources.some(t => t.path === path)) {
-
-                var s: ITextureSource = {path, textureHeight: 0, textureWidth: 0};
-                var t = new Texture(s);
-                this._sources.push(s);
-                this._textures.push(t);
-                localStorage.setItem('textureSources', JSON.stringify(this._sources))
-            }
-        });  
-    };
 
     public previous = (ref: ITextureReference): ITextureReference => {
         const t = this._textures.findIndex(_ => _.id === ref.id);
@@ -60,5 +45,4 @@ export class TextureLibrary {
         return this._textures.find(_ => _.id === id);
     }
 }
-
 export const textureLib = new TextureLibrary();

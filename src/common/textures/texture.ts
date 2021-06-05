@@ -1,7 +1,6 @@
 import { WallProps } from '../renderer3d';
 import { ITextureSource } from "./model";
-import sizeOf from 'image-size';
-import * as fs from "fs";
+
 import { distance } from '../geometry/vertex';
 
 export class Texture {
@@ -11,32 +10,29 @@ export class Texture {
     private totalHeight: number;
     private columns: number;
     private rows: number;
-
-    constructor(private source: ITextureSource) {
-
-        const imageBuffer = fs.readFileSync(source.path);
-        const base64 = Buffer.from(imageBuffer).toString('base64');
-        const dimensions = sizeOf(source.path);
-
+    private _source: ITextureSource
+    constructor(source: ITextureSource) {
+       
+        this._source = {...source};
         this.canvas = document.createElement('canvas') as HTMLCanvasElement;
-        this.canvas.width = this.totalWidth = dimensions.width;
-        this.canvas.height = this.totalHeight = dimensions.height;
+        this.canvas.width = this.totalWidth = this._source.totalWidth;
+        this.canvas.height = this.totalHeight = this._source.totalHeight;
         this.context = this.canvas.getContext('2d');
 
         const image = new Image();
         image.onload = () => {
             this.context.drawImage(image, 0, 0);
         };
-        image.src = `data:image/png;base64,${base64}`;
+        image.src = `data:image/png;base64,${source.data}`;
 
-        source.textureHeight = source.textureHeight || this.totalHeight;
-        source.textureWidth = source.textureWidth || this.totalWidth;
+        this._source.textureHeight = this._source.textureHeight || this._source.totalHeight;
+        this._source.textureWidth = this._source.textureWidth || this._source.totalWidth;
 
-        this.columns = Math.floor(this.totalWidth / source.textureWidth);
-        this.rows = Math.floor(this.totalHeight / source.textureHeight);
+        this.columns = Math.floor(this.totalWidth / this._source.textureWidth);
+        this.rows = Math.floor(this.totalHeight / this._source.textureHeight);
     }
 
-    get id() { return this.source.path; }
+    get id() { return this._source.id; }
     get parts() { return this.columns * this.rows; }
     public getPosition = (index: number): [number, number] => {        
         return [
@@ -50,8 +46,8 @@ export class Texture {
         const [col, row] = this.getPosition(tref != null ? tref.index : 0);
         
         const tileFactor = 20; // => w.length for stretching
-        const twidth = this.source.textureWidth;
-        const theight = this.source.textureHeight;
+        const twidth = this._source.textureWidth;
+        const theight = this._source.textureHeight;
         
         for (let windex = wallProps.length - 1; windex >= 0; windex--) {
             const w = wallProps[windex];
