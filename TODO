@@ -1,4 +1,4 @@
-- add linter
+- TEXTURES: adapt cols/rows for texture in library
 - remove material at face
 - toggle texture key (ctrl-T) should open popup with scrollable popup of all textures
 - luminosity on edge as a function of time to implement flickering 
@@ -15,5 +15,4 @@
 - expand polygon: AS IS: push out walls from center => TO BE would be nice to stay parallel to existing edges
 - slower fps slows down movement => normalize this
 - implement sprites
-- collision detection for moving camera should include distance (only detect collisions with geometry close to camera position)
-
+- add linter

@@ -1,7 +1,5 @@
 import { EMPTY_GEOMETRY } from './geometry/geometry';
 import { cloneKey, createEntityKey, IEntityKey } from './geometry/entity';
-import { TextureLibrary } from './textures/textureLibrary';
-import { Texture } from "./textures/texture";
 import { makeRays, DEFAULT_CAMERA } from './camera';
 import * as raycaster from './raycaster';
 import { drawRect, drawTrapezoid } from './drawing/drawing';
@@ -13,6 +11,8 @@ import { statisticsUpdated } from './store/stats';
 import { useAppDispatch } from './store';
 import { connect } from './store/store-connector';
 import { IWorldConfigState } from './store/world-config';
+import { textureLib, TextureLibrary2 } from './textures/textureLibrary2';
+import { Texture2 } from './textures/texture2';
 
 const dispatch = useAppDispatch();
 
@@ -38,8 +38,9 @@ export class Renderer3d {
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
     private worldConfig: IWorldConfigState = {};
-    
-    constructor(private canvas: HTMLCanvasElement, private textureLibrary: TextureLibrary) {
+    private textureLibrary: TextureLibrary2 = textureLib;
+
+    constructor(private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');
         this.context.imageSmoothingEnabled = false;        
         this.context.font = '12px sans-serif';
@@ -51,7 +52,7 @@ export class Renderer3d {
         connect(s => {
             this.camera = s.player.camera;
             this.wallGeometry = s.walls.geometry;
-            this.worldConfig = s.worldConfig;
+            this.worldConfig = s.worldConfig;            
         });
         
     }
@@ -196,7 +197,7 @@ export class Renderer3d {
         }                 
     };
 
-    private drawTexture = (texture: Texture, wallProps: WallProps[]) => {
+    private drawTexture = (texture: Texture2, wallProps: WallProps[]) => {
         const start = wallProps[wallProps.length-1];
         const end = wallProps[0];
 

@@ -7,6 +7,7 @@ import player from './player'
 import walls from './walls'
 import worldConfig from './world-config'
 import uiConfig from './ui-config'
+import textures from './textures'
 
 const reducer = combineReducers({
   stats,
@@ -14,7 +15,8 @@ const reducer = combineReducers({
   player,
   walls,
   worldConfig, 
-  uiConfig
+  uiConfig,
+  textures
 });
 
 const logger = createLogger({

@@ -1,3 +1,4 @@
+import { textureLib, TextureLibrary2 } from './../textures/textureLibrary2';
 import { useAppDispatch } from './../store/index';
 import { IEntityKey } from './../geometry/entity';
 import { getMaterial, setTexture } from './../geometry/properties';
@@ -5,7 +6,6 @@ import { ITextureReference } from './../textures/model';
 import { IActionHandler } from "./actions";
 import { IEdge } from '../geometry/edge';
 import { isEdge, isPolygon, SelectableElement } from "../selection/selectable";
-import { TextureLibrary } from '../textures/textureLibrary';
 import { ipcRenderer } from 'electron';
 import { applyTexture, Face, toggleTexture } from '../geometry/properties';
 import { connect } from '../store/store-connector';
@@ -15,10 +15,10 @@ const dispatch = useAppDispatch();
 export class EdgeModifier implements IActionHandler {
     
     private selectedElements: SelectableElement[] = [];
-    
-    constructor(private texLib: TextureLibrary) {
+    private texLib: TextureLibrary2 = textureLib;
+    constructor() {
         connect(s => {
-            this.selectedElements = s.selection.elements;    
+            this.selectedElements = s.selection.elements;                
         });
     }
    

@@ -3,6 +3,7 @@ import { ipcRenderer } from "electron";
 import { ITextureReference, ITextureSource } from "./model";
 import * as fs from "fs";
 import { Texture } from './texture';
+import { connect } from '../store/store-connector';
 
 export class TextureLibrary {
     private _sources: ITextureSource[];

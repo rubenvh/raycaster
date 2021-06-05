@@ -5,7 +5,6 @@
 import { createCanvasHandlers, createGlobalActionHandlers } from '../common/actions/actionHandlerFactory';
 import { Renderer3d } from '../common/renderer3d';
 import { MapEditorRenderer } from '../common/mapEditor';
-import { textureLib } from '../common/textures/textureLibrary';
 import { WorldLoader } from '../common/storage/stateLoader';
 import { UndoService } from '../common/actions/undoService';
 import { connect } from '../common/store/store-connector';
@@ -17,6 +16,7 @@ import StatsElement from './components/statsComponent';
 import { TestCanvasRenderer } from './testCanvas';
 
 loadComponents();
+
 
 window.addEventListener('load', (event) => {
     const ui = {        
@@ -33,8 +33,8 @@ window.addEventListener('load', (event) => {
     
     new WorldLoader();
     new UndoService();
-    let handlers = [...createGlobalActionHandlers(), ...createCanvasHandlers(ui.view_2d.canvas, textureLib)];
-    let renderer3d = new Renderer3d(ui.view_3d.canvas, textureLib);
+    let handlers = [...createGlobalActionHandlers(), ...createCanvasHandlers(ui.view_2d.canvas)];
+    let renderer3d = new Renderer3d(ui.view_3d.canvas);
     let mapEditor = new MapEditorRenderer(ui.view_2d.canvas);
     let testCanvas = new TestCanvasRenderer(ui.view_2d.canvas);//, mapEditor.context);
     new BspGenerationStarter();

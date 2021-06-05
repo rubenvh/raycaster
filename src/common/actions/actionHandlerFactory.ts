@@ -7,7 +7,6 @@ import { GeometryMover } from './geometryMover';
 import { GlobalActionsHandler } from './globalActionHandler';
 import { GeometryRemover } from './geometryRemover';
 import { PolygonCreator } from './polygonCreator';
-import { TextureLibrary } from '../textures/textureLibrary';
 import { PolygonExpander } from './polygonExpander';
 import { PolygonSplitter } from './polygonSplitter';
 import { PolygonRotator } from './polygonRotator';
@@ -22,7 +21,7 @@ export function createGlobalActionHandlers(): IActionHandler[] {
 
 }
 
-export function createCanvasHandlers(canvas: HTMLCanvasElement, texLib: TextureLibrary): IActionHandler[] {
+export function createCanvasHandlers(canvas: HTMLCanvasElement): IActionHandler[] {
     const t = spaceTranslator(canvas);
 
     const blockingHandlers = [
@@ -37,7 +36,7 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, texLib: TextureL
             new GeometryRemover(),
             new PolygonCreator(canvas.getContext('2d'), t),
             new PolygonSplitter(),
-            new EdgeModifier(texLib),
+            new EdgeModifier(),
             new PolygonReverser(),
         ]
         .map(_ => _.register(canvas));
