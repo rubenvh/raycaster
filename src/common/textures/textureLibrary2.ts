@@ -12,8 +12,10 @@ export class TextureLibrary2 {
 
     constructor() {        
         connect(state => {
-            this._sources = state.textures.sources;
-            this._textures = this._sources.map(s => new Texture2(s));
+            if (this._sources !== state.textures.sources) {
+                this._sources = state.textures.sources;
+                this._textures = this._sources.map(s => new Texture2(s));
+            }            
         })        
     }
 
