@@ -1,4 +1,7 @@
+
+- TEXTURES: create component for displaying texture library
 - TEXTURES: adapt cols/rows for texture in library
+- GEOMETRY: adapt EditEdgeComponent to select texture from library (dropdown?)
 - remove material at face
 - toggle texture key (ctrl-T) should open popup with scrollable popup of all textures
 - luminosity on edge as a function of time to implement flickering 
