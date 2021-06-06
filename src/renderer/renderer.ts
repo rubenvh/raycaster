@@ -14,6 +14,7 @@ import GeometrySelectionComponent from './components/geometrySelectionComponent'
 import GeometryEditorComponent from './components/geometryEditorComponent';
 import StatsElement from './components/statsComponent';
 import { TestCanvasRenderer } from './testCanvas';
+import TextureLibraryElement from './components/textureLibraryComponent';
 
 loadComponents();
 
@@ -29,6 +30,7 @@ window.addEventListener('load', (event) => {
         stats: document.getElementById('stats') as StatsElement,
         selectionTree: document.getElementById('geometry-selection') as GeometrySelectionComponent,
         geometryEditor: document.getElementById('geometry-editor') as GeometryEditorComponent,
+        textureLibrary: document.getElementById('texture-library') as TextureLibraryElement,
     };
     
     new WorldLoader();

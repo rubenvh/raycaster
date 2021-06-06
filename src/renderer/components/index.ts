@@ -6,6 +6,8 @@ import MaterialEditorComponent from './materialEditorComponent';
 import SelectionTreeNodeComponent from './selectionTreeNodeComponent';
 import StatsElement from './statsComponent';
 import VertexEditorComponent from './vertexEditorComponent';
+import TextureLibraryElement from './textureLibraryComponent';
+import TextureSourceEditorElement from './textureSourceEditorComponent';
 
 
 
@@ -19,6 +21,8 @@ export function loadComponents() {
     SelectionTreeNodeComponent;
     VertexEditorComponent;
     StatsElement;
+    TextureLibraryElement;
+    TextureSourceEditorElement;
 }
 
 
