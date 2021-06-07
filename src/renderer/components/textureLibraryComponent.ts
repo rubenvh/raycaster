@@ -6,15 +6,19 @@ const template = document.createElement('template');
 template.innerHTML =  /*html*/`
 <style> 
 </style>
-<div>    
+<p>Texture editor</p>
+<div>
+    <select name="sources" id="sources"></select>
 </div>
+<texture-source-editor id="texture-source-editor"></texture-source-editor>
 `;
 /// …
 
 export default class TextureLibraryElement extends HTMLElement {
     
-    private element: HTMLDivElement;
-    sources: ITextureSource[] = [];
+    private sourcesElement: HTMLSelectElement;
+    private sources: ITextureSource[] = [];
+    private sourceEditor: TextureSourceEditorElement;
 
     constructor() {
         super();
@@ -24,36 +28,38 @@ export default class TextureLibraryElement extends HTMLElement {
         const shadowRoot = this.attachShadow({mode: 'closed'});
         // clone template content nodes to the shadow DOM
         shadowRoot.appendChild(template.content.cloneNode(true));
-        
-        this.element = shadowRoot.querySelector('div');
+                
+        this.sourcesElement = shadowRoot.getElementById('sources') as HTMLSelectElement;
+        this.sourcesElement.addEventListener('change', () => { this.sourceEditor.textureSource = this.sources.find(x => x.id === this.sourcesElement.value); } );
 
+        this.sourceEditor = shadowRoot.getElementById('texture-source-editor') as TextureSourceEditorElement;
+        
         connect(state => {
             if (this.sources !== state.textures.sources) {
-                this.sources =state.textures.sources;
+                this.sources = state.textures.sources;                
                 this.render();
             }           
         });
     }
 
-    
-    // set data(value) {
-    //     if (value !== this._stats) {
-    //         this._stats = value;
-    //         this.render();
-    //     }
-    // }
-      
-    // get data() {
-    //     return this._stats;
-    // }
+    private render() {                
 
+        const hasSources = this.sources.length > 0;
+        this.sourcesElement.hidden = !hasSources;
+        this.sourceEditor.hidden = !hasSources;
+        if (!hasSources) { return; }
 
-    private render() {        
-        this.sources.map(s => {
-            let editor = document.createElement('texture-source-editor') as TextureSourceEditorElement
-            this.element.append(editor);
-            editor.textureSource = s;
-        })
+        const items = this.sources
+        .map(c => {
+            const option = document.createElement("option");              
+            option.setAttribute('value', c.id);               
+            option.innerText = c.id;            
+            return option;
+        });        
+        
+        this.sourcesElement.append(...items);
+        this.sourcesElement.selectedIndex = 0;  
+        this.sourceEditor.textureSource = this.sources[0];
     }    
 }
 

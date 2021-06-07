@@ -44,5 +44,10 @@ export class TextureLibrary {
         const id = material.texture.id;
         return this._textures.find(_ => _.id === id);
     }
+
+    public getTextureReferences = (id: string): ITextureReference[] => {
+        const t = this._textures.find(_=>_.id === id);        
+        return new Array(t?.parts || 0).map((_, index) => ({id, index}));
+    }
 }
 export const textureLib = new TextureLibrary();

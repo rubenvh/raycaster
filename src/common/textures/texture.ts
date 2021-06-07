@@ -1,5 +1,5 @@
 import { WallProps } from '../renderer3d';
-import { ITextureSource } from "./model";
+import { ITextureReference, ITextureSource } from "./model";
 
 import { distance } from '../geometry/vertex';
 
@@ -57,7 +57,21 @@ export class Texture {
             const targetWidth = x2-x1;
             const targetHeight = y2-y1;
             const tx = Math.floor((twidth * wx / tileFactor) % (twidth - 1));
-            target.drawImage(this.canvas, tx + col * twidth, row * theight, 1, theight, x1, y1, targetWidth, targetHeight);            
+            target.drawImage(this.canvas, tx + col * twidth, row * theight, 1, theight, x1, y1, targetWidth, targetHeight);                        
         }
     };
+
+    public getTextureAsImage = (tref: ITextureReference): string => {
+        const [col, row] = this.getPosition(tref != null ? tref.index : 0);
+        const canvas = document.createElement('canvas') as HTMLCanvasElement;
+        const twidth = this._source.textureWidth;
+        const theight = this._source.textureHeight;
+        canvas.width = twidth;
+        canvas.height = theight;
+        const context = this.canvas.getContext('2d');
+        
+        // context.drawImage(this.canvas, );
+        let data =  this.context.getImageData(col*twidth, col*theight, col*twidth+twidth,col*theight + theight);
+
+    }
 }
