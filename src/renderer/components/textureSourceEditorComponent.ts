@@ -1,4 +1,6 @@
 import { ITextureSource } from './../../common/textures/model';
+import { textureLib } from './../../common/textures/textureLibrary';
+import TextureSelectorComponent from './textureSelectorComponent';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
@@ -9,6 +11,7 @@ template.innerHTML =  /*html*/`
     <div><span id="label_id">id:</span><span id="identifier"></span></div>
     <div><span id="label_dimensions">dimensions:</span><span id="dimensions"></span></div>
     <div><span id="label_size">size:</span><input id="width" type="number" min="0" name="width" /> x <input id="height" type="number" min="0" name="height" /></div> 
+    <texture-selector id="selector"></texture-selector>
 </div>
 `;
 /// …
@@ -21,14 +24,11 @@ export default class TextureSourceEditorElement extends HTMLElement {
     private widthElement: HTMLInputElement;
     private heightElement: HTMLInputElement;
     private imageElement: HTMLImageElement;
+    private selectorComponent: TextureSelectorComponent;
 
     constructor() {
-        super();
-        // attach Shadow DOM to the parent element.
-        // save the shadowRoot in a property because, if you create your shadow DOM in closed mode, 
-        // you have no access from outside
-        const shadowRoot = this.attachShadow({mode: 'closed'});
-        // clone template content nodes to the shadow DOM
+        super();        
+        const shadowRoot = this.attachShadow({mode: 'closed'});        
         shadowRoot.appendChild(template.content.cloneNode(true));
 
         this.imageElement = shadowRoot.querySelector('#image');
@@ -36,13 +36,16 @@ export default class TextureSourceEditorElement extends HTMLElement {
         this.dimElement = shadowRoot.querySelector('#dimensions');
         this.widthElement = shadowRoot.querySelector('#width');
         this.heightElement = shadowRoot.querySelector('#height');    
+        this.selectorComponent = shadowRoot.querySelector('#selector');
 
+        this.selectorComponent.addEventListener('change', (e) => console.log(this.selectorComponent.value));
         
     }
 
     set textureSource (source: ITextureSource) {
         if (this._source !== source) {
-            this._source = source;
+            this._source = source;            
+            this.selectorComponent.textures = [source]; // textureLib.textures;            
             this.render();
         }
     }
@@ -57,7 +60,7 @@ export default class TextureSourceEditorElement extends HTMLElement {
         this.idElement.innerText = this._source.id;
         this.dimElement.innerText = `${this._source.totalWidth} x ${this._source.totalHeight}`;        
         this.widthElement.value = this._source.textureWidth.toString();
-        this.heightElement.value = this._source.textureHeight.toString();     
+        this.heightElement.value = this._source.textureHeight.toString();                  
     }    
 }
 

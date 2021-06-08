@@ -184,7 +184,7 @@ export class Renderer3d {
         if (start.height <= 0) return;
         if (start.material.color[3] === 0) return;
 
-        const texture = this.textureLibrary.getTexture(start.material);
+        const texture = this.textureLibrary.lookupTexture(start.material);
         if (!texture) {
             drawTrapezoid(this.context, getTrapezoid(start, end), getColor(start.material, this.getLumen(start)));
         } else {            

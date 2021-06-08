@@ -31,7 +31,7 @@ export default class TextureLibraryElement extends HTMLElement {
                 
         this.sourcesElement = shadowRoot.getElementById('sources') as HTMLSelectElement;
         this.sourcesElement.addEventListener('change', () => { this.sourceEditor.textureSource = this.sources.find(x => x.id === this.sourcesElement.value); } );
-
+        
         this.sourceEditor = shadowRoot.getElementById('texture-source-editor') as TextureSourceEditorElement;
         
         connect(state => {

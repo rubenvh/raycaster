@@ -39,15 +39,16 @@ export class TextureLibrary {
         }
     }
     
-    public getTexture = (material: IMaterial): Texture|null => {        
+    public lookupTexture = (material: IMaterial): Texture|null => {        
         if (!material?.texture) { return null; }
         const id = material.texture.id;
-        return this._textures.find(_ => _.id === id);
+        return this.getTexture(id);
     }
 
+    public getTexture = (id: string): Texture|null => this._textures.find(_ => _.id === id);
     public getTextureReferences = (id: string): ITextureReference[] => {
-        const t = this._textures.find(_=>_.id === id);        
-        return new Array(t?.parts || 0).map((_, index) => ({id, index}));
+        const t = this.getTexture(id);
+        return new Array(t?.parts || 0).fill(0).map((_, index) => ({id, index}));
     }
 }
 export const textureLib = new TextureLibrary();

@@ -68,10 +68,9 @@ export class Texture {
         const theight = this._source.textureHeight;
         canvas.width = twidth;
         canvas.height = theight;
-        const context = this.canvas.getContext('2d');
-        
-        // context.drawImage(this.canvas, );
-        let data =  this.context.getImageData(col*twidth, col*theight, col*twidth+twidth,col*theight + theight);
+        const context = canvas.getContext('2d');
+        context.drawImage(this.canvas, col*twidth, row*theight,twidth,theight, 0,0,twidth, theight);
+        return canvas.toDataURL()
 
     }
 }
