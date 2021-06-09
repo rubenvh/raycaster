@@ -5,34 +5,46 @@ import TextureSelectorComponent from './textureSelectorComponent';
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
 <style> 
+#container {    
+    display: flex;
+    flex-flow: column;    
+    align-content: flex-start;
+    width: 210px;
+}
+.containerElement {
+    display: flex;
+    flex-flow: row;
+    width: 100%;
+}
+.label {
+    min-width: 5em; 
+    float: left;   
+}
+input {
+    min-width: 3em;
+}
 </style>
-<div>  
-    <div><img width="100px" id="image"></img></div>
-    <div><span id="label_id">id:</span><span id="identifier"></span></div>
-    <div><span id="label_dimensions">dimensions:</span><span id="dimensions"></span></div>
-    <div><span id="label_size">size:</span><input id="width" type="number" min="0" name="width" /> x <input id="height" type="number" min="0" name="height" /></div> 
-    <texture-selector id="selector"></texture-selector>
+<div id="container">      
+    <div class="containerElement"><span class="label">dimensions:</span><span id="dimensions"></span></div>
+    <div class="containerElement"><span class="label">size:</span><input id="width" type="number" min="0" name="width" /> &Cross; <input id="height" type="number" min="0" name="height" /></div> 
+    <texture-selector id="selector" class="containerElement"></texture-selector>
 </div>
 `;
 /// …
 
 export default class TextureSourceEditorElement extends HTMLElement {
         
-    private _source: ITextureSource;
-    private idElement: HTMLElement;
+    private _source: ITextureSource;   
     private dimElement: HTMLElement;
     private widthElement: HTMLInputElement;
-    private heightElement: HTMLInputElement;
-    private imageElement: HTMLImageElement;
+    private heightElement: HTMLInputElement;    
     private selectorComponent: TextureSelectorComponent;
 
     constructor() {
         super();        
         const shadowRoot = this.attachShadow({mode: 'closed'});        
         shadowRoot.appendChild(template.content.cloneNode(true));
-
-        this.imageElement = shadowRoot.querySelector('#image');
-        this.idElement = shadowRoot.querySelector('#identifier');
+        
         this.dimElement = shadowRoot.querySelector('#dimensions');
         this.widthElement = shadowRoot.querySelector('#width');
         this.heightElement = shadowRoot.querySelector('#height');    
@@ -55,10 +67,8 @@ export default class TextureSourceEditorElement extends HTMLElement {
     }
 
 
-    private render() {             
-        this.imageElement.src = `data:image/png;base64,${this._source.data}`;        
-        this.idElement.innerText = this._source.id;
-        this.dimElement.innerText = `${this._source.totalWidth} x ${this._source.totalHeight}`;        
+    private render() {                     
+        this.dimElement.innerText = `${this._source.totalWidth} ⨯ ${this._source.totalHeight}`;        
         this.widthElement.value = this._source.textureWidth.toString();
         this.heightElement.value = this._source.textureHeight.toString();                  
     }    

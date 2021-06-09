@@ -5,10 +5,32 @@ import TextureSourceEditorElement from "./textureSourceEditorComponent";
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
 <style> 
+#container {    
+    display: flex;
+    flex-flow: column;    
+    align-content: flex-start;
+    width: 210px;
+}
+.containerElement {
+    display: flex;
+    flex-flow: row;
+    width: 100%;
+}
+.label {
+    min-width: 5em; 
+    float: left;   
+}
+select {
+    width: 130px;
+}
+
 </style>
 <p>Texture editor</p>
-<div>
-    <select name="sources" id="sources"></select>
+<div id="container">
+    <div class="containerElement">
+        <span class="label">source:</span>
+        <select name="sources" id="sources"></select>
+    </div>
 </div>
 <texture-source-editor id="texture-source-editor"></texture-source-editor>
 `;
