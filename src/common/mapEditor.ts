@@ -14,6 +14,10 @@ import { ISpaceTranslator } from './actions/geometrySelector';
 import { Vector } from './math/vector';
 
 export class MapEditorRenderer implements ISpaceTranslator {
+
+    private SCROLL_SIZE: number = 40;
+    private GRID_SIZE: number = this.SCROLL_SIZE/2;
+
     private _context: CanvasRenderingContext2D;
     private background: HTMLCanvasElement;
     private selectedElements: SelectableElement[] = [];
@@ -42,7 +46,9 @@ export class MapEditorRenderer implements ISpaceTranslator {
         });
         this.canvas.addEventListener('wheel', (ev: WheelEvent) => {
             ev.preventDefault();   
-            const [deltaX, deltaY] = ev.shiftKey ? [ev.deltaY, ev.deltaX] : [ev.deltaX, ev.deltaY];
+
+            const sign = ev.deltaY<0?-1:1;            
+            const [deltaX, deltaY] = ev.shiftKey ? [this.SCROLL_SIZE*sign, 0] : [0, this.SCROLL_SIZE*sign];
             if ((this.scrollPos[0]+deltaX < 0) ||  this.scrollPos[1]+deltaY < 0) {
                 return;
             }
@@ -81,12 +87,13 @@ export class MapEditorRenderer implements ISpaceTranslator {
         this.canvas.height = this.canvas.parentElement.clientHeight;
         this.background.width = this.canvas.width;
         this.background.height = this.canvas.height;
+        this.scrollPos = [0,0 ];             
         this.initGrid();        
     }
 
     public render = (fps: number) => {
         if (this.active) {
-            this._context.clearRect(0, 0, this.canvas.width, this.canvas.height);        
+            this._context.clearRect(this.scrollPos[0], this.scrollPos[1], this.scrollPos[0]+this.canvas.width, this.scrollPos[1]+this.canvas.height);        
             this.drawGrid();
             this.drawCamera(this._context, this.camera);
             this.drawGeometry(this._context, this.wallGeometry);
@@ -153,10 +160,10 @@ export class MapEditorRenderer implements ISpaceTranslator {
         backgroundContext.lineWidth = 1;
         backgroundContext.setLineDash([4, 2]);
         backgroundContext.strokeStyle = Colors.BLACK;
-        for (let x = 0; x <= backgroundContext.canvas.width; x += 20) {
+        for (let x = 0; x <= backgroundContext.canvas.width; x += this.GRID_SIZE) {
             backgroundContext.moveTo(x, 0);
             backgroundContext.lineTo(x, backgroundContext.canvas.height);
-            for (let y = 0; y <= backgroundContext.canvas.height; y += 20) {
+            for (let y = 0; y <= backgroundContext.canvas.height; y += this.GRID_SIZE) {
                 backgroundContext.moveTo(0, y);
                 backgroundContext.lineTo(backgroundContext.canvas.width, y);
             }
@@ -174,7 +181,7 @@ export class MapEditorRenderer implements ISpaceTranslator {
         }
     };
         
-    private drawGrid = () => this._context.drawImage(this.background, 0, 0);
+    private drawGrid = () => this._context.drawImage(this.background,this.scrollPos[0], this.scrollPos[1]);
 }
 
 enum Colors {
