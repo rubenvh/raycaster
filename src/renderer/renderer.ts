@@ -35,9 +35,10 @@ window.addEventListener('load', (event) => {
     
     new WorldLoader();
     new UndoService();
-    let handlers = [...createGlobalActionHandlers(), ...createCanvasHandlers(ui.view_2d.canvas)];
     let renderer3d = new Renderer3d(ui.view_3d.canvas);
     let mapEditor = new MapEditorRenderer(ui.view_2d.canvas);
+    let handlers = [...createGlobalActionHandlers(), ...createCanvasHandlers(ui.view_2d.canvas, mapEditor)];
+    
     let testCanvas = new TestCanvasRenderer(ui.view_2d.canvas);//, mapEditor.context);
     new BspGenerationStarter();
     

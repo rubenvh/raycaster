@@ -99,8 +99,9 @@ export const spaceTranslator = (canvas: HTMLCanvasElement): ISpaceTranslator => 
 
     return {
         toWorldSpace: (event: MouseEvent): Vector => {
-            return [event.pageX - elemLeft,
-                event.pageY - elemTop];
+            //console.log('spacetranslate', canvas.scrollLeft, canvas.scrollTop);
+            return [event.pageX - (elemLeft + canvas.scrollLeft),
+                event.pageY - (elemTop + canvas.scrollTop)];
         }
     }
 }

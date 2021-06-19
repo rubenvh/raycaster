@@ -10,8 +10,10 @@ import { IVertex } from './geometry/vertex';
 import { normal } from './math/lineSegment';
 import { CastingStats, EMPTY_STATS } from './raycaster';
 import { IUIConfigState } from './store/ui-config';
+import { ISpaceTranslator } from './actions/geometrySelector';
+import { Vector } from './math/vector';
 
-export class MapEditorRenderer {
+export class MapEditorRenderer implements ISpaceTranslator {
     private _context: CanvasRenderingContext2D;
     private background: HTMLCanvasElement;
     private selectedElements: SelectableElement[] = [];
@@ -20,19 +22,39 @@ export class MapEditorRenderer {
     private selectedTreeNode: SelectableElement;    
     private castingStats: CastingStats = EMPTY_STATS;
     private uiConfig: IUIConfigState = {};
-    
+    private scrollPos = [0,0];
+    elemLeft: number;
+    elemTop: number;
     get context(): CanvasRenderingContext2D {
         return this._context;
     }
     
     constructor(private canvas: HTMLCanvasElement) {
         this._context = canvas.getContext('2d');
-        this.background = document.createElement('canvas') as HTMLCanvasElement;
+        this.background = document.createElement('canvas') as HTMLCanvasElement;        
         this.resizeCanvas();        
+        this.elemLeft = canvas.offsetLeft + canvas.clientLeft;
+        this.elemTop = canvas.offsetTop + canvas.clientTop;
+
         window.addEventListener('resize', e => {
-            e.preventDefault();  
-            this.resizeCanvas();
+            e.preventDefault();              
+            this.resizeCanvas();            
         });
+        this.canvas.addEventListener('wheel', (ev: WheelEvent) => {
+            ev.preventDefault();   
+            const [deltaX, deltaY] = ev.shiftKey ? [ev.deltaY, ev.deltaX] : [ev.deltaX, ev.deltaY];
+            if ((this.scrollPos[0]+deltaX < 0) ||  this.scrollPos[1]+deltaY < 0) {
+                return;
+            }
+
+            this.scrollPos = [this.scrollPos[0]+deltaX, this.scrollPos[1]+deltaY];            
+            this._context.setTransform(
+                1, 0,
+                0, 1,
+                -1 * this.scrollPos[0], 
+                -1 * this.scrollPos[1]);
+        });
+
         connect(s => {
             this.selectedElements = s.selection.elements;
             this.selectedTreeNode = s.selection.treeSelection;
@@ -43,16 +65,23 @@ export class MapEditorRenderer {
         });
     }
    
+    public toWorldSpace = (event: MouseEvent): Vector => {
+        
+        return [event.pageX - (this.elemLeft - this.scrollPos[0]),
+            event.pageY - (this.elemTop - this.scrollPos[1])];
+    }
+
     private get active() {
         return !this.uiConfig.enableTestCanvas;
     }
 
-    private resizeCanvas = (): void => {
+    private resizeCanvas = (): void => {        
+        this.canvas.height = 0;        
         this.canvas.width = this.canvas.clientWidth;
-        this.canvas.height = this.canvas.clientHeight;
+        this.canvas.height = this.canvas.parentElement.clientHeight;
         this.background.width = this.canvas.width;
         this.background.height = this.canvas.height;
-        this.initGrid();
+        this.initGrid();        
     }
 
     public render = (fps: number) => {

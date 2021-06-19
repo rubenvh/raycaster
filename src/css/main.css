@@ -1,25 +1,31 @@
-body {
+html, body {
     background-color: #2d2d2d;
-    color: #eee;    
+    color: #eee;  
+    margin: 0;
+    width: 100%;
+    height: 100%; 
+}
+
+.widget {
+    border: 1px solid black;
 }
 
 .container {
     display: flex; 
-    flex-direction: column;
-    height: 100%;
-    min-height: 1000px;
-    align-items: stretch;
+    flex-direction: column;    
+    height: 95%;
+    /* align-items: stretch;
     justify-content: space-evenly;
-    align-content: stretch;
+    align-content: stretch;     */
 }
 
 .views {
     flex: 2;
     display: flex;
     flex-direction: row;    
-    align-items: stretch;
+    /* align-items: stretch;
     justify-content: space-evenly;
-    align-content: stretch;
+    align-content: stretch;      */
 }
 
 .tools {
@@ -29,20 +35,39 @@ body {
 }
 
 .dim2 {
-    flex: 1;    
-    border: 1px solid black;       
+    flex: 1;   
+    /* overflow: scroll; */
 }
 .dim3 {
     flex: 1;
-    border: 1px solid black;        
+    align-items: center;
+    justify-content: center;
+    align-content: center;
 }
 
-.views canvas {
+.views .dim3 canvas {
     margin: 0;
     padding: 0;  
     display: block;
     width: 100%;
 }
-.views > .dim2 > canvas {    
-    height: 100%;
+.views .dim2 canvas {    
+    margin: 0;
+    padding: 0;  
+    display: block;    
+    width: 100%;
+    /* height: 100%; */
+}
+
+#geometry-selection {
+    flex: 2;    
+}
+#geometry-editor {
+    flex: 4;    
+}
+#texture-library {
+    flex: 1;
+}
+#stats {
+    flex: 1;
 }

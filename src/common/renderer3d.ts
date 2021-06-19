@@ -43,8 +43,7 @@ export class Renderer3d {
     constructor(private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');
         this.context.imageSmoothingEnabled = false;        
-        this.context.font = '12px sans-serif';
-
+        
         this.canvas.width = this.resolution;
         this.canvas.height = Math.round(this.resolution * 3 / 4);
         this.width = this.canvas.width;
