@@ -48,6 +48,7 @@ export class Scrollifier {
         
     }
 
+    
 
     private calc =() => {
 
@@ -71,3 +72,30 @@ export class Scrollifier {
     }
     
 };
+
+class ScrollBar {
+
+    private pos: number;
+    private bound: number;
+    constructor(private isHorizontal: boolean, private viewSize: number, private size: number) {
+        this.pos = 0;
+    }
+
+    public setBoundary = (bound: number) => {
+        this.bound = bound;
+    }
+
+    public draw = (context: CanvasRenderingContext2D, location: number)  => {
+        const max = Math.max(this.bound, this.pos + this.viewSize);
+        const p = this.viewSize / max;
+        const barSize = p * this.size;
+        const barOffset = this.pos / max * this.size;
+
+        if (this.isHorizontal) {
+            context.fillRect(this.pos+barOffset, location,barSize,5);
+        } else {
+            context.fillRect(location, this.pos+barOffset, 5, barSize);
+        }        
+    }
+
+}
