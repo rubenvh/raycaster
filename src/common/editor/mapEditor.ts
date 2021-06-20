@@ -1,17 +1,17 @@
-import { BoundingBox } from './geometry/polygon';
-import { IBSPNode, isSplitNode } from './geometry/bsp/model';
-import { connect } from './store/store-connector';
-import { ICamera, makeRays, DEFAULT_CAMERA } from './camera';
-import { drawSegment, drawVector, drawBoundingBox, drawPlane } from './drawing/drawing';
-import { IEdge } from './geometry/edge';
-import { EMPTY_GEOMETRY, IGeometry } from './geometry/geometry';
-import { isSelectedEdge, isSelectedPolygon, isSelectedVertex, SelectableElement, selectedId } from './selection/selectable';
-import { IVertex } from './geometry/vertex';
-import { normal } from './math/lineSegment';
-import { CastingStats, EMPTY_STATS } from './raycaster';
-import { IUIConfigState } from './store/ui-config';
-import { ISpaceTranslator } from './actions/geometrySelector';
-import { Vector } from './math/vector';
+import { BoundingBox } from '../geometry/polygon';
+import { IBSPNode, isSplitNode } from '../geometry/bsp/model';
+import { connect } from '../store/store-connector';
+import { ICamera, makeRays, DEFAULT_CAMERA } from '../camera';
+import { drawSegment, drawVector, drawBoundingBox, drawPlane } from '../drawing/drawing';
+import { IEdge } from '../geometry/edge';
+import { EMPTY_GEOMETRY, IGeometry } from '../geometry/geometry';
+import { isSelectedEdge, isSelectedPolygon, isSelectedVertex, SelectableElement, selectedId } from '../selection/selectable';
+import { IVertex } from '../geometry/vertex';
+import { normal } from '../math/lineSegment';
+import { CastingStats, EMPTY_STATS } from '../raycaster';
+import { IUIConfigState } from '../store/ui-config';
+import { ISpaceTranslator } from '../actions/geometrySelector';
+import { Vector } from '../math/vector';
 
 export class MapEditorRenderer implements ISpaceTranslator {
 

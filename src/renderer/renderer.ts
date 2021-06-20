@@ -4,7 +4,7 @@
 
 import { createCanvasHandlers, createGlobalActionHandlers } from '../common/actions/actionHandlerFactory';
 import { Renderer3d } from '../common/renderer3d';
-import { MapEditorRenderer } from '../common/mapEditor';
+import { MapEditorRenderer } from '../common/editor/mapEditor';
 import { WorldLoader } from '../common/storage/stateLoader';
 import { UndoService } from '../common/actions/undoService';
 import { connect } from '../common/store/store-connector';
