@@ -12,11 +12,12 @@ import { CastingStats, EMPTY_STATS } from '../raycaster';
 import { IUIConfigState } from '../store/ui-config';
 import { ISpaceTranslator } from '../actions/geometrySelector';
 import { Vector } from '../math/vector';
+import {Scrollifier} from './scrollifier';
 
 export class MapEditorRenderer implements ISpaceTranslator {
 
-    private SCROLL_SIZE: number = 40;
-    private GRID_SIZE: number = this.SCROLL_SIZE/2;
+    
+    private GRID_SIZE: number = 20;
 
     private _context: CanvasRenderingContext2D;
     private background: HTMLCanvasElement;
@@ -26,7 +27,9 @@ export class MapEditorRenderer implements ISpaceTranslator {
     private selectedTreeNode: SelectableElement;    
     private castingStats: CastingStats = EMPTY_STATS;
     private uiConfig: IUIConfigState = {};
-    private scrollPos = [0,0];
+    // private scrollPos = [0,0];
+    private scroll: Scrollifier;
+
     elemLeft: number;
     elemTop: number;
     get context(): CanvasRenderingContext2D {
@@ -35,6 +38,7 @@ export class MapEditorRenderer implements ISpaceTranslator {
     
     constructor(private canvas: HTMLCanvasElement) {
         this._context = canvas.getContext('2d');
+        this.scroll = new Scrollifier(canvas);
         this.background = document.createElement('canvas') as HTMLCanvasElement;        
         this.resizeCanvas();        
         this.elemLeft = canvas.offsetLeft + canvas.clientLeft;
@@ -44,22 +48,22 @@ export class MapEditorRenderer implements ISpaceTranslator {
             e.preventDefault();              
             this.resizeCanvas();            
         });
-        this.canvas.addEventListener('wheel', (ev: WheelEvent) => {
-            ev.preventDefault();   
+        // this.canvas.addEventListener('wheel', (ev: WheelEvent) => {
+        //     ev.preventDefault();   
 
-            const sign = ev.deltaY<0?-1:1;            
-            const [deltaX, deltaY] = ev.shiftKey ? [this.SCROLL_SIZE*sign, 0] : [0, this.SCROLL_SIZE*sign];
-            if ((this.scrollPos[0]+deltaX < 0) ||  this.scrollPos[1]+deltaY < 0) {
-                return;
-            }
+        //     const sign = ev.deltaY<0?-1:1;            
+        //     const [deltaX, deltaY] = ev.shiftKey ? [this.SCROLL_SIZE*sign, 0] : [0, this.SCROLL_SIZE*sign];
+        //     if ((this.scrollPos[0]+deltaX < 0) ||  this.scrollPos[1]+deltaY < 0) {
+        //         return;
+        //     }
 
-            this.scrollPos = [this.scrollPos[0]+deltaX, this.scrollPos[1]+deltaY];            
-            this._context.setTransform(
-                1, 0,
-                0, 1,
-                -1 * this.scrollPos[0], 
-                -1 * this.scrollPos[1]);
-        });
+        //     this.scrollPos = [this.scrollPos[0]+deltaX, this.scrollPos[1]+deltaY];            
+        //     this._context.setTransform(
+        //         1, 0,
+        //         0, 1,
+        //         -1 * this.scrollPos[0], 
+        //         -1 * this.scrollPos[1]);
+        // });
 
         connect(s => {
             this.selectedElements = s.selection.elements;
@@ -68,13 +72,15 @@ export class MapEditorRenderer implements ISpaceTranslator {
             this.wallGeometry = s.walls.geometry;
             this.uiConfig = s.uiConfig;            
             this.castingStats = s.stats.intersections.stats;            
+
+            this.scroll.setBounds(this.wallGeometry.bounds);
         });
     }
    
     public toWorldSpace = (event: MouseEvent): Vector => {
         
-        return [event.pageX - (this.elemLeft - this.scrollPos[0]),
-            event.pageY - (this.elemTop - this.scrollPos[1])];
+        return [event.pageX - (this.elemLeft - this.scroll.scrollX),
+            event.pageY - (this.elemTop - this.scroll.scrollY)];
     }
 
     private get active() {
@@ -87,13 +93,13 @@ export class MapEditorRenderer implements ISpaceTranslator {
         this.canvas.height = this.canvas.parentElement.clientHeight;
         this.background.width = this.canvas.width;
         this.background.height = this.canvas.height;
-        this.scrollPos = [0,0 ];             
+        this.scroll.reset();
         this.initGrid();        
     }
 
     public render = (fps: number) => {
         if (this.active) {
-            this._context.clearRect(this.scrollPos[0], this.scrollPos[1], this.scrollPos[0]+this.canvas.width, this.scrollPos[1]+this.canvas.height);        
+            this.scroll.clearView();            
             this.drawGrid();
             this.drawCamera(this._context, this.camera);
             this.drawGeometry(this._context, this.wallGeometry);
@@ -101,6 +107,8 @@ export class MapEditorRenderer implements ISpaceTranslator {
             if (this.wallGeometry.bsp && this.uiConfig.drawBsp) {                
                 this.drawBsp(this.wallGeometry.bsp);
             }
+
+            this.scroll.draw();
         }       
                 
         // if (this.world.rays?.length > 0) {
@@ -181,7 +189,7 @@ export class MapEditorRenderer implements ISpaceTranslator {
         }
     };
         
-    private drawGrid = () => this._context.drawImage(this.background,this.scrollPos[0], this.scrollPos[1]);
+    private drawGrid = () => this._context.drawImage(this.background,this.scroll.scrollX, this.scroll.scrollY);
 }
 
 enum Colors {
