@@ -1,5 +1,6 @@
+import { useAppDispatch } from '../../common/store';
+import * as actions from '../../common/store/textures';
 import { ITextureSource } from './../../common/textures/model';
-import { textureLib } from './../../common/textures/textureLibrary';
 import TextureSelectorComponent from './textureSelectorComponent';
 
 const template = document.createElement('template');
@@ -31,7 +32,7 @@ input {
 </div>
 `;
 /// …
-
+const dispatch = useAppDispatch();
 export default class TextureSourceEditorElement extends HTMLElement {
         
     private _source: ITextureSource;   
@@ -50,6 +51,8 @@ export default class TextureSourceEditorElement extends HTMLElement {
         this.heightElement = shadowRoot.querySelector('#height');    
         this.selectorComponent = shadowRoot.querySelector('#selector');
 
+        this.widthElement.addEventListener('change', this.changeTextureSize.bind(this));
+        this.heightElement.addEventListener('change', this.changeTextureSize.bind(this));
         this.selectorComponent.addEventListener('change', (e) => console.log(this.selectorComponent.value));
         
     }
@@ -66,6 +69,13 @@ export default class TextureSourceEditorElement extends HTMLElement {
          return this._source;
     }
 
+
+    private changeTextureSize() {        
+        const action = {id: this._source.id, 
+            textureWidth: +this.widthElement.value, 
+            textureHeight: +this.heightElement.value };
+        dispatch(actions.adaptTexture(action));
+    }
 
     private render() {                     
         this.dimElement.innerText = `${this._source.totalWidth} ⨯ ${this._source.totalHeight}`;        

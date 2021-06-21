@@ -1,4 +1,3 @@
-import { TextureLibrary } from '../textures/textureLibrary';
 import { ITextureSource } from './../textures/model';
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import sizeOf from 'image-size';       
@@ -19,16 +18,16 @@ const slice = createSlice({
       // TODO: get filename and use as id
       var s: ITextureSource = {id: fileName, textureHeight: 0, textureWidth: 0, data: base64, totalHeight: dimensions.height, totalWidth: dimensions.width};
       _.sources.push(s);      
+    },
+    adaptTexture: (state, action: PayloadAction<{id: string, textureHeight: number, textureWidth: number}>) => {
+      const {id, textureHeight, textureWidth} = action.payload;
+      const s = state.sources.find(_=>_.id === id);
+      s.textureHeight = textureHeight;
+      s.textureWidth = textureWidth;
     }
-//     toggleTestCanvas: (state) => {
-//         state.enableTestCanvas = !state.enableTestCanvas;        
-//     },
-//     toggleBspDrawing: (state) => {
-//       state.drawBsp = !state.drawBsp;        
-//   }
   },
 });
 export default slice.reducer
 
 // Actions
-export const { initialize, loadTexture } = slice.actions
+export const { initialize, loadTexture, adaptTexture } = slice.actions

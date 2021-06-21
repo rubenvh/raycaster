@@ -1,5 +1,4 @@
 
-- TEXTURES: adapt cols/rows for texture in library
 - GEOMETRY: adapt EditEdgeComponent to select texture from library (dropdown?)
 - GEOMETRY: edit material on both faces of an edge
 - GEOMETRY: remove material at face
