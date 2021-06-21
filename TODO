@@ -1,17 +1,22 @@
 
 - TEXTURES: adapt cols/rows for texture in library
 - GEOMETRY: adapt EditEdgeComponent to select texture from library (dropdown?)
-- MAPEDITOR: display scrollbars 
-- remove material at face
-- luminosity on edge as a function of time to implement flickering 
+- GEOMETRY: edit material on both faces of an edge
+- GEOMETRY: remove material at face
+- RENDERING: slower fps slows down movement => normalize this
 - BUG: completely translucent (invisible) edge is being drawn as fading shadow
 - BUG: when selecting multiple adjacent polygons, the highlighted edge (green) might be overdrawn by 1 of the polygon's edges
-- BSP: try different split plane selection strategy (e.g. alternating horizontal/vertical split on center of combined bounding box)
 - BSP: allow adding hinting split planes drawn by the user
-- disable menu items when not appropriate
-- implement zooming in 2d view (+ impact on distance threshold for selection?)
-- implement sprites
-- implement mirror walls
-- implement doors
-- expand polygon: AS IS: push out walls from center => TO BE would be nice to stay parallel to existing edges
-- slower fps slows down movement => normalize this
+- MAPEDITOR: implement zooming in 2d view (+ impact on distance threshold for selection?)
+- RENDERING: implement sprites: represent as directed (short) line segments
+- RENDERING: implement doors
+- RENDERING: luminosity on edge as a function of time to implement flickering 
+- RENDERING: implement mirror walls
+- GEOMETRY: expand polygon: AS IS: push out walls from center => TO BE would be nice to stay parallel to existing edges
+
+
+
+ WOULD BE NICE
+-=============-
+- MAPEDITOR: clickable scrollbars `
+- MENU: disable menu items when not appropriate

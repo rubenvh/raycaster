@@ -1,101 +1,55 @@
 import { maximumComponents, Vector } from "../math/vector";
+import { ScrollBar } from "./scrollBar";
 
 export class Scrollifier {
     
-    private scrollPos = [0,0];
-    private SCROLL_SIZE: number = 40;
+    private SCROLL_SIZE: number = 100;
     private context: CanvasRenderingContext2D;
-    bounds: Vector;
+    private horizontalScroll: ScrollBar;
+    private verticalScroll: ScrollBar;
 
-    get scrollX() {
-        return this.scrollPos[0];
-    }
-    get scrollY() {
-        return this.scrollPos[1];
-    }
-    
-    
+    get scrollX() { return this.horizontalScroll.position; }
+    get scrollY() { return this.verticalScroll.position; }
+        
     constructor(private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');
+        this.horizontalScroll = new ScrollBar(true, this.canvas.width, this.canvas.width-10);
+        this.verticalScroll = new ScrollBar(false, this.canvas.height, this.canvas.height-10);
         this.canvas.addEventListener('wheel', (ev: WheelEvent) => {
             ev.preventDefault();   
 
             const sign = ev.deltaY<0?-1:1;            
             const [deltaX, deltaY] = ev.shiftKey ? [this.SCROLL_SIZE*sign, 0] : [0, this.SCROLL_SIZE*sign];
-            if ((this.scrollPos[0]+deltaX < 0) ||  this.scrollPos[1]+deltaY < 0) {
+            if ((this.horizontalScroll.position+deltaX < 0) ||  this.verticalScroll.position+deltaY < 0) {
                 return;
             }
 
-            this.scrollPos = [this.scrollPos[0]+deltaX, this.scrollPos[1]+deltaY];            
+            this.horizontalScroll.scroll(deltaX);
+            this.verticalScroll.scroll(deltaY);
             this.context.setTransform(
                 1, 0,
                 0, 1,
-                -1 * this.scrollPos[0], 
-                -1 * this.scrollPos[1]);
+                -1 * this.horizontalScroll.position, 
+                -1 * this.verticalScroll.position);
         });
     }
 
     public setBounds = (bounds: Vector) => {
-        this.bounds = bounds;
+
+        this.horizontalScroll.setBoundary(bounds[0]);
+        this.verticalScroll.setBoundary(bounds[1]);
     }
-    public reset = () => this.scrollPos = [0,0];
-    public clearView = () => this.context.clearRect(this.scrollPos[0], this.scrollPos[1], this.scrollPos[0]+this.canvas.width, this.scrollPos[1]+this.canvas.height);
+    public reset = () => { 
+        this.horizontalScroll.resize(this.canvas.width, this.canvas.width-10);
+        this.horizontalScroll.reset(); 
+        this.verticalScroll.reset(); 
+        this.verticalScroll.resize(this.canvas.height, this.canvas.height-10);
+
+    }
+    public clearView = () => this.context.clearRect(this.horizontalScroll.position, this.verticalScroll.position, this.horizontalScroll.position+this.canvas.width, this.verticalScroll.position+this.canvas.height);
 
     public draw = () => {
-        if (this.bounds) {
-            this.calc();
-        }
-        
+        this.horizontalScroll.draw(this.context, this.verticalScroll.position+this.canvas.height-10);
+        this.verticalScroll.draw(this.context, this.horizontalScroll.position+this.canvas.width-10);
     }
-
-    
-
-    private calc =() => {
-
-        // TODO: split horizontal/vertical calculation into something generic
-        // TODO: only recalc when scroll pos changes or bounds change
-        const [w, h] = [this.canvas.width, this.canvas.height];
-        const [sx, sy] = this.scrollPos;
-        const [max_x, max_y] = maximumComponents(this.bounds, [sx + w, sy + h]);
-
-        const [hor_p, ver_p] = [w / max_x, h / max_y];
-
-        const [hor_bar, ver_bar] = [hor_p * w, ver_p * h];
-        const [hor_pos, ver_pos] = [(sx) / max_x, (sy) / max_y];
-
-        // TODO: execute drawing inside draw function (+ style it)
-        // TODO: make sure horizontal does not overlap vertical at the end of scroll view
-        this.context.fillRect(sx+w*hor_pos,sy+h-10,hor_bar,5);
-        this.context.fillRect(sx+w-10, sy+h*ver_pos, 5, ver_bar);
-
-
-    }
-    
-};
-
-class ScrollBar {
-
-    private pos: number;
-    private bound: number;
-    constructor(private isHorizontal: boolean, private viewSize: number, private size: number) {
-        this.pos = 0;
-    }
-
-    public setBoundary = (bound: number) => {
-        this.bound = bound;
-    }
-
-    public draw = (context: CanvasRenderingContext2D, location: number)  => {
-        const max = Math.max(this.bound, this.pos + this.viewSize);
-        const p = this.viewSize / max;
-        const barSize = p * this.size;
-        const barOffset = this.pos / max * this.size;
-
-        if (this.isHorizontal) {
-            context.fillRect(this.pos+barOffset, location,barSize,5);
-        } else {
-            context.fillRect(location, this.pos+barOffset, 5, barSize);
-        }        
-    }
-
 }
