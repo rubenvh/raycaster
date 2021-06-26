@@ -1,3 +1,4 @@
+import { Colors } from './colors';
 import { BoundingBox } from '../geometry/polygon';
 import { IBSPNode, isSplitNode } from '../geometry/bsp/model';
 import { connect } from '../store/store-connector';
@@ -12,24 +13,19 @@ import { CastingStats, EMPTY_STATS } from '../raycaster';
 import { IUIConfigState } from '../store/ui-config';
 import { ISpaceTranslator } from '../actions/geometrySelector';
 import { Vector } from '../math/vector';
-import {Scrollifier} from './scrollifier';
+import {ViewPort} from './viewport';
 
 export class MapEditorRenderer implements ISpaceTranslator {
 
-    
-    private GRID_SIZE: number = 20;
-
     private _context: CanvasRenderingContext2D;
-    private background: HTMLCanvasElement;
     private selectedElements: SelectableElement[] = [];
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
     private selectedTreeNode: SelectableElement;    
     private castingStats: CastingStats = EMPTY_STATS;
     private uiConfig: IUIConfigState = {};
-    // private scrollPos = [0,0];
-    private scroll: Scrollifier;
-
+    private scroll: ViewPort;
+    
     elemLeft: number;
     elemTop: number;
     get context(): CanvasRenderingContext2D {
@@ -38,8 +34,7 @@ export class MapEditorRenderer implements ISpaceTranslator {
     
     constructor(private canvas: HTMLCanvasElement) {
         this._context = canvas.getContext('2d');
-        this.scroll = new Scrollifier(canvas);
-        this.background = document.createElement('canvas') as HTMLCanvasElement;        
+        this.scroll = new ViewPort(canvas);
         this.resizeCanvas();        
         this.elemLeft = canvas.offsetLeft + canvas.clientLeft;
         this.elemTop = canvas.offsetTop + canvas.clientTop;
@@ -48,23 +43,7 @@ export class MapEditorRenderer implements ISpaceTranslator {
             e.preventDefault();              
             this.resizeCanvas();            
         });
-        // this.canvas.addEventListener('wheel', (ev: WheelEvent) => {
-        //     ev.preventDefault();   
-
-        //     const sign = ev.deltaY<0?-1:1;            
-        //     const [deltaX, deltaY] = ev.shiftKey ? [this.SCROLL_SIZE*sign, 0] : [0, this.SCROLL_SIZE*sign];
-        //     if ((this.scrollPos[0]+deltaX < 0) ||  this.scrollPos[1]+deltaY < 0) {
-        //         return;
-        //     }
-
-        //     this.scrollPos = [this.scrollPos[0]+deltaX, this.scrollPos[1]+deltaY];            
-        //     this._context.setTransform(
-        //         1, 0,
-        //         0, 1,
-        //         -1 * this.scrollPos[0], 
-        //         -1 * this.scrollPos[1]);
-        // });
-
+        
         connect(s => {
             this.selectedElements = s.selection.elements;
             this.selectedTreeNode = s.selection.treeSelection;
@@ -77,11 +56,7 @@ export class MapEditorRenderer implements ISpaceTranslator {
         });
     }
    
-    public toWorldSpace = (event: MouseEvent): Vector => {
-        
-        return [event.pageX - (this.elemLeft - this.scroll.scrollX),
-            event.pageY - (this.elemTop - this.scroll.scrollY)];
-    }
+    public toWorldSpace = (event: MouseEvent): Vector => this.scroll.toWorldSpace([event.pageX-this.elemLeft, event.pageY - this.elemTop]);
 
     private get active() {
         return !this.uiConfig.enableTestCanvas;
@@ -91,16 +66,13 @@ export class MapEditorRenderer implements ISpaceTranslator {
         this.canvas.height = 0;        
         this.canvas.width = this.canvas.clientWidth;
         this.canvas.height = this.canvas.parentElement.clientHeight;
-        this.background.width = this.canvas.width;
-        this.background.height = this.canvas.height;
-        this.scroll.reset();
-        this.initGrid();        
+        this.scroll.reset();       
     }
 
     public render = (fps: number) => {
-        if (this.active) {
-            this.scroll.clearView();            
-            this.drawGrid();
+        if (this.active) {            
+            this.scroll.drawBackground();
+
             this.drawCamera(this._context, this.camera);
             this.drawGeometry(this._context, this.wallGeometry);
 
@@ -108,7 +80,7 @@ export class MapEditorRenderer implements ISpaceTranslator {
                 this.drawBsp(this.wallGeometry.bsp);
             }
 
-            this.scroll.draw();
+            this.scroll.drawForeground();
         }       
                 
         // if (this.world.rays?.length > 0) {
@@ -159,26 +131,7 @@ export class MapEditorRenderer implements ISpaceTranslator {
         const highlighted = this.selectedTreeNode && selectedId(this.selectedTreeNode) === vertex.id;
         drawVector(context, vertex.vector, highlighted ? Colors.HIGHLIGHTED : selected ? Colors.VERTEX_SELECTED : Colors.VERTEX);
     };    
-
-    private initGrid = () => {        
-        this.background.width = this.canvas.width;
-        this.background.height = this.canvas.height;        
-        const backgroundContext = this.background.getContext('2d');
-        backgroundContext.beginPath();
-        backgroundContext.lineWidth = 1;
-        backgroundContext.setLineDash([4, 2]);
-        backgroundContext.strokeStyle = Colors.BLACK;
-        for (let x = 0; x <= backgroundContext.canvas.width; x += this.GRID_SIZE) {
-            backgroundContext.moveTo(x, 0);
-            backgroundContext.lineTo(x, backgroundContext.canvas.height);
-            for (let y = 0; y <= backgroundContext.canvas.height; y += this.GRID_SIZE) {
-                backgroundContext.moveTo(0, y);
-                backgroundContext.lineTo(backgroundContext.canvas.width, y);
-            }
-        }
-        backgroundContext.stroke();
-    };
-
+    
     private colors: string[] = ['white', 'yellow', 'orange', 'red', 'purple', 'blue', 'cyan', 'green'];
     private drawBsp = (tree: IBSPNode, depth: number = 0, clipRegion: Path2D[] = []) => {        
         if (depth > 5) { return; }        
@@ -187,22 +140,6 @@ export class MapEditorRenderer implements ISpaceTranslator {
             this.drawBsp(tree.front, depth +1, clipRegion.concat(frontClip));
             this.drawBsp(tree.back, depth + 1, clipRegion.concat(backClip) );
         }
-    };
-        
-    private drawGrid = () => this._context.drawImage(this.background,this.scroll.scrollX, this.scroll.scrollY);
+    };        
 }
 
-enum Colors {
-    BLACK = 'rgb(0,0,0)',    
-    HIGHLIGHTED = 'rgb(0,250,100)',
-    IMMATERIAL = 'rgb(100,100,0)',
-    CAMERA = 'grey',
-    POLYGON = 'rgba(150,100,50,0.8)',
-    POLYGON_SELECTED = 'rgba(255,100,0,0.8)',
-    POLYGON_HIGHLIGHTED = 'rgba(0,250,100,0.8)',
-    POLYGON_TESTED = 'rgba(250,250,10,0.8)',
-    VERTEX = 'rgb(200,200,200)',
-    VERTEX_SELECTED = 'rgb(255,100,0)',
-    EDGE = 'rgb(175,175,125)',
-    EDGE_SELECTED = 'rgb(210,80,10)',
-}

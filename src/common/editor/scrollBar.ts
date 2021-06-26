@@ -21,15 +21,15 @@ export class ScrollBar {
         this.recalculate();
     }
 
-    public draw = (context: CanvasRenderingContext2D, location: number) => {
+    public draw = (context: CanvasRenderingContext2D, location: number, scale: number) => {
         // don't draw when everything in view
         if (this.barSize === this.size) { return; }
 
         context.fillStyle = "rgba(0,0,0,0.7)";
         if (this.isHorizontal) {
-            context.fillRect(this.pos + this.barOffset, location, this.barSize, 5);
+            context.fillRect((this.pos + this.barOffset)/scale, location/scale, this.barSize/scale, 5/scale);
         } else {
-            context.fillRect(location, this.pos + this.barOffset, 5, this.barSize);
+            context.fillRect(location/scale, (this.pos + this.barOffset)/scale, 5/scale, this.barSize/scale);
         }
     };
 
