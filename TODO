@@ -1,4 +1,5 @@
 
+- MAPEDITOR: when zooming in -> use mouse position as target area for zooming
 - GEOMETRY: adapt EditEdgeComponent to select texture from library (dropdown?)
 - GEOMETRY: edit material on both faces of an edge
 - GEOMETRY: remove material at face
@@ -6,7 +7,6 @@
 - BUG: completely translucent (invisible) edge is being drawn as fading shadow
 - BUG: when selecting multiple adjacent polygons, the highlighted edge (green) might be overdrawn by 1 of the polygon's edges
 - BSP: allow adding hinting split planes drawn by the user
-- MAPEDITOR: implement zooming in 2d view (+ impact on distance threshold for selection?)
 - RENDERING: implement sprites: represent as directed (short) line segments
 - RENDERING: implement doors
 - RENDERING: luminosity on edge as a function of time to implement flickering 
