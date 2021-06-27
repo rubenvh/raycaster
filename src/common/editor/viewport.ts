@@ -10,6 +10,8 @@ export class ViewPort {
     private horizontalScroll: ScrollBar;
     private verticalScroll: ScrollBar;
     private grid: Grid;
+    private elemLeft: number;
+    private elemTop: number;
     public scale: number = 1;
     
     get scrollX() { return this.horizontalScroll.position; }
@@ -20,6 +22,8 @@ export class ViewPort {
         this.grid = new Grid(this.context, canvas.width, canvas.height);
         this.horizontalScroll = new ScrollBar(true, this.canvas.width, this.canvas.width-10);
         this.verticalScroll = new ScrollBar(false, this.canvas.height, this.canvas.height-10);
+        this.elemLeft = canvas.offsetLeft + canvas.clientLeft;
+        this.elemTop = canvas.offsetTop + canvas.clientTop;
         this.canvas.addEventListener('wheel', (ev: WheelEvent) => {
             if (ev.ctrlKey) { return; }
             ev.preventDefault();   
@@ -33,12 +37,7 @@ export class ViewPort {
             this.horizontalScroll.scroll(deltaX);
             this.verticalScroll.scroll(deltaY);
             
-            this.context.setTransform(
-                this.scale, 0,
-                0, this.scale,
-                -1 * this.horizontalScroll.position, 
-                -1 * this.verticalScroll.position);   
-            this.grid.adaptGrid(...this.toWorldSpace([this.canvas.width, this.canvas.height]));
+            this.adaptView(1);
         });
 
         this.canvas.addEventListener('wheel', (ev: WheelEvent) => {
@@ -51,13 +50,27 @@ export class ViewPort {
             this.horizontalScroll.resize(this.canvas.width/this.scale, this.canvas.width-10);
             this.verticalScroll.resize(this.canvas.height/this.scale, this.canvas.height-10);       
             
-            this.context.scale(factor, factor);            
-            this.grid.adaptGrid(...this.toWorldSpace([this.canvas.width, this.canvas.height]));
+            const [x, y] = this.toWorldSpace([Math.max(0, ev.pageX-this.elemLeft-this.canvas.width/2),
+                Math.max(0, ev.pageY - this.elemTop - this.canvas.height/2)]);
+            this.horizontalScroll.scrollTo(x);            
+            this.verticalScroll.scrollTo(y);
+
+            this.adaptView(factor);            
         });
     }
+
+    private adaptView = (scaleFactor: number) => {
+        this.context.scale(scaleFactor, scaleFactor);            
+        this.context.setTransform(
+            this.scale, 0,
+            0, this.scale,
+            -1 * this.horizontalScroll.position, 
+            -1 * this.verticalScroll.position);
+        this.grid.adaptGrid(...this.toWorldSpace([this.canvas.width, this.canvas.height]));
+    }
     public toWorldSpace = (position: Vector): Vector  => 
-        [Math.floor((position[0] + this.scrollX) / this.scale),
-         Math.floor((position[1] + this.scrollY) / this.scale)];
+        [Math.ceil((position[0] + this.scrollX) / this.scale),
+         Math.ceil((position[1] + this.scrollY) / this.scale)];
 
     public setBounds = (bounds: Vector) => {
 
@@ -65,11 +78,12 @@ export class ViewPort {
         this.verticalScroll.setBoundary(bounds[1]);
     }
     public reset = () => { 
+        this.scale = 1;
         this.horizontalScroll.resize(this.canvas.width, this.canvas.width-10);
-        this.horizontalScroll.reset(); 
-        this.verticalScroll.reset(); 
         this.verticalScroll.resize(this.canvas.height, this.canvas.height-10);
-        this.grid.adaptGrid(...this.toWorldSpace([this.canvas.width, this.canvas.height]));
+        this.horizontalScroll.reset(); 
+        this.verticalScroll.reset();         
+        this.adaptView(this.scale);
     }
 
     private clearView = () => this.context.clearRect(...this.toWorldSpace([0,0]), ...this.toWorldSpace([this.canvas.width,this.canvas.height]));

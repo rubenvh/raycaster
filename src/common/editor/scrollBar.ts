@@ -14,6 +14,7 @@ export class ScrollBar {
     };
     public get position() { return this.pos; }
     public scroll(value: number) { this.pos += value; this.recalculate(); }
+    public scrollTo(target: number) { this.pos = target; this.recalculate(); }
     public reset() { this.pos = 0; this.recalculate(); }
     public resize(viewSize: number, size = viewSize) {
         this.viewSize = viewSize;
@@ -25,10 +26,17 @@ export class ScrollBar {
         // don't draw when everything in view
         if (this.barSize === this.size) { return; }
 
-        context.fillStyle = "rgba(0,0,0,0.7)";
-        if (this.isHorizontal) {
-            context.fillRect((this.pos + this.barOffset)/scale, location/scale, this.barSize/scale, 5/scale);
+        context.fillStyle = "rgba(125,125,125,0.7)";
+        if (this.isHorizontal) { 
+            context.fillRect(this.pos/scale, location/scale, this.size/scale, 5/scale);
         } else {
+            context.fillRect(location/scale, this.pos/scale, 5/scale, this.size/scale);
+        }
+
+        context.fillStyle = "rgba(0,0,0,0.9)";
+        if (this.isHorizontal) {            
+            context.fillRect((this.pos + this.barOffset)/scale, location/scale, this.barSize/scale, 5/scale);
+        } else {            
             context.fillRect(location/scale, (this.pos + this.barOffset)/scale, 5/scale, this.barSize/scale);
         }
     };
