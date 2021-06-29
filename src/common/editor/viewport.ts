@@ -44,17 +44,12 @@ export class ViewPort {
             if (!ev.ctrlKey) { return; }            
             ev.preventDefault();   
 
-            const factor = ev.deltaY<0?0.9:1.1;            
-            
+            const zoomOut = ev.deltaY<0;
+            const factor = zoomOut?0.9:1.1;            
+            if ( factor * this.scale < 0.1) { return; }
             this.scale = factor * this.scale;                        
             this.horizontalScroll.resize(this.canvas.width/this.scale, this.canvas.width-10);
             this.verticalScroll.resize(this.canvas.height/this.scale, this.canvas.height-10);       
-            
-            const [x, y] = this.toWorldSpace([Math.max(0, ev.pageX-this.elemLeft-this.canvas.width/2),
-                Math.max(0, ev.pageY - this.elemTop - this.canvas.height/2)]);
-            this.horizontalScroll.scrollTo(x);            
-            this.verticalScroll.scrollTo(y);
-
             this.adaptView(factor);            
         });
     }
