@@ -30,10 +30,6 @@ export class ViewPort {
 
             const sign = ev.deltaY<0?-1:1;            
             const [deltaX, deltaY] = ev.shiftKey ? [this.SCROLL_SIZE*sign, 0] : [0, this.SCROLL_SIZE*sign];
-            if ((this.horizontalScroll.position+deltaX < 0) ||  this.verticalScroll.position+deltaY < 0) {
-                return;
-            }
-
             this.horizontalScroll.scroll(deltaX);
             this.verticalScroll.scroll(deltaY);
             
@@ -44,12 +40,21 @@ export class ViewPort {
             if (!ev.ctrlKey) { return; }            
             ev.preventDefault();   
 
+            // TODO: scaling messes up scrollbars a bit
+            
             const zoomOut = ev.deltaY<0;
             const factor = zoomOut?0.9:1.1;            
             if ( factor * this.scale < 0.1) { return; }
             this.scale = factor * this.scale;                        
             this.horizontalScroll.resize(this.canvas.width/this.scale, this.canvas.width-10);
             this.verticalScroll.resize(this.canvas.height/this.scale, this.canvas.height-10);       
+            
+            const [x, y] = this.toWorldSpace([
+                Math.max(0, ev.pageX - this.elemLeft - this.canvas.width/2),
+                Math.max(0, ev.pageY - this.elemTop - this.canvas.height/2)]);
+            this.horizontalScroll.scrollTo(x);            
+            this.verticalScroll.scrollTo(y);
+
             this.adaptView(factor);            
         });
     }
@@ -66,6 +71,10 @@ export class ViewPort {
     public toWorldSpace = (position: Vector): Vector  => 
         [Math.ceil((position[0] + this.scrollX) / this.scale),
          Math.ceil((position[1] + this.scrollY) / this.scale)];
+
+    public toViewPortSpace = (position: Vector): Vector => 
+        [this.scale * position[0] - this.scrollX,
+        this.scale * position[1] - this.scrollY];
 
     public setBounds = (bounds: Vector) => {
 

@@ -13,7 +13,10 @@ export class ScrollBar {
         this.recalculate();
     };
     public get position() { return this.pos; }
-    public scroll(value: number) { this.pos += value; this.recalculate(); }
+    public scroll(value: number) {                 
+        this.pos = Math.max(0, this.pos + value);
+        this.recalculate(); 
+    }
     public scrollTo(target: number) { this.pos = target; this.recalculate(); }
     public reset() { this.pos = 0; this.recalculate(); }
     public resize(viewSize: number, size = viewSize) {
