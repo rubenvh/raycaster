@@ -47,12 +47,14 @@ export class MapEditorRenderer implements ISpaceTranslator {
         connect(s => {
             this.selectedElements = s.selection.elements;
             this.selectedTreeNode = s.selection.treeSelection;
-            this.camera = s.player.camera;
-            this.wallGeometry = s.walls.geometry;
+            this.camera = s.player.camera;            
             this.uiConfig = s.uiConfig;            
             this.castingStats = s.stats.intersections.stats;            
 
-            this.scroll.setBounds(this.wallGeometry.bounds);
+            if (s.walls.geometry !== this.wallGeometry) {
+                this.wallGeometry = s.walls.geometry;
+                this.scroll.setBounds(this.wallGeometry.bounds);
+            }            
         });
     }
    

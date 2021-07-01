@@ -40,14 +40,12 @@ export class ViewPort {
             if (!ev.ctrlKey) { return; }            
             ev.preventDefault();   
 
-            // TODO: scaling messes up scrollbars a bit
-            
             const zoomOut = ev.deltaY<0;
             const factor = zoomOut?0.9:1.1;            
             if ( factor * this.scale < 0.1) { return; }
             this.scale = factor * this.scale;                        
-            this.horizontalScroll.resize(this.canvas.width/this.scale, this.canvas.width-10);
-            this.verticalScroll.resize(this.canvas.height/this.scale, this.canvas.height-10);       
+            this.horizontalScroll.resize(this.canvas.width/this.scale, this.canvas.width-10, this.scale);
+            this.verticalScroll.resize(this.canvas.height/this.scale, this.canvas.height-10, this.scale);       
             
             const [x, y] = this.toWorldSpace([
                 Math.max(0, ev.pageX - this.elemLeft - this.canvas.width/2),
@@ -77,7 +75,6 @@ export class ViewPort {
         this.scale * position[1] - this.scrollY];
 
     public setBounds = (bounds: Vector) => {
-
         this.horizontalScroll.setBoundary(bounds[0]);
         this.verticalScroll.setBoundary(bounds[1]);
     }

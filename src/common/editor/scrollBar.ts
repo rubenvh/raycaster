@@ -4,6 +4,7 @@ export class ScrollBar {
     private bound: number = 0;
     private barOffset: number = 0;
     private barSize: number = 0;
+    scale: number;
 
     constructor(private isHorizontal: boolean, private viewSize: number, private size: number = viewSize) {
     }
@@ -19,9 +20,10 @@ export class ScrollBar {
     }
     public scrollTo(target: number) { this.pos = target; this.recalculate(); }
     public reset() { this.pos = 0; this.recalculate(); }
-    public resize(viewSize: number, size = viewSize) {
+    public resize(viewSize: number, size = viewSize, scale = 1) {
         this.viewSize = viewSize;
         this.size = size;
+        this.scale = scale;
         this.recalculate();
     }
 
@@ -40,14 +42,15 @@ export class ScrollBar {
         if (this.isHorizontal) {            
             context.fillRect((this.pos + this.barOffset)/scale, location/scale, this.barSize/scale, 5/scale);
         } else {            
-            context.fillRect(location/scale, (this.pos + this.barOffset)/scale, 5/scale, this.barSize/scale);
+            context.fillRect(location/scale, (this.pos + this.barOffset)/scale, 5/scale, this.barSize/scale);            
         }
     };
 
     private recalculate = () => {
-        const max = Math.max(this.bound, this.pos + this.viewSize);
+        const pos = this.pos/this.scale;
+        const max = Math.max(this.bound, pos + this.viewSize);
         const p = this.viewSize / max;
         this.barSize = p * this.size;
-        this.barOffset = this.pos / max * this.size;
+        this.barOffset = pos / max * this.size;        
     };
 }
