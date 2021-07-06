@@ -1,5 +1,4 @@
 
-- BUG: bsp split planes not drawn correctly when zooming
 - MAPEDITOR: when zooming in -> use mouse position as target area for zooming
 - GEOMETRY: adapt EditEdgeComponent to select texture from library (dropdown?)
 - GEOMETRY: edit material on both faces of an edge
