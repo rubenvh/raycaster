@@ -26,7 +26,7 @@ export class BspGenerationStarter {
     // TODO: this can be used for web worker based bsp generation (for now not needed)
     private generate = () =>{     
         if (this.worker) { this.worker.terminate(); }
-        this.worker = new Worker("../workers/dist/worker-bundle.js");
+        this.worker = new Worker("../workers/dist/bspGenerator-bundle.js");
         this.worker.postMessage(this.geometry.polygons);
         this.worker.addEventListener('message', (e) => {
             console.log('Finished bsp construction', e);            

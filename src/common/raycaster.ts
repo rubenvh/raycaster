@@ -77,3 +77,39 @@ const detectCollisions = (ray: IRay, geometry: IGeometry, options: RayCastingOpt
 };
 
 const needsRendering = (hit: RayHit): boolean => !!lookupMaterialFor(hit);
+
+/**
+ * This class can be used to partition rays and send collision queries to a number of web workers.
+ * I'm keeping this for reference, but it does not increase speed.
+ */
+export class PartionedRayCaster {
+    private workers: Worker[] = [];
+    constructor() {        
+        this.workers = [...Array(3).keys()].map(_ => new Worker("../workers/dist/rayCaster-bundle.js"));
+    }
+
+    public updateGeometry = (geometry: IGeometry) => {
+        this.workers.forEach(w => w.postMessage(geometry));
+    }
+
+    private send(worker: Worker, rays: IRay[]): Promise<CastedRays> {
+        return new Promise(function(resolve) {            
+            worker.postMessage(rays);
+            worker.onmessage = function(event){
+                resolve(event.data);
+            };
+        });
+    }
+
+    public cast = (rays: IRay[]): Promise<CastedRays> => {
+        const chunkSize = Math.ceil(rays.length / this.workers.length);
+
+        let workloads = rays.reduce((memo, value, index) => {            
+            if (index % chunkSize == 0 && index !== 0) { memo.push([]); }
+            memo[memo.length - 1].push(value);
+            return memo
+          }, [[]] as IRay[][]);        
+        let promises = workloads.map((w, i) => this.send(this.workers[i], w));
+        return Promise.all(promises).then(results => results.reduce((acc, cur) => ({castedRays: acc.castedRays.concat(cur.castedRays), stats: cur.stats})));
+    }
+}

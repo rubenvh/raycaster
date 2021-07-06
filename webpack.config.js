@@ -47,7 +47,8 @@ module.exports = [
   Object.assign({}, common_config, {
     target: 'webworker',
     entry: {      
-      worker: './src/workers/worker.ts'
+      bspGenerator: './src/workers/bspGenerator.ts',
+      rayCaster: './src/workers/ray-caster.ts'
     },
     output: {
       filename: '[name]-bundle.js',

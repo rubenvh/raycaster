@@ -13,6 +13,7 @@ import { connect } from './store/store-connector';
 import { IWorldConfigState } from './store/world-config';
 import { textureLib, TextureLibrary } from './textures/textureLibrary';
 import { Texture } from './textures/texture';
+import { CastedRays, PartionedRayCaster } from './raycaster';
 
 const dispatch = useAppDispatch();
 
@@ -39,7 +40,7 @@ export class Renderer3d {
     private wallGeometry = EMPTY_GEOMETRY;
     private worldConfig: IWorldConfigState = {};
     private textureLibrary: TextureLibrary = textureLib;
-
+    // private caster: PartionedRayCaster = new PartionedRayCaster();
     constructor(private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');
         this.context.imageSmoothingEnabled = false;        
@@ -49,11 +50,13 @@ export class Renderer3d {
         this.width = this.canvas.width;
         this.height = this.canvas.height;
         connect(s => {
-            this.camera = s.player.camera;
-            this.wallGeometry = s.walls.geometry;
-            this.worldConfig = s.worldConfig;            
-        });
-        
+            this.camera = s.player.camera;            
+            this.worldConfig = s.worldConfig;  
+            if (this.wallGeometry != s.walls.geometry) {
+                this.wallGeometry = s.walls.geometry;
+                // this.caster.updateGeometry(this.wallGeometry);
+            }            
+        });        
     }
 
         
@@ -79,7 +82,16 @@ export class Renderer3d {
     public render = (fps: number) => {                           
         // initiate raycasting
         const startCasting = performance.now();
+        
+        // this.caster
+        //     .cast(makeRays(this.resolution, this.camera))
+        //     .then(rays => this.processCastedRays(startCasting, fps, rays));
+        
         const rays = raycaster.castCollisionRays(makeRays(this.resolution, this.camera), this.wallGeometry);
+        this.processCastedRays(startCasting, fps, rays);
+    };
+
+    private processCastedRays = (startCasting: number, fps: number, rays: CastedRays) => {
         // construct a z-index buffer: 
         const startZBuffering = performance.now();
         const zbuffer = this.constructZBuffer(rays.castedRays);        
@@ -99,7 +111,7 @@ export class Renderer3d {
         //     }
         //     rayIndex++;
         // }
-        
+
         const endDrawing = performance.now();
 
         if (!this.lastUpdated || endDrawing-this.lastUpdated > 1000){
@@ -116,7 +128,7 @@ export class Renderer3d {
                 intersections: {stats: rays.stats}}));
         }        
     };
-
+    
     /**
      * This function loops the rays iteratively and constructs wall properties for all the closest ray
      * hits and groups them by edge. It then continues with the 2nd closest and so on until we reach 
