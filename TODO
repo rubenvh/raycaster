@@ -1,11 +1,11 @@
-
-- MAPEDITOR: when zooming in -> use mouse position as target area for zooming
-- GEOMETRY: adapt EditEdgeComponent to select texture from library (dropdown?)
 - GEOMETRY: edit material on both faces of an edge
 - GEOMETRY: remove material at face
+- GENERAL: style edit edge component
+- GEOMETRY: allow batch edit multiple edges (via tree view checkboxes ?)
 - RENDERING: slower fps slows down movement => normalize this
 - BUG: completely translucent (invisible) edge is being drawn as fading shadow
 - BUG: when selecting multiple adjacent polygons, the highlighted edge (green) might be overdrawn by 1 of the polygon's edges
+- BUG: when loading files, texture library receives new textures that are already loaded
 - BSP: allow adding hinting split planes drawn by the user
 - RENDERING: implement sprites: represent as directed (short) line segments
 - RENDERING: implement doors

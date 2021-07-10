@@ -1,22 +1,22 @@
 import { ITextureSource } from './../../common/textures/model';
 import ColorEditorComponent from './colorEditorComponent';
 import { IMaterial } from '../../common/geometry/properties';
-import TextureSelectorComponent from './textureSelectorComponent';
+import TextureDropdownComponent from './texture-dropdown.component';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
 <style> 
 </style>
-<div><color-editor id="color"></color-editor></div>
-<div><texture-selector id="texture" dropdown="true"></texture-selector></div>
-<div><span id="label_lumen">lumen override</span><input type="number" id="lumen" min="0" max="1" /></div>
+<div><span>color: </span><color-editor id="color"></color-editor></div>
+<div><span>texture: </span><texture-dropdown id="texture"></texture-dropdown></div>
+<div><span>lumen override: </span><input type="number" id="lumen" min="0" max="1" /></div>
 `;
 
 export default class MaterialEditorComponent extends HTMLElement {
     private _material: IMaterial;
     private colorElement: ColorEditorComponent;
     private lumenElement: HTMLInputElement;
-    private textureElement: TextureSelectorComponent;
+    private textureElement: TextureDropdownComponent;
     private _sources: ITextureSource[];
 
     constructor() {
@@ -26,7 +26,7 @@ export default class MaterialEditorComponent extends HTMLElement {
         
         this.colorElement = <ColorEditorComponent>shadowRoot.querySelector('#color');           
         this.lumenElement = <HTMLInputElement>shadowRoot.querySelector('#lumen');   
-        this.textureElement = <TextureSelectorComponent>shadowRoot.querySelector('#texture');
+        this.textureElement = <TextureDropdownComponent>shadowRoot.querySelector('#texture');
 
         this.colorElement.addEventListener('change', this.onMaterialChanged);
         this.lumenElement.addEventListener('change', this.onMaterialChanged);

@@ -1,7 +1,7 @@
 import { useAppDispatch } from '../../common/store';
 import * as actions from '../../common/store/textures';
 import { ITextureSource } from './../../common/textures/model';
-import TextureSelectorComponent from './textureSelectorComponent';
+import TextureSelectorComponent from './texture-selector.component';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`

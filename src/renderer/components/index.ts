@@ -8,7 +8,8 @@ import StatsElement from './statsComponent';
 import VertexEditorComponent from './vertexEditorComponent';
 import TextureLibraryElement from './textureLibraryComponent';
 import TextureSourceEditorElement from './textureSourceEditorComponent';
-import TextureSelectorComponent from './textureSelectorComponent';
+import TextureSelectorComponent from './texture-selector.component';
+import TextureDropdownComponent from './texture-dropdown.component';
 
 
 
@@ -25,6 +26,7 @@ export function loadComponents() {
     TextureLibraryElement;
     TextureSourceEditorElement;
     TextureSelectorComponent;
+    TextureDropdownComponent
 }
 
 
