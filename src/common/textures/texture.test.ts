@@ -1,10 +1,20 @@
 import { Texture } from "./texture";
 import 'jest-canvas-mock';
+import * as fs from "fs";
+import sizeOf from 'image-size';  
 
 describe('texture tests', () => {
-    describe('rows and columns', () => {
-        //TODO load file and pass into data
-        const sut = new Texture({path: './assets/textures/001.jpg', textureWidth: 192, textureHeight: 192});
+    let base64: string;
+    let sut: Texture;
+    beforeAll(() => {
+        const path = "./assets/textures/001.jpg";        
+        const buffer = fs.readFileSync(path);        
+        const dimensions = sizeOf(path);
+        base64 = Buffer.from(buffer).toString('base64');        
+        sut = new Texture({data: base64, textureWidth: 192, textureHeight: 192, totalHeight: dimensions.height, totalWidth: dimensions.width});
+    });
+
+    describe('rows and columns', () => {        
 
         test('expect 16 parts inside texture', () => expect(sut.parts).toBe(16));
         test('expect index 0  to be [0, 0]', () => expect(sut.getPosition(0 )).toEqual([0, 0]));

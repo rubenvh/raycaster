@@ -12,6 +12,7 @@
         "sourceMap": true,
         "skipLibCheck": true,
         "allowJs": true,
+        "downlevelIteration": true,
         "jsx": "preserve",
         "lib": [ "DOM", "ES2020"]
     },    

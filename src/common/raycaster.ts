@@ -85,7 +85,7 @@ const needsRendering = (hit: RayHit): boolean => !!lookupMaterialFor(hit);
 export class PartionedRayCaster {
     private workers: Worker[] = [];
     constructor() {        
-        this.workers = [...Array(3).keys()].map(_ => new Worker("../workers/dist/rayCaster-bundle.js"));
+        this.workers = Array.from(Array(3).keys()).map(_ => new Worker("../workers/dist/rayCaster-bundle.js"));
     }
 
     public updateGeometry = (geometry: IGeometry) => {
