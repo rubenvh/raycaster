@@ -1,3 +1,4 @@
+import { ITextureSource } from './../../common/textures/model';
 import { distanceToMidPoint } from '../../common/math/lineSegment';
 import MaterialEditorComponent from './materialEditorComponent';
 import VertexEditorComponent from './vertexEditorComponent';
@@ -61,20 +62,22 @@ export default class EdgeEditorComponent extends HTMLElement {
         this.materialElement.addEventListener('change', (event: Event) => {
             this.adaptEdge(_ => {
                 // TODO handle directed materials:
-                const {color, luminosity} = (event as CustomEvent<IMaterial>).detail;
+                const {color, luminosity, texture} = (event as CustomEvent<IMaterial>).detail;
                 const m = Array.isArray(_.material) ? _.material[0] : _.material;
                 m.color = color;
                 m.luminosity = luminosity;
+                m.texture = texture;
                 return _;
             });
         });
 
         connect(state => {
+            this.materialElement.selectableTextures = state.textures?.sources ?? [];
             const selectedElement = state.selection.treeSelection;                        
             this.distanceToCamera = (edge: IEdge): number => distanceToMidPoint(state.player.camera.position, edge.segment);
             if (isEdge(selectedElement)) {
                 let edge = queryEdge(selectedElement.edge.id, selectedElement.polygon.id, state.walls.geometry);                
-                this.updateEdge(edge, selectedElement.polygon.id);
+                this.updateEdge(edge, selectedElement.polygon.id);                
             }            
         });
     } 
@@ -91,7 +94,7 @@ export default class EdgeEditorComponent extends HTMLElement {
             this.startElement.updateVertex(edge.start, poligonId);
             this.endElement.updateVertex(edge.end, poligonId);
             // TODO: directed material
-            this.materialElement.material = Array.isArray(edge.material) ? edge.material[0] : edge.material;            
+            this.materialElement.material = Array.isArray(edge.material) ? edge.material[0] : edge.material;                        
             this.render();
         } else {
             this.renderStats();
