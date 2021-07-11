@@ -8,8 +8,8 @@ template.innerHTML =  /*html*/`
 <style> 
 </style>
 <div><span>color: </span><color-editor id="color"></color-editor></div>
-<div><span>texture: </span><texture-dropdown id="texture"></texture-dropdown></div>
 <div><span>lumen override: </span><input type="number" id="lumen" min="0" max="1" /></div>
+<div><span>texture: </span><texture-dropdown id="texture"></texture-dropdown></div>
 `;
 
 export default class MaterialEditorComponent extends HTMLElement {
@@ -61,9 +61,9 @@ export default class MaterialEditorComponent extends HTMLElement {
     }
 
     private render() {    
-        this.colorElement.color = this._material.color;
-        this.lumenElement.value = this._material.luminosity?.toString() || '';    
-        this.textureElement.value = this._material.texture;        
+        this.colorElement.color = this._material?.color || [0,0,0,0];
+        this.lumenElement.value = this._material?.luminosity?.toString() || '';    
+        this.textureElement.value = this._material?.texture;        
     }
 }
 

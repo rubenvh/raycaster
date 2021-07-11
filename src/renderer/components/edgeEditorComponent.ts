@@ -9,7 +9,7 @@ import { isEdge } from '../../common/selection/selectable';
 import { IEdge } from '../../common/geometry/edge';
 import { queryEdge } from '../../common/geometry/geometry';
 import { adaptEdges } from '../../common/store/walls';
-import { IMaterial } from '../../common/geometry/properties';
+import { IDirectedMaterial, IMaterial, isDirected } from '../../common/geometry/properties';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
@@ -19,7 +19,11 @@ template.innerHTML =  /*html*/`
 <div><span id="label_immaterial">immaterial:</span><input id="immaterial" type="checkbox" /></div>
 <div><span id="label_start">start:</span><vertex-editor id="start" hideId></vertex-editor></div>
 <div><span id="label_end">end:</span><vertex-editor id="end" hideId></vertex-editor></div>
-<div><span id="label_material">material:</span><material-editor id="material"></material-editor></div>
+<div><span id="label_material">material:</span>
+    <input id="double_sided" type="checkbox" />
+    <material-editor id="front_material"></material-editor>
+    <material-editor id="back_material"></material-editor>
+</div>
 <div><span id="label_stats">stats:</span>
 <ul id="stats">    
 </ul>
@@ -35,9 +39,11 @@ export default class EdgeEditorComponent extends HTMLElement {
     private immaterialElement: HTMLInputElement;
     private startElement: VertexEditorComponent;
     private endElement: VertexEditorComponent;
-    private materialElement: MaterialEditorComponent;
+    private frontMaterialElement: MaterialEditorComponent;
+    private backMaterialElement: MaterialEditorComponent;
     private statsElement: HTMLUListElement;
     private distanceToCamera: (edge: IEdge) => number;
+    private doubleSidedMaterialElement: HTMLInputElement;
     
 
     constructor() {
@@ -49,8 +55,12 @@ export default class EdgeEditorComponent extends HTMLElement {
         this.immaterialElement = <HTMLInputElement>shadowRoot.querySelector('#immaterial');
         this.startElement = <VertexEditorComponent>shadowRoot.querySelector('#start');
         this.endElement = <VertexEditorComponent>shadowRoot.querySelector('#end');
-        this.materialElement = <MaterialEditorComponent>shadowRoot.querySelector('#material');
         this.statsElement = <HTMLUListElement>shadowRoot.querySelector('#stats');
+
+        // TODO Split of material editor components and checkbox into separate component
+        this.doubleSidedMaterialElement = <HTMLInputElement>shadowRoot.querySelector('#double_sided');
+        this.frontMaterialElement = <MaterialEditorComponent>shadowRoot.querySelector('#front_material');
+        this.backMaterialElement = <MaterialEditorComponent>shadowRoot.querySelector('#back_material');
 
         this.immaterialElement.addEventListener('change', (event) => {                       
             this.adaptEdge(_ => {
@@ -59,20 +69,17 @@ export default class EdgeEditorComponent extends HTMLElement {
             });
         });        
 
-        this.materialElement.addEventListener('change', (event: Event) => {
+        this.frontMaterialElement.addEventListener('change', this.changeMaterial);
+        this.backMaterialElement.addEventListener('change', this.changeMaterial);
+        this.doubleSidedMaterialElement.addEventListener('change', () => {            
             this.adaptEdge(_ => {
-                // TODO handle directed materials:
-                const {color, luminosity, texture} = (event as CustomEvent<IMaterial>).detail;
-                const m = Array.isArray(_.material) ? _.material[0] : _.material;
-                m.color = color;
-                m.luminosity = luminosity;
-                m.texture = texture;
+                _.material = this.doubleSidedMaterialElement.checked ? [this.frontMaterialElement.material, {color: [0,0,0,0]}] : this.frontMaterialElement.material;
                 return _;
             });
         });
 
         connect(state => {
-            this.materialElement.selectableTextures = state.textures?.sources ?? [];
+            this.backMaterialElement.selectableTextures = this.frontMaterialElement.selectableTextures = state.textures?.sources ?? [];             
             const selectedElement = state.selection.treeSelection;                        
             this.distanceToCamera = (edge: IEdge): number => distanceToMidPoint(state.player.camera.position, edge.segment);
             if (isEdge(selectedElement)) {
@@ -82,6 +89,17 @@ export default class EdgeEditorComponent extends HTMLElement {
         });
     } 
 
+    get material(): IDirectedMaterial {
+        return this.doubleSidedMaterialElement.checked ? 
+            [this.frontMaterialElement.material, this.backMaterialElement.material] 
+            : this.frontMaterialElement.material;
+    }
+    private changeMaterial = (event: Event) => {
+        this.adaptEdge(_ => {
+            _.material = this.material;
+            return _;
+        });
+    }
     private adaptEdge = (transformer: ((edge: IEdge) => IEdge)): void => {
         dispatch(adaptEdges({edgeMap: new Map<string, IEdge[]>([[this._polygonId, [this._edge]]]),
             transformer}));
@@ -93,17 +111,20 @@ export default class EdgeEditorComponent extends HTMLElement {
             this._polygonId = poligonId;
             this.startElement.updateVertex(edge.start, poligonId);
             this.endElement.updateVertex(edge.end, poligonId);
-            // TODO: directed material
-            this.materialElement.material = Array.isArray(edge.material) ? edge.material[0] : edge.material;                        
+            this.doubleSidedMaterialElement.checked = this.hasDirectedMaterial;    
             this.render();
         } else {
             this.renderStats();
         }
     }
 
+    private get hasDirectedMaterial() { return isDirected(this._edge.material); }
     private render() {
         this.idElement.innerText = this._edge.id;
-        this.immaterialElement.checked = this._edge.immaterial ?? false;        
+        this.immaterialElement.checked = this._edge.immaterial ?? false;                        
+        this.frontMaterialElement.material = this.hasDirectedMaterial ? this._edge.material[0] : this._edge.material;
+        this.backMaterialElement.material = this.hasDirectedMaterial ? this._edge.material[1] : {color: [0,0,0,0]};
+        this.backMaterialElement.style.display = this.doubleSidedMaterialElement.checked ? 'block' : 'none';
         this.renderStats();
     }
 
