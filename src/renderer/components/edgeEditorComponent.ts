@@ -1,6 +1,4 @@
-import { ITextureSource } from './../../common/textures/model';
 import { distanceToMidPoint } from '../../common/math/lineSegment';
-import MaterialEditorComponent from './materialEditorComponent';
 import VertexEditorComponent from './vertexEditorComponent';
 import { connect } from '../../common/store/store-connector';
 import { IEntityKey } from '../../common/geometry/entity';
@@ -9,7 +7,7 @@ import { isEdge } from '../../common/selection/selectable';
 import { IEdge } from '../../common/geometry/edge';
 import { queryEdge } from '../../common/geometry/geometry';
 import { adaptEdges } from '../../common/store/walls';
-import { IDirectedMaterial, IMaterial, isDirected } from '../../common/geometry/properties';
+import DirectedMaterialEditorComponent from './directed-material.component';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
@@ -20,9 +18,7 @@ template.innerHTML =  /*html*/`
 <div><span id="label_start">start:</span><vertex-editor id="start" hideId></vertex-editor></div>
 <div><span id="label_end">end:</span><vertex-editor id="end" hideId></vertex-editor></div>
 <div><span id="label_material">material:</span>
-    <input id="double_sided" type="checkbox" />
-    <material-editor id="front_material"></material-editor>
-    <material-editor id="back_material"></material-editor>
+    <directed-material-editor id="material"></directed-material-editor>    
 </div>
 <div><span id="label_stats">stats:</span>
 <ul id="stats">    
@@ -39,12 +35,9 @@ export default class EdgeEditorComponent extends HTMLElement {
     private immaterialElement: HTMLInputElement;
     private startElement: VertexEditorComponent;
     private endElement: VertexEditorComponent;
-    private frontMaterialElement: MaterialEditorComponent;
-    private backMaterialElement: MaterialEditorComponent;
+    private materialElement: DirectedMaterialEditorComponent;
     private statsElement: HTMLUListElement;
-    private distanceToCamera: (edge: IEdge) => number;
-    private doubleSidedMaterialElement: HTMLInputElement;
-    
+    private distanceToCamera: (edge: IEdge) => number;    
 
     constructor() {
         super();
@@ -56,11 +49,7 @@ export default class EdgeEditorComponent extends HTMLElement {
         this.startElement = <VertexEditorComponent>shadowRoot.querySelector('#start');
         this.endElement = <VertexEditorComponent>shadowRoot.querySelector('#end');
         this.statsElement = <HTMLUListElement>shadowRoot.querySelector('#stats');
-
-        // TODO Split of material editor components and checkbox into separate component
-        this.doubleSidedMaterialElement = <HTMLInputElement>shadowRoot.querySelector('#double_sided');
-        this.frontMaterialElement = <MaterialEditorComponent>shadowRoot.querySelector('#front_material');
-        this.backMaterialElement = <MaterialEditorComponent>shadowRoot.querySelector('#back_material');
+        this.materialElement = <DirectedMaterialEditorComponent>shadowRoot.querySelector('#material');
 
         this.immaterialElement.addEventListener('change', (event) => {                       
             this.adaptEdge(_ => {
@@ -69,17 +58,10 @@ export default class EdgeEditorComponent extends HTMLElement {
             });
         });        
 
-        this.frontMaterialElement.addEventListener('change', this.changeMaterial);
-        this.backMaterialElement.addEventListener('change', this.changeMaterial);
-        this.doubleSidedMaterialElement.addEventListener('change', () => {            
-            this.adaptEdge(_ => {
-                _.material = this.doubleSidedMaterialElement.checked ? [this.frontMaterialElement.material, {color: [0,0,0,0]}] : this.frontMaterialElement.material;
-                return _;
-            });
-        });
+        this.materialElement.addEventListener('change', this.changeMaterial);       
 
         connect(state => {
-            this.backMaterialElement.selectableTextures = this.frontMaterialElement.selectableTextures = state.textures?.sources ?? [];             
+            this.materialElement.selectableTextures = state.textures?.sources ?? [];             
             const selectedElement = state.selection.treeSelection;                        
             this.distanceToCamera = (edge: IEdge): number => distanceToMidPoint(state.player.camera.position, edge.segment);
             if (isEdge(selectedElement)) {
@@ -88,15 +70,10 @@ export default class EdgeEditorComponent extends HTMLElement {
             }            
         });
     } 
-
-    get material(): IDirectedMaterial {
-        return this.doubleSidedMaterialElement.checked ? 
-            [this.frontMaterialElement.material, this.backMaterialElement.material] 
-            : this.frontMaterialElement.material;
-    }
-    private changeMaterial = (event: Event) => {
+  
+    private changeMaterial = (_: Event) => {
         this.adaptEdge(_ => {
-            _.material = this.material;
+            _.material = this.materialElement.material;
             return _;
         });
     }
@@ -111,20 +88,16 @@ export default class EdgeEditorComponent extends HTMLElement {
             this._polygonId = poligonId;
             this.startElement.updateVertex(edge.start, poligonId);
             this.endElement.updateVertex(edge.end, poligonId);
-            this.doubleSidedMaterialElement.checked = this.hasDirectedMaterial;    
+            this.materialElement.material = edge.material;    
             this.render();
         } else {
             this.renderStats();
         }
     }
-
-    private get hasDirectedMaterial() { return isDirected(this._edge.material); }
+    
     private render() {
         this.idElement.innerText = this._edge.id;
-        this.immaterialElement.checked = this._edge.immaterial ?? false;                        
-        this.frontMaterialElement.material = this.hasDirectedMaterial ? this._edge.material[0] : this._edge.material;
-        this.backMaterialElement.material = this.hasDirectedMaterial ? this._edge.material[1] : {color: [0,0,0,0]};
-        this.backMaterialElement.style.display = this.doubleSidedMaterialElement.checked ? 'block' : 'none';
+        this.immaterialElement.checked = this._edge.immaterial ?? false;                                
         this.renderStats();
     }
 

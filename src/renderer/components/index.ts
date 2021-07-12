@@ -10,6 +10,7 @@ import TextureLibraryElement from './textureLibraryComponent';
 import TextureSourceEditorElement from './textureSourceEditorComponent';
 import TextureSelectorComponent from './texture-selector.component';
 import TextureDropdownComponent from './texture-dropdown.component';
+import DirectedMaterialEditorComponent from './directed-material.component';
 
 
 
@@ -20,6 +21,7 @@ export function loadComponents() {
     GeometryEditorComponent;
     GeometrySelectionComponent;
     MaterialEditorComponent;
+    DirectedMaterialEditorComponent;
     SelectionTreeNodeComponent;
     VertexEditorComponent;
     StatsElement;

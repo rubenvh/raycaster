@@ -7,7 +7,7 @@ export enum Face {
 };
 export type IDirectedMaterial = IMaterial | [IMaterial, IMaterial];
 export type IMaterial = {color: Color, texture?: ITextureReference, luminosity?: number};
-export const isDirected = (m: IDirectedMaterial) => Array.isArray(m);
+export const hasDirection = (m: IDirectedMaterial) => Array.isArray(m);
 export const cloneMaterial = (m: IDirectedMaterial): IDirectedMaterial => 
     m == null ? null :
     Array.isArray(m) ? [cloneSingleMaterial(m[Face.interior]), cloneSingleMaterial(m[Face.exterior])]: 
