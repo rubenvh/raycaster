@@ -1,7 +1,5 @@
-- GEOMETRY: edit material on both faces of an edge
-- GEOMETRY: remove material at face
-- GENERAL: style edit edge component
 - GEOMETRY: allow batch edit multiple edges (via tree view checkboxes ?)
+- GENERAL: style edit edge component
 - RENDERING: slower fps slows down movement => normalize this
 - BUG: completely translucent (invisible) edge is being drawn as fading shadow
 - BUG: when selecting multiple adjacent polygons, the highlighted edge (green) might be overdrawn by 1 of the polygon's edges

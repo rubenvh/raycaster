@@ -34,7 +34,7 @@ export class Renderer3d {
     private context: CanvasRenderingContext2D;    
     private width: number;
     private height: number;        
-    private resolution = 1280;
+    private resolution = 640;
     private horizonDistance = 300;
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
