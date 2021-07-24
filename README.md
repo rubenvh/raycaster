@@ -1,15 +1,26 @@
-# electron raycaster experiments
+# re-enactments of old graphics technologies
 
-In this project we are implementing an engine to convert a 2D geometry into a simple 3D world where all walls have the same height. We are deviating from the standard raycasting implementations where all walls are square blocks. This means that we cannot benefit from some of the performance improvements on which a game like wolfenstein 3D was based. But the advantage is that we can have a general 2D geometry with walls of any angle.
-
-Eventually we want to include wall rendering, texture mapping, floors and ceilings, sprites, dynamic geometry (moving walls, doors etc).
+This project is an experiment on implementing a geometry editor and engine to convert a 2D geometry into a simple 3D world. 
 
 ![image showing the current state of the project](images/current-state.png?raw=true "current state")
 
 - The image shows a screenshot of the current state of the project.
-- On the left you can see the 2D top view containing a camera object and a couple of connected rooms (single polygon)
+- On the top left you can see the 2D top view containing a camera object and a couple of connected spaces/rooms
 - the rooms consist of vertices (yellow) and edges (white)
-- On the right you can see the resulting 3D generated environment.
+- The top right shows the resulting generated simulation of a 3D environment.
+
+## starting the program
+
+1. Install all dependencies (run these commands from the root folder of the project)
+> npm install
+
+2. Startup:
+> npm start
+
+When the application is loaded, you can start creating your geometry. You can find some convenient shortcuts via the menu bar.
+Instead, you can load some of the json map files available inside the assets/maps folder.
+
+## changing the camera position
 - The UI is listening to the following keys to change the camera position:
 
 | Key combination |      Action      |
@@ -24,8 +35,5 @@ Eventually we want to include wall rendering, texture mapping, floors and ceilin
 | -               |decrease field of vision | 
 | Control +       |increase camera depth | 
 | Control -       |decrease camera depth | 
-| Control s       |save world state |      
-
-
 
 
