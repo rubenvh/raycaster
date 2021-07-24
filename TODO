@@ -1,3 +1,4 @@
+- IMPROVE: bsp representation should only be removed when physically changing the geometry (moving, adding, deleting elements)
 - GEOMETRY: allow batch edit multiple edges (via tree view checkboxes ?)
 - GENERAL: style edit edge component
 - RENDERING: slower fps slows down movement => normalize this
