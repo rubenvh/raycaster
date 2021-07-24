@@ -42,3 +42,8 @@ We are using a Binary Space Partitioning (BSP) to enhance performance of the ren
 Note that BSP (re)generation is not yet automated. You can trigger it manually using the menu bar:
 
 ![image showing the menu bar item to trigger regeneration of the BSP](images/generate-bsp.png?raw=true "regenerate bsp")
+
+Note also that whenever you adapt the geometry (move an edge, add a polygon,...), the BSP representation is removed because it's not valid anymore. You'll need to manually recalculate as described above.
+You can press Control + Tab to display BSP information on the 2D overview:
+
+![image showing how bsp split planes are drawn on the 2D editor](images/bsp-split-planes.png?raw=true "bsp split planes")
