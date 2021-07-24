@@ -36,4 +36,9 @@ Instead, you can load some of the json map files available inside the assets/map
 | Control +       |increase camera depth | 
 | Control -       |decrease camera depth | 
 
+## speeding up performance
 
+We are using a Binary Space Partitioning (BSP) to enhance performance of the rendering process. 
+Note that BSP (re)generation is not yet automated. You can trigger it manually using the menu bar:
+
+![image showing the menu bar item to trigger regeneration of the BSP](images/generate-bsp.png?raw=true "regenerate bsp")
