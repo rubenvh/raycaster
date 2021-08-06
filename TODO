@@ -1,6 +1,7 @@
 - REDUX-STORE: when an edge is selected then moving the camera is slowed down
 - GEOMETRY: create edit polygon component => mostly a batch edit of its edges
 - GEOMETRY: allow batch edit multiple edges (via tree view checkboxes)
+- IMPROVE: bsp representation should only be removed when physically changing the geometry (moving, adding, deleting elements)
 - GENERAL: style edit edge component
 - RENDERING: slower fps slows down movement => normalize this
 - BUG: completely translucent (invisible) edge is being drawn as fading shadow
