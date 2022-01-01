@@ -162,7 +162,7 @@ export class Renderer3d {
      */
     private drawZBuffer = (zbuffer: ZBuffer) => {
         while (zbuffer.length > 0) {
-            const z = zbuffer.pop();
+            const z = zbuffer.pop();            
             z.forEach((wallProps, ) => {
                 if (wallProps.length === 0) return;
                 this.drawWall(wallProps);                           

@@ -1,6 +1,6 @@
 import { createLeaf, createNode, IBSPNode, NULL_NODE, PointToPlaneRelation, PolygonToPlaneRelation } from './model';
 import { IPolygon } from './../polygon';
-import { oldSplitPolygon, pickSplittingPlane, splitPolygon } from './splitting';
+import { pickSplittingPlane, splitPolygon } from './splitting';
 import { classifyPointToPlane, classifyPolygonToPlane } from './classification';
 
 //const MAX_DEPTH = 10;

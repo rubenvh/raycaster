@@ -8,7 +8,7 @@ import { MapEditorRenderer } from '../common/editor/mapEditor';
 import { WorldLoader } from '../common/storage/stateLoader';
 import { UndoService } from '../common/actions/undoService';
 import { connect } from '../common/store/store-connector';
-import { BspGenerationStarter } from '../common/geometry/bsp/BspGenerationStarter';
+import { BspGenerationStarter } from '../common/geometry/bsp/bspGenerationStarter';
 import { loadComponents } from './components';
 import GeometrySelectionComponent from './components/geometrySelectionComponent';
 import GeometryEditorComponent from './components/geometryEditorComponent';
