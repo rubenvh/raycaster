@@ -40,7 +40,7 @@ export class WorldLoader {
             this.camera = state.player.camera;
             this.wallGeometry = state.walls.geometry;
             this.worldConfig = state.worldConfig;
-            this.textureSources = state.textures.sources;
+            this.textureSources = state.textures.sources;            
         })
     }
 

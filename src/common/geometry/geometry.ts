@@ -10,13 +10,13 @@ import { SelectableElement, selectEdge, selectVertex } from '../selection/select
 import { areEqual, IVertex, IVertexMap, makeVertex } from './vertex';
 import { cloneMaterial } from './properties';
 
-export type IStoredGeometry = IEntity & { polygons: IStoredPolygon[]};
+export type IStoredGeometry = IEntity & { polygons: IStoredPolygon[],bsp?: IBSPNode};
 export type IGeometry = IEntity & { polygons: IPolygon[], bsp?: IBSPNode, edgeCount: number, bounds: vector.Vector};
 export const EMPTY_GEOMETRY: IGeometry = {polygons: [], edgeCount: 0, bounds: [0,0]};
-export const storeGeometry = (g: IGeometry): IStoredGeometry => ({id: g.id, polygons: g.polygons.map(storePolygon)});
+export const storeGeometry = (g: IGeometry): IStoredGeometry => ({id: g.id, polygons: g.polygons.map(storePolygon), bsp: g.bsp});
 export const loadGeometry = (g : IStoredGeometry): IGeometry => {
     const polygons = g.polygons.map(loadPolygon);
-    return ({id: g.id, polygons, edgeCount: countEdges(polygons), bounds: findBounds(polygons)});
+    return ({id: g.id, polygons, edgeCount: countEdges(polygons), bounds: findBounds(polygons), bsp: g.bsp});
 };
 export const createGeometry = (polygonCollection: vector.Vector[][]): IGeometry => {
     const polygons = polygonCollection.map(createPolygon);

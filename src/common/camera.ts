@@ -85,7 +85,7 @@ const constrainedMove = (direction: 1|-1, cam: ICamera,
 
 export const makeRays = (resolution: number, camera: ICamera): IRay[] => {    
     const result = [];    
-    for(let x: number = 0; x < resolution; x++)
+    for(let x: number = 0; x <= resolution; x++)
     {
         let factor = 2 * x / resolution - 1;
         let rayDir = vector.add(camera.direction, vector.scale(factor, camera.plane));

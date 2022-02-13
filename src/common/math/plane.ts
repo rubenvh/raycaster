@@ -1,3 +1,4 @@
+import { drawVector } from "../drawing/drawing";
 import { ILineSegment, slope } from "./lineSegment";
 import { add, dot, normalize, perpendicular, scale, subtract, Vector } from "./vector";
 
@@ -40,3 +41,23 @@ export function intersectSegmentPlane(s: ILineSegment, p: Plane): {t: number, q?
     }
     return ({t});
 }
+
+//Since we have 3 possible outcomes, a short will be used to return either 0, 1 or 2
+//This can be replaced with just a bool, depending on how the special case (point on plane) wants to be handled
+export function halfSpaceTest(point: Vector, plane: Plane) {
+    const [[x1, y1], [x2, y2]] = getBounds(plane, 1, 1);
+    //Calculate a vector from the point on the plane to our test point
+    const temp = subtract(point, [x1, y1]);
+    //Calculate the distance: dot product of the new vector with the plane's normal
+    const fdist = dot(temp, plane.n)
+    if(fdist > Number.EPSILON) {
+        //Point is in front of the plane
+        return 0;
+    } else if(fdist < -Number.EPSILON) {
+        //Point is behind the plane
+        return 1;
+    } 
+    //If neither of these were true, then the point is on the plane
+    return 2;
+} 
+

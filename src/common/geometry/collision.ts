@@ -110,10 +110,13 @@ export const intersectRayPlane = (ray: IRay, plane: Plane): Intersection => {
 
 export function intersectRayPolygons(polygons: IPolygon[], ray: IRay, options: RayCastingOptions): PolygonIntersections {    
     const result: PolygonIntersections = {hits: [], stop: false, edgeCount: 0, polygonCount: polygons.length, polygonIds: new Set<string>()};
-    for (const polygon of polygons){        
+    for (let i=0, n=polygons.length; i<n; i++){
+        const polygon = polygons[i];
         if (polygon.edgeCount > 5 && !hasIntersect(ray, polygon.boundingBox)) continue;
         result.polygonIds.add(polygon.id);
-        for (const edge of polygon.edges) {                        
+
+        for (let j=0, m=polygon.edges.length; j<m; j++) {
+            const edge = polygon.edges[j];
             if (options.edgeFilter && !options.edgeFilter(edge)) { continue; }
             // if (!edge.material) continue;
             result.edgeCount += 1;

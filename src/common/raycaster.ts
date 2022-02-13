@@ -34,23 +34,25 @@ export const castCollisionRays = (rays: IRay[], geometry: IGeometry): CastedRays
 const castRays = (rays: IRay[], geometry: IGeometry,
     options: RayCastingOptions): CastedRays => {        
     let stats = {...EMPTY_STATS, polygons: new Set<String>()};
-    const castedRays = rays
-        .map(_ => {
-            const collisions = detectCollisions(_, geometry, options);
-            const result = collisions.hits
-                .filter(needsRendering)
-                .sort((a,b)=> a.distance - b.distance);
-            
-            stats = accumulateStats(stats, collisions.stats);
+    let castedRays: CastedRay[] = [];
+    for (let i = 0, n = rays.length; i<n;i++){
+        const _ = rays[i];
+        const collisions = detectCollisions(_, geometry, options);
+        
+        const result = collisions.hits
+            .filter(needsRendering)
+            .sort((a,b)=> a.distance - b.distance);
+        
+        stats = accumulateStats(stats, collisions.stats);
 
-            if (!result || result.length < 1) { return makeInfinity(_, collisions.stats); }                                    
-            return { stats: collisions.stats, hits: result };
-        });
-
+        castedRays.push( (!result || result.length < 1) 
+            ? makeInfinity(_, collisions.stats)
+            : { stats: collisions.stats, hits: result });
+    }    
     return ({castedRays, stats});
 };
 
-const accumulateStats = (stats: CastingStats, iStats: IntersectionStats): CastingStats => {
+const accumulateStats = (stats: CastingStats, iStats: IntersectionStats): CastingStats => {    
     iStats.polygons.forEach(x => stats.polygons.add(x));
     return ({
         polygons: stats.polygons,

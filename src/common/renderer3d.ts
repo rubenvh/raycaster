@@ -105,9 +105,10 @@ export class Renderer3d {
 
         // // dray column per column (no zbuffer needed): less efficient when handling lots of texture less walls
         // let rayIndex = 0;
-        // for (const ray of rays.castedRays) {
-        //     for (let i = ray.hits.length-1; i >= 0; i--) {
-        //         this.drawWall([this.createWall(ray.hits[i], rayIndex)]);
+        // for (let r = 0, n = rays.castedRays.length; r<n;r++) {
+        //     let ray = rays.castedRays[r];
+        //     for (let i = ray.hits.length; i > 0; i--) {
+        //         this.drawWall([this.createWall(ray.hits[i-1], rayIndex)]);
         //     }
         //     rayIndex++;
         // }
