@@ -3,18 +3,32 @@ import { ILine, ILineSegment, lineAngle } from "./math/lineSegment";
 import { castCameraRay } from './raycaster';
 import { IGeometry } from './geometry/geometry';
 import { IRay, makeRay } from './geometry/collision';
+import { createPlane, Plane } from './math/plane';
 
 type ICameraData = { position: vector.Vector, direction: vector.Vector, plane?: vector.Vector};
-export type ICamera = ICameraData & { screen: ILineSegment, midline: ILineSegment};
+export type ICamera = ICameraData & { screen: ILineSegment, midline: ILineSegment, planes: {camera:Plane, left: Plane, right: Plane}};
 
 const makeScreen = (data: ICameraData): ILineSegment => {
     let plane = data.plane || vector.perpendicular(data.direction);    
     let mid = vector.add(data.position, data.direction);
     return [vector.subtract(mid, plane), vector.add(mid, plane)];
 };
-export const makeCamera = (data: ICameraData): ICamera => ({...data,    
-    screen: makeScreen(data),
-    midline: [data.position, vector.add(data.position, data.direction)]});
+const makeCameraRay = (factor: number, camera: ICameraData, midline: ILineSegment) => {    
+    let rayDir = vector.add(camera.direction, vector.scale(factor, camera.plane));
+    let rayLine = [camera.position, vector.add(camera.position, rayDir)] as ILine;
+    return makeRay(camera.position, rayDir, lineAngle(midline, rayLine));
+};
+export const makeCamera = (data: ICameraData): ICamera => {
+    const midline: ILineSegment = [data.position, vector.add(data.position, data.direction)]
+    const cone = [makeCameraRay(-1, data, midline),makeCameraRay(1, data, midline)];
+    let p1 = createPlane(cone[0].line);
+    let p2 = createPlane(cone[1].line);
+    let cameraPlane = createPlane([vector.subtract(data.position, data.plane), vector.add(data.position, data.plane)]);
+    return ({...data,    
+        screen: makeScreen(data),
+        midline, 
+        planes: {camera: cameraPlane, left: p1, right: p2} });
+}
 
 export const DEFAULT_CAMERA: ICamera = makeCamera({position: [50,50], direction: [0,10], plane: [15, 0]});
 
@@ -83,17 +97,19 @@ const constrainedMove = (direction: 1|-1, cam: ICamera,
         geometry);     
 }
 
+
+
 export const makeRays = (resolution: number, camera: ICamera): IRay[] => {    
     const result = [];    
     for(let x: number = 0; x <= resolution; x++)
     {
         let factor = 2 * x / resolution - 1;
-        let rayDir = vector.add(camera.direction, vector.scale(factor, camera.plane));
-        let rayLine = [camera.position, vector.add(camera.position, rayDir)] as ILine;
-        result.push(makeRay(camera.position, rayDir, lineAngle(camera.midline, rayLine)));
+        result.push(makeCameraRay(factor, camera, camera.midline));
     }
     return result;    
 };
+
+
 
 const makeDirectionRay = (direction: 1|-1, camera: ICamera): IRay => direction === 1 
     ? makeRay(camera.position, camera.direction)

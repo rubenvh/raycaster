@@ -1,6 +1,6 @@
 import { createPolygon } from './../common/geometry/polygon';
 import { intersectRayPlane, intersectRaySegment, makeRay } from './../common/geometry/collision';
-import { add, scale, Vector } from './../common/math/vector';
+import { add, scale, subtract, Vector } from './../common/math/vector';
 import { drawSegment, drawVector } from "../common/drawing/drawing";
 import { createPlane, intersectSegmentPlane } from "../common/math/plane";
 import { connect } from "../common/store/store-connector";
@@ -50,13 +50,15 @@ export class TestCanvasRenderer {
             drawSegment(this.context, cone[0].line);
             drawSegment(this.context, cone[1].line);
 
-            let p1 = createPlane(cone[0].line);
-            let p2 = createPlane(cone[1].line);
-            let cameraPlane = createPlane(this.camera.screen);
+            // let p1 = createPlane(cone[0].line);
+            // let p2 = createPlane(cone[1].line);
+            // let cameraPlane = createPlane([subtract(this.camera.position, this.camera.plane), add(this.camera.position, this.camera.plane)]);
+            let p1 = this.camera.planes.left;
+            let p2 = this.camera.planes.right;
+            let cameraPlane = this.camera.planes.camera;
             for (let p of this.geometry.polygons) {
                 for (let e of p.edges) {
-                                        
-                    // TODO: determine plane of camera at position (not screen)
+                    
                     // TODO: very long edges are still passing this check
                     if (classifyPointToPlane(e.start.vector, cameraPlane)===PointToPlaneRelation.InFront 
                     || classifyPointToPlane(e.end.vector, cameraPlane)===PointToPlaneRelation.InFront)
