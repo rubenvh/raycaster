@@ -2,7 +2,7 @@ import { createPolygon } from './../common/geometry/polygon';
 import { intersectRayPlane, intersectRaySegment, makeRay } from './../common/geometry/collision';
 import { add, scale, Vector } from './../common/math/vector';
 import { drawSegment, drawVector } from "../common/drawing/drawing";
-import { createPlane, halfSpaceTest, intersectSegmentPlane } from "../common/math/plane";
+import { createPlane, intersectSegmentPlane } from "../common/math/plane";
 import { connect } from "../common/store/store-connector";
 import { Face } from '../common/geometry/properties';
 import { classifyPointToPlane } from '../common/geometry/bsp/classification';
@@ -52,25 +52,25 @@ export class TestCanvasRenderer {
 
             let p1 = createPlane(cone[0].line);
             let p2 = createPlane(cone[1].line);
+            let cameraPlane = createPlane(this.camera.screen);
             for (let p of this.geometry.polygons) {
                 for (let e of p.edges) {
-                    
+                                        
                     // TODO: determine plane of camera at position (not screen)
-                    if (halfSpaceTest(e.start.vector, createPlane(this.camera.screen)) === 0
-                    || halfSpaceTest(e.start.vector, createPlane(this.camera.screen)) === 0) {
+                    // TODO: very long edges are still passing this check
+                    if (classifyPointToPlane(e.start.vector, cameraPlane)===PointToPlaneRelation.InFront 
+                    || classifyPointToPlane(e.end.vector, cameraPlane)===PointToPlaneRelation.InFront)
+                    {
                         let [c1, c2, c3, c4] = [
                             classifyPointToPlane(e.start.vector, p1),
                             classifyPointToPlane(e.start.vector, p2),
                             classifyPointToPlane(e.end.vector, p1),
                             classifyPointToPlane(e.end.vector, p2)];
-    
-                        if (c1 === c2 && c3 === c4 && c1 !== c3) {
+                          
+                       if (c1 === c2 && c3 === c4 && c1 !== c3 || c1 !== c2 || c3 !== c4) {
                             drawSegment(this.context, e.segment);
-                        } else if (c1 !== c2 || c3 !== c4) {
-                            drawSegment(this.context, e.segment);
-                        }                    
+                       } 
                     }
-                    
                 }
             }
         }
