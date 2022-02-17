@@ -233,3 +233,6 @@ export const queryVertex = (vertexId : IEntityKey, polygonId: IEntityKey, geomet
 export const queryEdge = (edgeId : IEntityKey, polygonId: IEntityKey, geometry: IGeometry): IEdge => {
     return geometry.polygons.find(_ => _.id === polygonId).edges.find(_ => _.id === edgeId);
 }
+export const queryPolygon = (polygonId: IEntityKey, geometry: IGeometry): IPolygon => {
+    return geometry.polygons.find(_ => _.id === polygonId);
+}

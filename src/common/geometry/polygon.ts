@@ -1,5 +1,5 @@
-import { midpoint } from "../math/lineSegment";
-import { maximumComponents, minimumComponents, Vector } from "../math/vector";
+import { lineAngle, midpoint, slope } from "../math/lineSegment";
+import { angleBetween, maximumComponents, minimumComponents, subtract, Vector } from "../math/vector";
 import { createEdges, IEdge, IStoredEdge, loadEdge, storeEdge } from "./edge";
 import { cloneKey, giveIdentity, IEntity } from "./entity";
 import { areClose, areEqual, IVertex } from "./vertex";
@@ -67,3 +67,39 @@ export const contains = (region: BoundingBox, box: BoundingBox) => {
 export const containsEdge = (edge: IEdge, box: BoundingBox) => contains(box, [edge.start.vector, edge.end.vector]);
 export const containsVertex = (vertex: IVertex, box: BoundingBox) => contains(box, [vertex.vector, vertex.vector]);
 export const centerOf = (box: BoundingBox) => midpoint(box);
+
+/**
+ * This function determines whether a polygon is convex or concave.
+ * @param polygon 
+ * @returns true when polygon is convex
+ */
+export const isConvex = (polygon: IPolygon): boolean => {
+    // triangles are always convex (as are points and segments)
+    if (polygon.vertices.length <= 3) return true;
+    
+    const last = polygon.vertices.length-1;
+    let result = true, sign = 1;
+
+    for (let i = 0; i <= last; i++) {    
+        // alias for 3 consecutive vertices    
+        const curr = polygon.vertices[i].vector;
+        const prev = polygon.vertices[i === 0 ? last : i - 1].vector;
+        const next = polygon.vertices[i === last ? 0 : i + 1].vector;
+        
+        // when the 3 points are colinear -> convex so skip any angle calculation
+        if (slope([curr, prev]) === slope([curr, next])) { continue; }
+
+        // calculate angle between 3 points
+        const angle = lineAngle([curr, prev], [curr, next]);
+
+        // set reference sign first loop to neutralize clock or counterclockwise polygon direction
+        if (i === 0) { sign = angle/Math.abs(angle); }
+        
+        // angle times sign should be larger than zero for convex polygons
+        result = result && (angle * sign > 0);
+        
+        // exit loop when polygon detected not to be convex
+        if (!result) { break; }
+    }
+    return result;
+}

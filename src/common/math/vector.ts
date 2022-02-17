@@ -9,7 +9,7 @@ const subtract = (u: Vector, v: Vector): Vector => [u[0]-v[0], u[1]-v[1]];
 const add = (u: Vector, v: Vector): Vector => [u[0]+v[0], u[1]+v[1]];
 const areOrthogonal = (u: Vector, v: Vector): boolean => dot(u, v) === 0;
 const distance = (u: Vector, v: Vector): number => norm(subtract(u, v));
-const angleBetween = (u: Vector, v: Vector): number => Math.atan2(cross(u, v), dot(u, v)); 
+const angleBetween = (u: Vector, v: Vector): number => Math.atan2(cross(u, v), dot(u, v));
 /**
  * Project a vector onto another vector (u projected on v)
  * @param u vector to project
