@@ -9,7 +9,7 @@ import { EMPTY_GEOMETRY, IGeometry } from '../geometry/geometry';
 import { isSelectedEdge, isSelectedPolygon, isSelectedVertex, SelectableElement, selectedId } from '../selection/selectable';
 import { IVertex } from '../geometry/vertex';
 import { normal } from '../math/lineSegment';
-import { CastingStats, EMPTY_STATS } from '../raycaster';
+import { CastingStats, EMPTY_STATS } from '../rendering/raycasting/raycaster';
 import { IUIConfigState } from '../store/ui-config';
 import { ISpaceTranslator } from '../actions/geometrySelector';
 import { Vector } from '../math/vector';
@@ -106,7 +106,7 @@ export class MapEditorRenderer implements ISpaceTranslator {
 
     private drawGeometry = (context: CanvasRenderingContext2D, geometry: IGeometry) => {
         geometry.polygons.forEach(p => {
-            const tested = this.uiConfig.drawBsp && this.castingStats.polygons.has(p.id);
+            const tested = this.uiConfig.drawBsp && this.castingStats?.polygons?.has(p.id);
             const selected = isSelectedPolygon(p.id, this.selectedElements);
             const highlighted = this.selectedTreeNode && selectedId(this.selectedTreeNode) === p.id;
             drawBoundingBox(context, p.boundingBox, tested ? Colors.POLYGON_TESTED : highlighted ? Colors.POLYGON_HIGHLIGHTED : selected ? Colors.POLYGON_SELECTED : Colors.POLYGON);

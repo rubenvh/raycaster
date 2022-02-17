@@ -1,4 +1,4 @@
-import { WallProps } from '../renderer3d';
+import { WallProps } from '../rendering/raycasting/renderer3d';
 import { ITextureReference, ITextureSource } from "./model";
 
 import { distance } from '../geometry/vertex';
@@ -12,8 +12,8 @@ export class Texture {
     private rows: number;
     private _source: ITextureSource
     constructor(source: ITextureSource) {
-       
-        this._source = {...source};
+
+        this._source = { ...source };
         this.canvas = document.createElement('canvas') as HTMLCanvasElement;
         this.canvas.width = this.totalWidth = this._source.totalWidth;
         this.canvas.height = this.totalHeight = this._source.totalHeight;
@@ -34,7 +34,7 @@ export class Texture {
 
     get id() { return this._source.id; }
     get parts() { return this.columns * this.rows; }
-    public getPosition = (index: number): [number, number] => {        
+    public getPosition = (index: number): [number, number] => {
         return [
             index % this.columns,
             Math.floor(index / this.columns)
@@ -44,20 +44,20 @@ export class Texture {
     public drawTexture = (target: CanvasRenderingContext2D, wallProps: WallProps[]) => {
         const tref = wallProps[0].material?.texture;
         const [col, row] = this.getPosition(tref != null ? tref.index : 0);
-        
+
         const tileFactor = 20; // => w.length for stretching
         const twidth = this._source.textureWidth;
         const theight = this._source.textureHeight;
-        
+
         for (let windex = wallProps.length - 1; windex >= 0; windex--) {
             const w = wallProps[windex];
             const wx = distance(w.origin, w.intersection);
             const [x2, x1] = w.colRange;
             const [y1, y2] = w.rowRange;
-            const targetWidth = x2-x1;
-            const targetHeight = y2-y1;
+            const targetWidth = x2 - x1;
+            const targetHeight = y2 - y1;
             const tx = Math.floor((twidth * wx / tileFactor) % (twidth - 1));
-            target.drawImage(this.canvas, tx + col * twidth, row * theight, 1, theight, x1, y1, targetWidth, targetHeight);                        
+            target.drawImage(this.canvas, tx + col * twidth, row * theight, 1, theight, x1, y1, targetWidth, targetHeight);
         }
     };
 
@@ -69,7 +69,7 @@ export class Texture {
         canvas.width = twidth;
         canvas.height = theight;
         const context = canvas.getContext('2d');
-        context.drawImage(this.canvas, col*twidth, row*theight,twidth,theight, 0,0,twidth, theight);
+        context.drawImage(this.canvas, col * twidth, row * theight, twidth, theight, 0, 0, twidth, theight);
         return canvas.toDataURL()
 
     }

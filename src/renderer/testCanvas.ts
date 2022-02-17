@@ -11,28 +11,30 @@ import { normal } from '../common/math/lineSegment';
 import { splitPolygon } from '../common/geometry/bsp/splitting';
 import { IGeometry } from '../common/geometry/geometry';
 import { ICamera, makeRays } from '../common/camera';
+import { findClosest, walk } from '../common/geometry/bsp/querying';
+import { IEdge } from '../common/geometry/edge';
 
-export class TestCanvasRenderer {    
+export class TestCanvasRenderer {
     private background: HTMLCanvasElement;
     private active: boolean = false;
     private geometry: IGeometry;
     private camera: ICamera;
-    
+
     constructor(private canvas: HTMLCanvasElement, private context?: CanvasRenderingContext2D) {
         this.context = this.context || canvas.getContext('2d');
         this.background = document.createElement('canvas') as HTMLCanvasElement;
-        this.resizeCanvas();        
+        this.resizeCanvas();
         window.addEventListener('resize', e => {
-            e.preventDefault();  
+            e.preventDefault();
             this.resizeCanvas();
         });
-        connect(s => {            
-            this.active = !!s.uiConfig.enableTestCanvas;  
+        connect(s => {
+            this.active = !!s.uiConfig.enableTestCanvas;
             this.geometry = s.walls.geometry;
             this.camera = s.player.camera;
         });
     }
-   
+
     private resizeCanvas = (): void => {
         this.canvas.width = this.canvas.clientWidth;
         this.canvas.height = this.canvas.clientHeight;
@@ -43,44 +45,50 @@ export class TestCanvasRenderer {
 
     public render = (fps: number) => {
         if (this.active) {
-            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);        
+            this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.drawGrid();
 
             const cone = makeRays(1, this.camera);
             drawSegment(this.context, cone[0].line);
             drawSegment(this.context, cone[1].line);
 
-            // let p1 = createPlane(cone[0].line);
-            // let p2 = createPlane(cone[1].line);
-            // let cameraPlane = createPlane([subtract(this.camera.position, this.camera.plane), add(this.camera.position, this.camera.plane)]);
-            let p1 = this.camera.planes.left;
-            let p2 = this.camera.planes.right;
-            let cameraPlane = this.camera.planes.camera;
-            for (let p of this.geometry.polygons) {
-                for (let e of p.edges) {
-                    
-                    // TODO: very long edges are still passing this check
-                    if (classifyPointToPlane(e.start.vector, cameraPlane)===PointToPlaneRelation.InFront 
-                    || classifyPointToPlane(e.end.vector, cameraPlane)===PointToPlaneRelation.InFront)
-                    {
-                        let [c1, c2, c3, c4] = [
-                            classifyPointToPlane(e.start.vector, p1),
-                            classifyPointToPlane(e.start.vector, p2),
-                            classifyPointToPlane(e.end.vector, p1),
-                            classifyPointToPlane(e.end.vector, p2)];
-                          
-                       if (c1 === c2 && c3 === c4 && c1 !== c3 || c1 !== c2 || c3 !== c4) {
-                            drawSegment(this.context, e.segment);
-                       } 
-                    }
-                }
-            }
+            let depth = 10;
+            let count = 0;
+            walk(this.geometry.bsp, this.camera.position, (ps => {
+                ps.forEach(p => {
+
+                    p.edges.forEach(e => {
+                        if (this.isInView(e)) {
+                            const c = 255 - count * 255 / depth;
+                            drawSegment(this.context, e.segment, `rgb(${c},${c},${c})`, 2);
+                            count++;
+                        }
+
+
+
+                    })
+                });
+                return count <= depth;
+            }))
         }
     };
 
-    private initGrid = () => {        
+    private isInView = (e: IEdge): boolean => {
+        if (classifyPointToPlane(e.start.vector, this.camera.planes.camera) === PointToPlaneRelation.InFront
+            || classifyPointToPlane(e.end.vector, this.camera.planes.camera) === PointToPlaneRelation.InFront) {
+            let [c1, c2, c3, c4] = [
+                classifyPointToPlane(e.start.vector, this.camera.planes.left),
+                classifyPointToPlane(e.start.vector, this.camera.planes.right),
+                classifyPointToPlane(e.end.vector, this.camera.planes.left),
+                classifyPointToPlane(e.end.vector, this.camera.planes.right)];
+
+            return (c1 === c2 && c3 === c4 && c1 !== c3 || c1 !== c2 || c3 !== c4)
+        }
+        return false;
+    }
+    private initGrid = () => {
         this.background.width = this.canvas.width;
-        this.background.height = this.canvas.height;        
+        this.background.height = this.canvas.height;
         const backgroundContext = this.background.getContext('2d');
         backgroundContext.beginPath();
         backgroundContext.lineWidth = 1;
@@ -96,6 +104,6 @@ export class TestCanvasRenderer {
         }
         backgroundContext.stroke();
     };
-        
+
     private drawGrid = () => this.context.drawImage(this.background, 0, 0);
 }
