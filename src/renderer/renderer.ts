@@ -3,7 +3,8 @@
 // All of the Node.js APIs are available in this process.
 
 import { createCanvasHandlers, createGlobalActionHandlers } from '../common/actions/actionHandlerFactory';
-import { Renderer3d } from '../common/renderer3d';
+import { Renderer3d } from '../common/rendering/raycasting/renderer3d';
+import { BspWalker } from '../common/rendering/bspwalking/walker';
 import { MapEditorRenderer } from '../common/editor/mapEditor';
 import { WorldLoader } from '../common/storage/stateLoader';
 import { UndoService } from '../common/actions/undoService';
@@ -20,7 +21,7 @@ loadComponents();
 
 
 window.addEventListener('load', (event) => {
-    const ui = {        
+    const ui = {
         view_2d: {
             canvas: document.getElementById('view_2d') as HTMLCanvasElement
         },
@@ -32,18 +33,18 @@ window.addEventListener('load', (event) => {
         geometryEditor: document.getElementById('geometry-editor') as GeometryEditorComponent,
         textureLibrary: document.getElementById('texture-library') as TextureLibraryElement,
     };
-    
+
     new WorldLoader();
     new UndoService();
-    let renderer3d = new Renderer3d(ui.view_3d.canvas);
+    let renderers = [new Renderer3d(ui.view_3d.canvas), new BspWalker(ui.view_3d.canvas)];
     let mapEditor = new MapEditorRenderer(ui.view_2d.canvas);
     let handlers = [...createGlobalActionHandlers(), ...createCanvasHandlers(ui.view_2d.canvas, mapEditor)];
-    
+
     let testCanvas = new TestCanvasRenderer(ui.view_2d.canvas);//, mapEditor.context);
     new BspGenerationStarter();
-    
+
     connect(s => {
-        ui.stats.data = s.stats;        
+        ui.stats.data = s.stats;
     });
 
     const times: number[] = [];
@@ -59,14 +60,18 @@ window.addEventListener('load', (event) => {
     }
     window.requestAnimationFrame(loop);
 
-    function redraw() {      
+    function redraw() {
         testCanvas.render(fps);
         mapEditor.render(fps);
-        renderer3d.render(fps);        
+        renderers.forEach(r => {
+            if (r.isActive()) {
+                r.render(fps);
+            }
+        });
     }
 
-    function update() {    
-        handlers.forEach(_=>_.handle());
+    function update() {
+        handlers.forEach(_ => _.handle());
     }
 });
 
