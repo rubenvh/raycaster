@@ -57,16 +57,15 @@ export class TestCanvasRenderer {
             walk(this.geometry.bsp, this.camera.position, (ps => {
                 ps.forEach(p => {
 
+                    let increment = 0;
                     p.edges.forEach(e => {
                         if (this.isInView(e)) {
                             const c = 255 - count * 255 / depth;
                             drawSegment(this.context, e.segment, `rgb(${c},${c},${c})`, 2);
-                            count++;
+                            increment = increment || 1;
                         }
-
-
-
-                    })
+                    });
+                    count = count + increment;
                 });
                 return count <= depth;
             }))
