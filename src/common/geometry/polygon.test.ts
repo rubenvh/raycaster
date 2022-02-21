@@ -17,11 +17,15 @@ describe('polygon tests', () => {
             it('rectangles are always convex - reversed', () => {
                 expect(invokeSut(createPolygon([[0,0],[1,0],[1,1],[0,1]]))).toBe(true);
             });
-            it('colinear splits do not make polygons concave', () => {                
-                expect(invokeSut(createPolygon([[0,0], [0,1], [0,2],[2,2],[2,0]]))).toBe(true);
+            it('colinear splits do not make polygons concave - horizontal split', () => {                                
                 expect(invokeSut(createPolygon([[0,0], [0,1], [1,1],[2,1],[2,0]]))).toBe(true);
                 expect(invokeSut(createPolygon([[0,0], [0,1], [2,1],[2,0],[1,0]]))).toBe(true);
+            }); 
+            it('colinear splits do not make polygons concave - vertical split', () => {                
+                expect(invokeSut(createPolygon([[0,0],[2,0],[2,1],[2,2],[0,2]]))).toBe(true);
+                expect(invokeSut(createPolygon([[0,0], [0,1], [0,2],[2,2],[2,0]]))).toBe(true);
             });            
+            
         });
 
         describe('concave polygons return false', () => {

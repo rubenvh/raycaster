@@ -11,9 +11,7 @@ import TextureSourceEditorElement from './textureSourceEditorComponent';
 import TextureSelectorComponent from './texture-selector.component';
 import TextureDropdownComponent from './texture-dropdown.component';
 import DirectedMaterialEditorComponent from './directed-material.component';
-
-
-
+import PolygonEditorComponent from './polygonEditorComponent';
 
 export function loadComponents() {
     EdgeEditorComponent;
@@ -22,6 +20,7 @@ export function loadComponents() {
     GeometrySelectionComponent;
     MaterialEditorComponent;
     DirectedMaterialEditorComponent;
+    PolygonEditorComponent;
     SelectionTreeNodeComponent;
     VertexEditorComponent;
     StatsElement;

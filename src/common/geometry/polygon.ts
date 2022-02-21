@@ -87,7 +87,9 @@ export const isConvex = (polygon: IPolygon): boolean => {
         const next = polygon.vertices[i === last ? 0 : i + 1].vector;
         
         // when the 3 points are colinear -> convex so skip any angle calculation
-        if (slope([curr, prev]) === slope([curr, next])) { continue; }
+        const m1 = slope([prev, curr]);
+        const m2 = slope([curr, next]);
+        if (m1 === m2) { continue; }
 
         // calculate angle between 3 points
         const angle = lineAngle([curr, prev], [curr, next]);
