@@ -36,17 +36,17 @@ export class TestCanvasRenderer {
         });
 
         const a: Vector[] = [
-            [400,120],
-            [420,120],
-            [460,120],
-            [450,160],
-            [439,173],
-            [463,222],
-            [489.68965517241384,224.72413793103448],
-            [537,194],
-            [519.24,120]
+            [400, 120],
+            [420, 120],
+            [460, 120],
+            [450, 160],
+            [439, 173],
+            [463, 222],
+            [489.68965517241384, 224.72413793103448],
+            [537, 194],
+            [519.24, 120]
         ];
-        this.tp = createPolygon(a);        
+        this.tp = createPolygon(a);
     }
 
     private resizeCanvas = (): void => {
@@ -57,25 +57,25 @@ export class TestCanvasRenderer {
         this.initGrid();
     }
 
-    
-    public render = (fps: number) => {        
-        if (this.active) {            
+
+    public render = (fps: number) => {
+        if (this.active) {
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.drawGrid();
 
-            
-            this.tp.edges.forEach(e => {                
+
+            this.tp.edges.forEach(e => {
                 drawSegment(this.context, e.segment, 'rgb(255,0,0)', 2);
             });
             let plane = pickSplittingPlane([this.tp], 0, VOID_PLANE);
-            drawPlane(this.context, plane, 'rgb(0,0,255)', [], [this.canvas.width, this.canvas.height] );    
-            
+            drawPlane(this.context, plane, 'rgb(0,0,255)', [], [this.canvas.width, this.canvas.height]);
+
 
             const cone = makeRays(1, this.camera);
             drawSegment(this.context, cone[0].line);
             drawSegment(this.context, cone[1].line);
 
-            let depth = 10;
+            let depth = 50;
             let count = 0;
             // TODO: pass direction into walk function so we can use it to ignore entire branch in some cases
             walk(this.geometry.bsp, this.camera.position, (ps => {

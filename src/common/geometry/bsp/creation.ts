@@ -4,11 +4,11 @@ import { pickSplittingPlane, splitPolygon } from './splitting';
 import { classifyPointToPlane, classifyPolygonToPlane } from './classification';
 import { isSamePlane, Plane, VOID_PLANE } from '../../math/plane';
 
-const MAX_DEPTH = 20;
+const MAX_DEPTH = 100;
 const MIN_LEAF_SIZE = 1;
 
 export function buildBspTree(polygons: IPolygon[], depth: number = 0, maxDepth = MAX_DEPTH || Math.ceil(Math.log2(polygons.length)), previousSplitPlane: Plane = VOID_PLANE): IBSPNode {
-    
+
     //if (depth === 0) { console.log("max depth: ", maxDepth); }
     if (polygons.length === null) return NULL_NODE;
 
@@ -24,14 +24,14 @@ export function buildBspTree(polygons: IPolygon[], depth: number = 0, maxDepth =
     //      return createLeaf(polygons);
     //  }
 
-    if (polygons.every(p => isConvex(p))) {
+    if (polygons.every(p => isConvex(p)) || depth >= maxDepth) {
         return createLeaf(polygons);
     }
 
 
     const splitPlane = pickSplittingPlane(polygons, depth, previousSplitPlane);
     if (isSamePlane(splitPlane, VOID_PLANE)) { return createLeaf(polygons); }
-    
+
     const frontList: IPolygon[] = [];
     const backList: IPolygon[] = [];
     const coplanarList: IPolygon[] = [];
