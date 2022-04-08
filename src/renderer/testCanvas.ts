@@ -1,14 +1,14 @@
-import { createPolygon } from './../common/geometry/polygon';
+import { createPolygon, IPolygon } from './../common/geometry/polygon';
 import { intersectRayPlane, intersectRaySegment, makeRay } from './../common/geometry/collision';
 import { add, scale, subtract, Vector } from './../common/math/vector';
-import { drawSegment, drawVector } from "../common/drawing/drawing";
-import { createPlane, intersectSegmentPlane } from "../common/math/plane";
+import { drawPlane, drawSegment, drawVector } from "../common/drawing/drawing";
+import { createPlane, intersectSegmentPlane, VOID_PLANE } from "../common/math/plane";
 import { connect } from "../common/store/store-connector";
 import { Face } from '../common/geometry/properties';
 import { classifyPointToPlane } from '../common/geometry/bsp/classification';
 import { PointToPlaneRelation } from '../common/geometry/bsp/model';
 import { normal } from '../common/math/lineSegment';
-import { splitPolygon } from '../common/geometry/bsp/splitting';
+import { pickSplittingPlane, splitPolygon } from '../common/geometry/bsp/splitting';
 import { IGeometry } from '../common/geometry/geometry';
 import { ICamera, makeRays } from '../common/camera';
 import { findClosest, walk } from '../common/geometry/bsp/querying';
@@ -19,6 +19,7 @@ export class TestCanvasRenderer {
     private active: boolean = false;
     private geometry: IGeometry;
     private camera: ICamera;
+    private tp: IPolygon;
 
     constructor(private canvas: HTMLCanvasElement, private context?: CanvasRenderingContext2D) {
         this.context = this.context || canvas.getContext('2d');
@@ -33,6 +34,19 @@ export class TestCanvasRenderer {
             this.geometry = s.walls.geometry;
             this.camera = s.player.camera;
         });
+
+        const a: Vector[] = [
+            [400,120],
+            [420,120],
+            [460,120],
+            [450,160],
+            [439,173],
+            [463,222],
+            [489.68965517241384,224.72413793103448],
+            [537,194],
+            [519.24,120]
+        ];
+        this.tp = createPolygon(a);        
     }
 
     private resizeCanvas = (): void => {
@@ -43,10 +57,19 @@ export class TestCanvasRenderer {
         this.initGrid();
     }
 
-    public render = (fps: number) => {
-        if (this.active) {
+    
+    public render = (fps: number) => {        
+        if (this.active) {            
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.drawGrid();
+
+            
+            this.tp.edges.forEach(e => {                
+                drawSegment(this.context, e.segment, 'rgb(255,0,0)', 2);
+            });
+            let plane = pickSplittingPlane([this.tp], 0, VOID_PLANE);
+            drawPlane(this.context, plane, 'rgb(0,0,255)', [], [this.canvas.width, this.canvas.height] );    
+            
 
             const cone = makeRays(1, this.camera);
             drawSegment(this.context, cone[0].line);
@@ -54,6 +77,7 @@ export class TestCanvasRenderer {
 
             let depth = 10;
             let count = 0;
+            // TODO: pass direction into walk function so we can use it to ignore entire branch in some cases
             walk(this.geometry.bsp, this.camera.position, (ps => {
                 ps.forEach(p => {
 

@@ -1,14 +1,16 @@
-import { drawVector } from "../drawing/drawing";
 import { ILineSegment, slope } from "./lineSegment";
-import { add, dot, normalize, perpendicular, scale, subtract, Vector } from "./vector";
+import { areEqual, add, dot, normalize, perpendicular, scale, subtract, Vector } from "./vector";
+
 
 export type Plane = {n: Vector, d: number};
+export const VOID_PLANE: Plane = {n: [0,0], d: 0};
 export function createPlane(a: ILineSegment): Plane {
     const n = normalize(perpendicular(subtract(a[1], a[0])));
     return {
         n, d: dot(n, a[0])
     };    
 }
+export const isSamePlane = (p1: Plane, p2: Plane): boolean => p1.d === p2.d && areEqual(p1.n, p2.n);
 
 export const planeSlope = (plane: Plane): number => {
     return slope([[0,0], perpendicular(plane.n)]);

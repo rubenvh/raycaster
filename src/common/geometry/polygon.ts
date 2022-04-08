@@ -22,7 +22,7 @@ export const loadPolygon = (polygon: IStoredPolygon): IPolygon => {
             if (acc.first && areClose(e.end, acc.first.start)) {                
                 e.end = giveIdentity(acc.first.start);
             }
-            if (acc.previous && !areEqual(e.start, acc.previous.end)) {
+            if (acc.previous && !areEqual(e.start, acc.previous.end)) { // TODO: areClose?
                 throw new Error(`polygon cannot contain jumps: start of edge should be equal to previous edge's end: ${acc.previous.end.vector} does not equal ${e.start.vector}`);                
             }
             else {

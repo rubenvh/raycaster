@@ -1,7 +1,7 @@
 import { areClose, areEqual, IVertex } from './../vertex';
 import { cloneEdge, IEdge, loadEdge } from './../edge';
-import { searchSplitPlane, randomAlternatingHorVerEdgeToPlane } from './splitting-strategies';
-import { intersectSegmentPlane, Plane } from '../../math/plane';
+import { searchSplitPlane, SPLITTING_STRATEGIES } from './splitting-strategies';
+import { intersectSegmentPlane, isSamePlane, Plane, VOID_PLANE } from '../../math/plane';
 import { createPolygon, IPolygon, loadPolygon } from './../polygon';
 import { classifyPointToPlane } from './classification';
 import { PointToPlaneRelation } from "./model";
@@ -11,9 +11,21 @@ import { Vector } from '../../math/vector';
 /**
  * Given a list of polygons, attempts to compute a good splitting plane.
  */
-export const pickSplittingPlane = (polygons: IPolygon[], depth: number): Plane => 
-    searchSplitPlane(polygons, depth, randomAlternatingHorVerEdgeToPlane);  
+export const pickSplittingPlane = (polygons: IPolygon[], depth: number, previousSplitPlane: Plane): Plane => {
 
+    let plane: Plane = VOID_PLANE;
+    let bestScore = Number.MAX_VALUE;
+    for (let s of SPLITTING_STRATEGIES) {
+        let [p, score] = searchSplitPlane(polygons, depth, s, previousSplitPlane);  
+        if (!isSamePlane(p, VOID_PLANE) 
+            && !isSamePlane(p, previousSplitPlane)
+            && score < bestScore) {
+            plane = p;
+            bestScore = score;
+        }
+    }
+    return plane;
+}
 /**
  * Splits a polygon on the given splitting plane. This function results in 2 subpolygons: 
  * one in front and one in the back of the given splitting plane.
@@ -82,7 +94,7 @@ const closeIfNeeded = (edges: IEdge[]): IEdge[] => {
     if (edges.length < 1) { return edges; }
     const start = edges[0].start;
     const end = edges[edges.length-1].end;
-    if (!areEqual(start, end)) {
+    if (!areEqual(start, end)) { // TODO: areClose?
         edges.push(createSplitEdge(end, start))
     }
     return edges;

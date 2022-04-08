@@ -1,5 +1,6 @@
 export type Vector = [number, number];
 
+const areEqual = (u: Vector, v: Vector) => u && v && u.length === v.length && u.every((x, i) => x === v[i]);
 const dot = (u: Vector, v: Vector): number => u[0]*v[0] + u[1]*v[1];
 const norm = (u: Vector): number => Math.sqrt(normSqr(u));
 const normSqr = (u: Vector): number => dot(u, u);
@@ -29,7 +30,7 @@ const snap = (u: Vector, ): Vector => [roundToGrid(u[0]), roundToGrid(u[1])];
 const minimumComponents = (u: Vector, v: Vector): Vector => [Math.min(u[0], v[0]), Math.min(u[1], v[1])];
 const maximumComponents = (u: Vector, v: Vector): Vector => [Math.max(u[0], v[0]), Math.max(u[1], v[1])];
 
-export {dot, norm, normSqr, normalize, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, cross, perpendicular, copyIn, snap, minimumComponents, maximumComponents};
+export {areEqual, dot, norm, normSqr, normalize, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, cross, perpendicular, copyIn, snap, minimumComponents, maximumComponents};
 
 const createRotation = (angle: number): [Vector, Vector] => [
     [Math.cos(angle), -1 * Math.sin(angle)],
