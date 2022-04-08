@@ -136,7 +136,7 @@ export class MapEditorRenderer implements ISpaceTranslator {
 
     private colors: string[] = ['white', 'yellow', 'orange', 'red', 'purple', 'blue', 'cyan', 'green'];
     private drawBsp = (tree: IBSPNode, depth: number = 0, clipRegion: Path2D[] = []) => {
-        if (depth > 5) { return; }
+        if (depth > 7) { return; }
         if (isSplitNode(tree)) {
             const bounds = this.scroll.toWorldSpace([this.canvas.width, this.canvas.height]);
             const [frontClip, backClip] = drawPlane(this._context, tree.plane, this.colors[depth], clipRegion, bounds);

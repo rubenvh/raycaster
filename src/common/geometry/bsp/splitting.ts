@@ -35,7 +35,8 @@ const searchSplitPlaneInSinglePolygon = (polygon: IPolygon, depth: number, plane
     const [p1, p2] = splitPolygon(polygon, plane);
     const c1 = isConvex(p1);
     const c2 = isConvex(p2);
-    return [plane, (c1 ? 0 : 1) + (c2 ? 0 : 1)];
+    const balance = Math.abs(p1.vertices.length - p2.vertices.length)/(p1.vertices.length+p2.vertices.length);
+    return [plane, (c1 ? 0 : 1) + (c2 ? 0 : 1) + balance];
 };
 /**
  * Splits a polygon on the given splitting plane. This function results in 2 subpolygons: 

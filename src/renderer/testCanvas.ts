@@ -35,18 +35,18 @@ export class TestCanvasRenderer {
             this.camera = s.player.camera;
         });
 
-        const a: Vector[] = [
-            [400, 120],
-            [420, 120],
-            [460, 120],
-            [450, 160],
-            [439, 173],
-            [463, 222],
-            [489.68965517241384, 224.72413793103448],
-            [537, 194],
-            [519.24, 120]
-        ];
-        this.tp = createPolygon(a);
+        // const a: Vector[] = [
+        //     [400, 120],
+        //     [420, 120],
+        //     [460, 120],
+        //     [450, 160],
+        //     [439, 173],
+        //     [463, 222],
+        //     [489.68965517241384, 224.72413793103448],
+        //     [537, 194],
+        //     [519.24, 120]
+        // ];
+        // this.tp = createPolygon(a);
     }
 
     private resizeCanvas = (): void => {
@@ -63,12 +63,11 @@ export class TestCanvasRenderer {
             this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
             this.drawGrid();
 
-
-            this.tp.edges.forEach(e => {
-                drawSegment(this.context, e.segment, 'rgb(255,0,0)', 2);
-            });
-            let plane = pickSplittingPlane([this.tp], 0, VOID_PLANE);
-            drawPlane(this.context, plane, 'rgb(0,0,255)', [], [this.canvas.width, this.canvas.height]);
+            // this.tp.edges.forEach(e => {
+            //     drawSegment(this.context, e.segment, 'rgb(255,0,0)', 2);
+            // });
+            // let plane = pickSplittingPlane([this.tp], 0, VOID_PLANE);
+            // drawPlane(this.context, plane, 'rgb(0,0,255)', [], [this.canvas.width, this.canvas.height]);
 
 
             const cone = makeRays(1, this.camera);
@@ -96,6 +95,7 @@ export class TestCanvasRenderer {
         }
     };
 
+    // TODO: move this to camera module
     private isInView = (e: IEdge): boolean => {
         if (classifyPointToPlane(e.start.vector, this.camera.planes.camera) === PointToPlaneRelation.InFront
             || classifyPointToPlane(e.end.vector, this.camera.planes.camera) === PointToPlaneRelation.InFront) {
