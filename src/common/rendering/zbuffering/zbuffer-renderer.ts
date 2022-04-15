@@ -1,9 +1,9 @@
 import { EMPTY_GEOMETRY } from '../../geometry/geometry';
 import { cloneKey, createEntityKey, IEntityKey } from '../../geometry/entity';
-import { makeRays, DEFAULT_CAMERA } from '../../camera';
+import { makeRays, DEFAULT_CAMERA, ICamera } from '../../camera';
 import { drawRect, drawTrapezoid } from '../../drawing/drawing';
 import { Guid } from 'guid-typescript';
-import { lookupMaterialFor, RayHit } from '../../geometry/collision';
+import { intersectRaySegment, lookupMaterialFor, makeRay, RayHit } from '../../geometry/collision';
 import { Vector } from '../../math/vector';
 import { IMaterial } from '../../geometry/properties';
 import { statisticsUpdated } from '../../store/stats';
@@ -13,10 +13,11 @@ import { IWorldConfigState } from '../../store/world-config';
 import { textureLib, TextureLibrary } from '../../textures/textureLibrary';
 import { Texture } from '../../textures/texture';
 import { IRenderer } from '../renderer';
-import { IEdge, NULL_EDGE } from '../../geometry/edge';
+import { cloneEdge, IEdge, makeEdge, NULL_EDGE } from '../../geometry/edge';
 import { walk } from '../../geometry/bsp/querying';
 import { classifyPointToPlane } from '../../geometry/bsp/classification';
 import { PointToPlaneRelation } from '../../geometry/bsp/model';
+import { distance } from '../../geometry/vertex';
 
 const dispatch = useAppDispatch();
 
@@ -55,14 +56,13 @@ export class ZBufferRenderer implements IRenderer {
     }
 
     render(fps: number): void {
-        
-        let buffer = new ZBuffer(this.resolution);        
+
+        let buffer = new ZBuffer(this.resolution, this.camera);
         // TODO: pass direction into walk function so we can use it to ignore entire branch in some cases
         walk(this.wallGeometry.bsp, this.camera.position, (ps => {
             for (let p of ps) {
                 for (let e of p.edges) {
-                    // TODO: clip edge to view frustum                    
-                    buffer.add(e);
+                    buffer.add(this.clip(e));
 
                     if (buffer.isFull()) return false;
                 }
@@ -86,17 +86,20 @@ export class ZBufferRenderer implements IRenderer {
             let clipBoth = sl === sr && el === er && sl !== el; // completely crossing view (need clipping)
             let clipStart = clipBoth || sl === sr && el !== er;
             let clipEnd = clipBoth || sl !== sr && el === er;
-            
+
+            return cloneEdge(e,
+                clipStart ? intersectRaySegment(this.camera.cone.left, e.segment)?.point : null,
+                clipEnd ? intersectRaySegment(this.camera.cone.right, e.segment)?.point : null);
         }
         return NULL_EDGE;
     }
 
-} 
+}
 
 export class ZBuffer {
     private cols: ZBufferColumn[];
-    constructor(private resolution: number) {
-        this.cols = Array.from({length: resolution}, (v, i) => new ZBufferColumn(i));
+    constructor(private resolution: number, private camera: ICamera) {
+        this.cols = Array.from({ length: resolution }, (v, i) => new ZBufferColumn(i));
     }
 
     public render(): void {
@@ -106,6 +109,10 @@ export class ZBuffer {
     }
 
     public add(edge: IEdge): void {
+        let d1 = distance(edge.start, this.camera.position); // * Math.cos(angle);
+        let d2 = distance(edge.end, this.camera.position); // * Math.cos(angle);
+
+
         // TODO: implement
     }
 
@@ -116,18 +123,18 @@ export class ZBuffer {
 }
 export class ZBufferColumn {
     private stack: ZBufferElement[];
-    constructor(private col: number){
+    constructor(private col: number) {
         this.stack = [];
     }
 
     public isFull(): boolean {
-        return this.stack.length > 0 && this.stack[this.stack.length-1].isOpaque;
+        return this.stack.length > 0 && this.stack[this.stack.length - 1].isOpaque;
     }
 
     public add(el: ZBufferElement): ZBufferColumn {
-        if (this.stack.length === 0 || !this.stack[this.stack.length-1].isOpaque){
+        if (this.stack.length === 0 || !this.stack[this.stack.length - 1].isOpaque) {
             this.stack.push(el);
-        }        
+        }
         return this;
     }
 
@@ -135,10 +142,10 @@ export class ZBufferColumn {
         while (this.stack.length > 0) {
             const el = this.stack.pop();
             el.render();
-        }    
+        }
     }
 }
 export type ZBufferElement = {
     isOpaque: boolean;
-    render: ()=>void;
+    render: () => void;
 }

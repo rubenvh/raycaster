@@ -6,7 +6,12 @@ import { IRay, makeRay } from './geometry/collision';
 import { createPlane, Plane } from './math/plane';
 
 type ICameraData = { position: vector.Vector, direction: vector.Vector, plane?: vector.Vector };
-export type ICamera = ICameraData & { screen: ILineSegment, midline: ILineSegment, planes: { camera: Plane, left: Plane, right: Plane } };
+export type ICamera = ICameraData & {
+    screen: ILineSegment,
+    midline: ILineSegment,
+    cone: { left: IRay, right: IRay },
+    planes: { camera: Plane, left: Plane, right: Plane }
+};
 
 const makeScreen = (data: ICameraData): ILineSegment => {
     let plane = data.plane || vector.perpendicular(data.direction);
@@ -28,6 +33,7 @@ export const makeCamera = (data: ICameraData): ICamera => {
         ...data,
         screen: makeScreen(data),
         midline,
+        cone: { left: cone[0], right: cone[1] },
         planes: { camera: cameraPlane, left: p1, right: p2 }
     });
 }
