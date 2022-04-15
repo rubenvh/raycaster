@@ -1,5 +1,6 @@
 export type Vector = [number, number];
 
+const ZERO: Vector = [0,0];
 const areEqual = (u: Vector, v: Vector) => u && v && u.length === v.length && u.every((x, i) => x === v[i]);
 const dot = (u: Vector, v: Vector): number => u[0] * v[0] + u[1] * v[1];
 const norm = (u: Vector): number => Math.sqrt(normSqr(u));
@@ -31,7 +32,7 @@ const minimumComponents = (u: Vector, v: Vector): Vector => [Math.min(u[0], v[0]
 const maximumComponents = (u: Vector, v: Vector): Vector => [Math.max(u[0], v[0]), Math.max(u[1], v[1])];
 const round = (u: Vector): Vector => [Math.round(u[0]), Math.round(u[1])];
 
-export { areEqual, dot, norm, normSqr, normalize, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, cross, perpendicular, copyIn, snap, minimumComponents, maximumComponents, round };
+export { ZERO, areEqual, dot, norm, normSqr, normalize, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, cross, perpendicular, copyIn, snap, minimumComponents, maximumComponents, round };
 
 const createRotation = (angle: number): [Vector, Vector] => [
     [Math.cos(angle), -1 * Math.sin(angle)],

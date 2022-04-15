@@ -2,6 +2,7 @@ import * as vector from '../math/vector';
 import { IEntity, giveIdentity, IEntityKey } from './entity';
 
 export type IVertex = IEntity & { vector: vector.Vector };
+export const NULL_VERTEX: IVertex = {vector: vector.ZERO };
 export type IVertexMap = Map<IEntityKey, IVertex[]>;
 export const makeVertex = (v: vector.Vector): IVertex => ({vector: v});
 const isVertex = (v: IVertex|vector.Vector): v is IVertex => (v as IVertex).vector !== undefined;    
