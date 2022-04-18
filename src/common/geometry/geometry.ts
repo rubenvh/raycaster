@@ -57,7 +57,7 @@ const adaptPolygons = (ids: IEntityKey[], geometry: IGeometry, edgeTransformer: 
 
 export const splitEdge = (cut: vector.Vector, edge: IEdge, poligon: IEntityKey, geometry: IGeometry) => {
     return adaptPolygons([poligon], geometry, (selectedPolygon) => {
-        return selectedPolygon.edges.map(cloneEdge).reduce((acc, e) => {
+        return selectedPolygon.edges.map(e => cloneEdge(e)).reduce((acc, e) => {
             if (e.id === edge.id) {
                 const newEnd = e.end;
                 e.end = makeVertex(cut);
@@ -79,7 +79,7 @@ export const moveVertices = (isSnapping: boolean, delta: vector.Vector, map: IVe
                 vector.copyIn(v.vector, doSnap(vector.add(v.vector, delta)));
             }
         };
-        return p.edges.map(cloneEdge).reduce((acc, e) => {
+        return p.edges.map(e=>cloneEdge(e)).reduce((acc, e) => {
             moveVertex(e.start);
             moveVertex(e.end);            
             return acc.concat(e);
@@ -89,7 +89,7 @@ export const moveVertices = (isSnapping: boolean, delta: vector.Vector, map: IVe
 
 export const removeVertex = (vertex: IVertex, poligon: IEntityKey, geometry: IGeometry) => {    
     const result = adaptPolygons([poligon], geometry, (selectedPolygon) => {
-        const {edges} = selectedPolygon.edges.map(cloneEdge).reduce((acc, e)=> {                
+        const {edges} = selectedPolygon.edges.map(e=>cloneEdge(e)).reduce((acc, e)=> {                
             if (vertex.id === e.start.id && vertex.id === e.end.id) { // removing last vertex in an empty polygon
                 return acc;
             } else if (e.end.id === vertex.id && acc.lastEnd) { // first vertex in polygon was removed and we arrive at the last edge
@@ -136,7 +136,7 @@ export const duplicatePolygons = (poligons: IPolygon[], delta: vector.Vector, ge
 
 export const transformEdges = (edges: IEdge[], poligonId: IEntityKey, transformer: (_: IEdge) => IEdge, geometry: IGeometry): IGeometry => {
     return adaptPolygons([poligonId], geometry, p => p.edges
-        .map(cloneEdge)
+        .map(e => cloneEdge(e))
         .reduce((acc, e) => acc.concat(edges.some(_ => e.id === _.id) ? transformer(e) : e), []));
 };
 
@@ -156,7 +156,7 @@ export const expandPolygon = (edge: IEdge, poligonId: IEntityKey, target: vector
         const createEdge = (start: vector.Vector, end: vector.Vector, edge: IEdge): IEdge => ({
             ...makeEdge(start, end), material: cloneMaterial(edge.material),
         });
-        return p.edges.map(cloneEdge).reduce((acc, e, i, edges) => {
+        return p.edges.map(e => cloneEdge(e)).reduce((acc, e, i, edges) => {
             if (e.id !== edge.id) return acc.concat(e);
 
             // walk reversely through edge list, creating new edges further away from center

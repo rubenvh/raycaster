@@ -1,3 +1,5 @@
+import { Intersection } from '../geometry/collision';
+import { Face } from '../geometry/properties';
 import { add, distance, angleBetween, cross, dot, norm, normalize, normSqr, perpendicular, scale, subtract, Vector, proj } from './vector';
 
 export type ILine = [Vector, Vector]; // or other representations
@@ -18,6 +20,8 @@ export const lineAngle = (a: ILineSegment, b: ILineSegment): number => {
     subtract(a[1], a[0]),
     subtract(b[1], b[0]));
 }
+
+export const segmentLength = (a: ILineSegment): number => distance(a[0], a[1]);
 
 export const normal = (a: ILineSegment, s: number = 1): ILineSegment => {
   const mp = midpoint(a);

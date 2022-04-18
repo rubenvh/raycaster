@@ -1,5 +1,6 @@
 import { intersectRay } from "../../geometry/bsp/querying";
-import { IntersectionStats, intersectRayPolygons, IRay, lookupMaterialFor, RayCastingOptions, RayCollisions, RayHit } from "../../geometry/collision";
+import { IntersectionStats, intersectRayEdge, intersectRayPolygons, IRay, lookupMaterialFor, RayCastingOptions, RayCollisions, RayHit } from "../../geometry/collision";
+import { IEdge } from "../../geometry/edge";
 import { IGeometry } from "../../geometry/geometry";
 import { isTranslucent } from "../../geometry/properties";
 
@@ -52,6 +53,20 @@ const castRays = (rays: IRay[], geometry: IGeometry,
     return ({ castedRays, stats });
 };
 
+export const castRaysOnEdge = (rays: IRay[], edge: IEdge): RayHit[] => {
+    
+    let hits: RayHit[] = [];
+    for (let i = 0, n = rays.length; i < n; i++) {
+        const _ = rays[i];
+        const hit = intersectRayEdge(edge, _);
+               
+        hits.push((!hit?.intersection)
+            ? { ray:_, edge: null, intersection: null, polygon: null, distance: Number.POSITIVE_INFINITY }
+            : hit);
+    }
+    return hits;
+};
+
 const accumulateStats = (stats: CastingStats, iStats: IntersectionStats): CastingStats => {
     iStats.polygons.forEach(x => stats.polygons.add(x));
     return ({
@@ -78,7 +93,7 @@ const detectCollisions = (ray: IRay, geometry: IGeometry, options: RayCastingOpt
     return result;
 };
 
-const needsRendering = (hit: RayHit): boolean => !!lookupMaterialFor(hit);
+const needsRendering = (hit: RayHit): boolean => !!lookupMaterialFor(hit.intersection, hit.edge);
 
 /**
  * This class can be used to partition rays and send collision queries to a number of web workers.

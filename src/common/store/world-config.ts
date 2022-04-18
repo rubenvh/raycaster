@@ -1,11 +1,12 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 // Slice
-export type IWorldConfigState = {fadeOn?: number};
+export type IWorldConfigState = {fadeOn?: number, horizonDistance?: number};
 const slice = createSlice({
   name: 'worldConfig',
   initialState: {      
       fadeOn: undefined,  
+      horizonDistance: 300
   } as IWorldConfigState,
   reducers: {    
     initialize: (_, action: PayloadAction<IWorldConfigState>) => action.payload,

@@ -73,7 +73,7 @@ export class Renderer3d implements IRenderer {
         return ({
             edgeId: cloneKey(edgeId), height,
             edgeLuminosity: hit.edge?.luminosity || 0,
-            material: lookupMaterialFor(hit),
+            material: lookupMaterialFor(hit.intersection, hit.edge),
             rowRange: [startRow, endRow],
             colRange: [this.mapToColumn(rayIndex), this.mapToColumn(rayIndex + 1)],
             intersection: hit.intersection?.point,

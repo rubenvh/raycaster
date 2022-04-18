@@ -4,7 +4,7 @@
 
 import { createCanvasHandlers, createGlobalActionHandlers } from '../common/actions/actionHandlerFactory';
 import { Renderer3d } from '../common/rendering/raycasting/renderer3d';
-import { BspWalker } from '../common/rendering/bspwalking/walker';
+import { ZBufferRenderer } from '../common/rendering/zbuffering/zbuffer-renderer';
 import { MapEditorRenderer } from '../common/editor/mapEditor';
 import { WorldLoader } from '../common/storage/stateLoader';
 import { UndoService } from '../common/actions/undoService';
@@ -36,7 +36,7 @@ window.addEventListener('load', (event) => {
 
     new WorldLoader();
     new UndoService();
-    let renderers = [new Renderer3d(ui.view_3d.canvas), new BspWalker(ui.view_3d.canvas)];
+    let renderers = [new Renderer3d(ui.view_3d.canvas), new ZBufferRenderer(ui.view_3d.canvas)];
     let mapEditor = new MapEditorRenderer(ui.view_2d.canvas);
     let handlers = [...createGlobalActionHandlers(), ...createCanvasHandlers(ui.view_2d.canvas, mapEditor)];
 

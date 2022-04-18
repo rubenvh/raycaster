@@ -15,6 +15,14 @@ export const storeEdge = (e: IEdge): IStoredEdge => ({
     material: e.material,
 })
 
+export const determineLuminosity = (slope: number): number => {
+    let percentage = 0.4;
+    let m = Math.abs(slope || 0);
+    if (!isFinite(m)) return 1;
+    return percentage + (m / (1 + m)) * (1 - percentage);
+};
+
+
 export const loadEdge = (e: IStoredEdge): IEdge => {
     const segment: ILineSegment = [e.start.vector, e.end.vector];
     const m: number = slope(segment);
@@ -91,9 +99,3 @@ export const createEdges = (vectors: Vector[]): IEdge[] => {
         .edges;
 }
 
-export const determineLuminosity = (slope: number): number => {
-    let percentage = 0.4;
-    let m = Math.abs(slope || 0);
-    if (!isFinite(m)) return 1;
-    return percentage + (m / (1 + m)) * (1 - percentage);
-};

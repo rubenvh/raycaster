@@ -31,6 +31,7 @@ export const makeRay = (p: Vector, d: Vector, angle: number = 0): IRay => {
         angle,
         cosAngle: Math.cos(angle)});
 }
+
 export const hasIntersect = (ray: IRay, box: BoundingBox): boolean => {
     const p = ray.position,
           d = ray.direction,
@@ -117,20 +118,32 @@ export function intersectRayPolygons(polygons: IPolygon[], ray: IRay, options: R
 
         for (let j=0, m=polygon.edges.length; j<m; j++) {
             const edge = polygon.edges[j];
-            if (options.edgeFilter && !options.edgeFilter(edge)) { continue; }
-            // if (!edge.material) continue;
+            let hit = intersectRayEdge(edge, ray, options);
+            if (hit == null) { continue; }            
             result.edgeCount += 1;
-            const intersection = intersectRaySegment(ray, edge.segment);
-            if (intersection) {
-                const hit = {polygon, ray, edge, intersection,
-                    distance: distance(intersection.point, ray.line[0]) * ray.cosAngle
-                };
+            if (hit.intersection != null) {                
                 result.stop = result.stop || (options.earlyExitPredicate && options.earlyExitPredicate(hit));
-                result.hits.push(hit)
+                result.hits.push({polygon, ray, edge, intersection: hit.intersection,
+                    distance: distance(hit.intersection.point, ray.line[0]) * ray.cosAngle
+                });
             }
         }
     }
     return result;
 }
 
-  export const lookupMaterialFor = (hit: RayHit): IMaterial => hit.intersection && getMaterial(hit.intersection.face, hit.edge?.material);
+export function intersectRayEdge(edge: IEdge, ray: IRay, options: RayCastingOptions = null): RayHit {    
+    
+    if (options?.edgeFilter && !options.edgeFilter(edge)) { return null; }    
+    const intersection = intersectRaySegment(ray, edge.segment);
+    if (intersection) {
+        return {
+            polygon: null, ray, edge, intersection,
+            distance: distance(intersection.point, ray.line[0]) * ray.cosAngle
+        };    
+    }    
+    
+    return {polygon: null, ray, edge, intersection: null, distance: 0};
+}
+  
+export const lookupMaterialFor = (intersection: Intersection, edge: IEdge): IMaterial => intersection && getMaterial(intersection.face, edge?.material);
