@@ -10,9 +10,9 @@ import { PointToPlaneRelation } from '../common/geometry/bsp/model';
 import { normal } from '../common/math/lineSegment';
 import { pickSplittingPlane, splitPolygon } from '../common/geometry/bsp/splitting';
 import { IGeometry } from '../common/geometry/geometry';
-import { ICamera, makeRays } from '../common/camera';
+import { clip, ICamera, makeRays } from '../common/camera';
 import { findClosest, walk } from '../common/geometry/bsp/querying';
-import { IEdge } from '../common/geometry/edge';
+import { IEdge, NULL_EDGE } from '../common/geometry/edge';
 
 export class TestCanvasRenderer {
     private background: HTMLCanvasElement;
@@ -74,7 +74,7 @@ export class TestCanvasRenderer {
             drawSegment(this.context, cone[0].line);
             drawSegment(this.context, cone[1].line);
 
-            let depth = 50;
+            let depth = 40;
             let count = 0;
             // TODO: pass direction into walk function so we can use it to ignore entire branch in some cases
             walk(this.geometry.bsp, this.camera.position, (ps => {
@@ -82,9 +82,11 @@ export class TestCanvasRenderer {
 
                     let increment = 0;
                     p.edges.forEach(e => {
-                        if (this.isInView(e)) {
+
+                        let clipped = clip(e, this.camera);
+                        if (clipped !== NULL_EDGE) {
                             const c = 255 - count * 255 / depth;
-                            drawSegment(this.context, e.segment, `rgb(${c},${c},${c})`, 2);
+                            drawSegment(this.context, clipped.segment, `rgb(${c},${c},${c})`, 2);
                             increment = increment || 1;
                         }
                     });
@@ -95,20 +97,7 @@ export class TestCanvasRenderer {
         }
     };
 
-    // TODO: move this to camera module
-    private isInView = (e: IEdge): boolean => {
-        if (classifyPointToPlane(e.start.vector, this.camera.planes.camera) === PointToPlaneRelation.InFront
-            || classifyPointToPlane(e.end.vector, this.camera.planes.camera) === PointToPlaneRelation.InFront) {
-            let [c1, c2, c3, c4] = [
-                classifyPointToPlane(e.start.vector, this.camera.planes.left),
-                classifyPointToPlane(e.start.vector, this.camera.planes.right),
-                classifyPointToPlane(e.end.vector, this.camera.planes.left),
-                classifyPointToPlane(e.end.vector, this.camera.planes.right)];
-
-            return (c1 === c2 && c3 === c4 && c1 !== c3 || c1 !== c2 || c3 !== c4)
-        }
-        return false;
-    }
+    
     private initGrid = () => {
         this.background.width = this.canvas.width;
         this.background.height = this.canvas.height;

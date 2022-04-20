@@ -2,8 +2,11 @@ import * as vector from './math/vector';
 import { ILine, ILineSegment, lineAngle } from "./math/lineSegment";
 import { castCameraRay } from './rendering/raycasting/raycaster';
 import { IGeometry } from './geometry/geometry';
-import { IRay, makeRay } from './geometry/collision';
+import { intersectRaySegment, IRay, makeRay } from './geometry/collision';
 import { createPlane, Plane } from './math/plane';
+import { cloneEdge, IEdge, NULL_EDGE } from './geometry/edge';
+import { classifyPointToPlane } from './geometry/bsp/classification';
+import { PointToPlaneRelation } from './geometry/bsp/model';
 
 type ICameraData = { position: vector.Vector, direction: vector.Vector, plane?: vector.Vector };
 export type ICamera = ICameraData & {
@@ -116,6 +119,44 @@ export const makeRays = (resolution: number, camera: ICamera): IRay[] => {
     }
     return result;
 };
+
+export const clip = (e: IEdge, camera: ICamera): IEdge => {
+    if (classifyPointToPlane(e.start.vector, camera.planes.camera) === PointToPlaneRelation.InFront
+        || classifyPointToPlane(e.end.vector, camera.planes.camera) === PointToPlaneRelation.InFront) {
+        let [sl, sr, el, er] = [
+            classifyPointToPlane(e.start.vector, camera.planes.left),
+            classifyPointToPlane(e.start.vector, camera.planes.right),
+            classifyPointToPlane(e.end.vector, camera.planes.left),
+            classifyPointToPlane(e.end.vector, camera.planes.right)];
+        
+        let outsideView = sl === sr && el === er && sl === el;
+        if (outsideView) { return NULL_EDGE; }
+
+        let clipBoth = sl === sr && el === er && sl !== el; // completely crossing view (need clipping)
+        let clipStart = clipBoth || sl === sr && el !== er;
+        let clipEnd = clipBoth || sl !== sr && el === er;
+
+        return cloneEdge(e,
+            clipStart ? intersectRaySegment(camera.cone.left, e.segment)?.point ?? intersectRaySegment(camera.cone.right, e.segment)?.point : null,
+            clipEnd ? intersectRaySegment(camera.cone.right, e.segment)?.point ?? intersectRaySegment(camera.cone.left, e.segment)?.point : null);
+    }
+    return NULL_EDGE;
+}
+
+// TODO: move this to camera module
+export const isInView = (e: IEdge, camera: ICamera): boolean => {
+    if (classifyPointToPlane(e.start.vector, camera.planes.camera) === PointToPlaneRelation.InFront
+        || classifyPointToPlane(e.end.vector, camera.planes.camera) === PointToPlaneRelation.InFront) {
+        let [c1, c2, c3, c4] = [
+            classifyPointToPlane(e.start.vector, camera.planes.left),
+            classifyPointToPlane(e.start.vector, camera.planes.right),
+            classifyPointToPlane(e.end.vector, camera.planes.left),
+            classifyPointToPlane(e.end.vector, camera.planes.right)];
+
+        return (c1 === c2 && c3 === c4 && c1 !== c3 || c1 !== c2 || c3 !== c4)
+    }
+    return false;
+}
 
 
 

@@ -43,7 +43,7 @@ export class Heap<T> implements PriorityQueue<T> {
     const last = this.extractLast();
     if (this.heapSize > 0) {
       this.items[i] = last;
-      if (this.comparer(this.items[i], this.items[parentNode(i)]) >= 1) {
+      if (this.comparer(this.items[i], this.items[parentNode(i)]) > 0) {
         this.heapFilterUp(i);
       } else {
         this.heapify(this.items, i);
@@ -58,7 +58,7 @@ export class Heap<T> implements PriorityQueue<T> {
   }
 
   heapFilterUp(i: number) {
-    while (this.comparer(this.items[i], this.items[parentNode(i)]) >= 1) {
+    while (this.comparer(this.items[i], this.items[parentNode(i)]) > 0) {
       swap(this.items, i, parentNode(i));
       i = parentNode(i);
     }
@@ -68,10 +68,10 @@ export class Heap<T> implements PriorityQueue<T> {
     const l = left(index);
     const r = right(index);
     let largest = index;
-    if (l < this.heapSize && this.comparer(a[l], a[largest]) >= 1) {
+    if (l < this.heapSize && this.comparer(a[l], a[largest]) > 0) {
       largest = l;
     }
-    if (r < this.heapSize && this.comparer(a[r], a[largest]) >= 1) {
+    if (r < this.heapSize && this.comparer(a[r], a[largest]) > 0) {
       largest = r;
     }
     if (largest !== index) {
@@ -86,14 +86,18 @@ export class Heap<T> implements PriorityQueue<T> {
     return result;
   }
 
+  sort(): T[] {
+    while (this.heapSize > 1) {
+      swap(this.items, 0, this.heapSize - 1);
+      this.heapSize--;
+      this.heapify(this.items, 0);
+    }
+    return this.items;
+  }
+
   static heapsort<T>(items: T[]): T[] {
     const heap = new Heap<T>(items);
-    while (heap.heapSize > 1) {
-      swap(heap.items, 0, heap.heapSize - 1);
-      heap.heapSize--;
-      heap.heapify(heap.items, 0);
-    }
-    return heap.items;
+    return heap.sort();
   }
 }
 

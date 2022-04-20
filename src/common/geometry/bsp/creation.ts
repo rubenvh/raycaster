@@ -4,7 +4,7 @@ import { pickSplittingPlane, splitPolygon } from './splitting';
 import { classifyPointToPlane, classifyPolygonToPlane } from './classification';
 import { isSamePlane, Plane, VOID_PLANE } from '../../math/plane';
 
-const MAX_DEPTH = 50;
+const MAX_DEPTH = 20;
 const MIN_LEAF_SIZE = 1;
 
 export function buildBspTree(polygons: IPolygon[], depth: number = 0, maxDepth = MAX_DEPTH, previousSplitPlane: Plane = VOID_PLANE): IBSPNode {

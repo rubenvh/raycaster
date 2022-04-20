@@ -1,31 +1,21 @@
 import { EMPTY_GEOMETRY } from '../../geometry/geometry';
-import { cloneKey, createEntityKey, IEntityKey } from '../../geometry/entity';
-import { makeRays, DEFAULT_CAMERA, ICamera } from '../../camera';
-import { drawRect, drawSegment, drawTrapezoid, drawVector } from '../../drawing/drawing';
-import { Guid } from 'guid-typescript';
-import { Intersection, intersectRayPlane, intersectRaySegment, IRay, lookupMaterialFor, makeRay, RayHit } from '../../geometry/collision';
-import { norm, subtract, Vector } from '../../math/vector';
-import { Face, IMaterial } from '../../geometry/properties';
-import { statisticsUpdated } from '../../store/stats';
+import { makeRays, DEFAULT_CAMERA, ICamera, clip } from '../../camera';
+import { intersectRayPlane, intersectRaySegment, IRay, makeRay } from '../../geometry/collision';
+import { subtract, Vector } from '../../math/vector';
 import { useAppDispatch } from '../../store';
 import { connect } from '../../store/store-connector';
-import { IWorldConfigState } from '../../store/world-config';
-import { textureLib, TextureLibrary } from '../../textures/textureLibrary';
-import { Texture } from '../../textures/texture';
 import { IRenderer } from '../renderer';
-import { cloneEdge, IEdge, makeEdge, NULL_EDGE } from '../../geometry/edge';
+import { IEdge, NULL_EDGE } from '../../geometry/edge';
 import { walk } from '../../geometry/bsp/querying';
-import { classifyPointToPlane } from '../../geometry/bsp/classification';
-import { PointToPlaneRelation } from '../../geometry/bsp/model';
 import { distance } from '../../geometry/vertex';
-import { createPlane, intersectSegmentPlane } from '../../math/plane';
-import { lineAngle, lineIntersect, segmentLength } from '../../math/lineSegment';
-import { convertDistanceToWallHeight, drawWall, WallProps } from '../common/wall-drawing';
+import { segmentLength } from '../../math/lineSegment';
 import { castRaysOnEdge } from '../raycasting/raycaster';
 import { WallPainter } from '../../drawing/wall-painter';
 import { Heap } from '../../datastructures/heap';
-
-const dispatch = useAppDispatch();
+import { drawRect, drawSegment } from '../../drawing/drawing';
+import { createPlane } from '../../math/plane';
+import { getMaterial, isTranslucent } from '../../geometry/properties';
+import { IWorldConfigState } from '../../store/world-config';
 
 export class ZBufferRenderer implements IRenderer {
 
@@ -36,6 +26,7 @@ export class ZBufferRenderer implements IRenderer {
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
     private wallPainter: WallPainter;
+    private worldConfig: IWorldConfigState;
 
     constructor(private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');
@@ -51,6 +42,7 @@ export class ZBufferRenderer implements IRenderer {
             if (this.wallGeometry != s.walls.geometry) {
                 this.wallGeometry = s.walls.geometry;
             }
+            this.worldConfig = s.worldConfig;
         });
     }
 
@@ -62,22 +54,20 @@ export class ZBufferRenderer implements IRenderer {
     render(fps: number): void {
 
         this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.drawSky()
+        this.drawFloor();
 
-
-        // const cone = makeRays(1, this.camera);
-        // drawSegment(this.context, cone[0].line);
-        // drawSegment(this.context, cone[1].line);
-
-        let buffer = new ZBuffer(this.resolution, this.camera, this.wallPainter);
+        let buffer = new ZBuffer(this.resolution, this.camera, this.wallPainter, this.context);
 
         // TODO: pass direction into walk function so we can use it to ignore entire branch in some cases
         walk(this.wallGeometry.bsp, this.camera.position, (ps => {
             for (let p of ps) {
                 for (let e of p.edges) {
-                    const clipped = this.clip(e);
+                    if (e.material === null) continue;
+                    const clipped = clip(e, this.camera);
                     if (clipped === NULL_EDGE) continue;
 
-                    buffer.add(clipped);
+                    buffer.add(clipped, e.start.vector);
                 }
             }
             return !buffer.isFull();
@@ -85,56 +75,55 @@ export class ZBufferRenderer implements IRenderer {
 
 
         buffer.render();
-    }
+    }      
 
-    private clip = (e: IEdge): IEdge => {
-        if (classifyPointToPlane(e.start.vector, this.camera.planes.camera) === PointToPlaneRelation.InFront
-            || classifyPointToPlane(e.end.vector, this.camera.planes.camera) === PointToPlaneRelation.InFront) {
-            let [sl, sr, el, er] = [
-                classifyPointToPlane(e.start.vector, this.camera.planes.left),
-                classifyPointToPlane(e.start.vector, this.camera.planes.right),
-                classifyPointToPlane(e.end.vector, this.camera.planes.left),
-                classifyPointToPlane(e.end.vector, this.camera.planes.right)];
-            
-            let outsideView = sl === sr && el === er && sl === el;
-            if (outsideView) { return NULL_EDGE; }
-
-            let clipBoth = sl === sr && el === er && sl !== el; // completely crossing view (need clipping)
-            let clipStart = clipBoth || sl === sr && el !== er;
-            let clipEnd = clipBoth || sl !== sr && el === er;
-
-            return cloneEdge(e,
-                clipStart ? intersectRaySegment(this.camera.cone.left, e.segment)?.point ?? intersectRaySegment(this.camera.cone.right, e.segment)?.point : null,
-                clipEnd ? intersectRaySegment(this.camera.cone.right, e.segment)?.point ?? intersectRaySegment(this.camera.cone.left, e.segment)?.point : null);
+    private drawSky = () => this.drawBackground('rgb(200,200,200)', 0, this.canvas.height / 2);
+    private drawFloor = () => this.drawBackground('rgb(50,80,80)', this.canvas.height / 2, this.canvas.height);
+    private drawBackground = (color: string, startRow: number, endRow: number) => {
+        let c: string | CanvasGradient = color;
+        const shade = this.worldConfig.fadeOn;
+        if (shade != null) {
+            var gradient = this.context.createLinearGradient(0, startRow, 0, endRow);
+            const convergence = `rgb(${shade},${shade},${shade})`;
+            gradient.addColorStop(0, startRow === 0 ? color : convergence);
+            gradient.addColorStop(1, startRow === 0 ? convergence : color);
+            c = gradient
         }
-        return NULL_EDGE;
+        drawRect(this.context, [[0, startRow], [this.canvas.width, endRow]], c);
     }
-
 }
 
 export class ZBuffer {
-    private cols: ZBufferColumn[];
-    private fullCols = 0;
+    private cols: ZBufferColumn[];    
     private rays: IRay[];
-
-    constructor(private resolution: number, private camera: ICamera, private wallPainter: WallPainter) {
-        this.cols = Array.from({ length: resolution }, (v, i) => new ZBufferColumn(i));
+    private debug = true;
+    constructor(private resolution: number, private camera: ICamera, private wallPainter: WallPainter, private context: CanvasRenderingContext2D) {
+        this.cols = Array.from({ length: resolution }, () => new ZBufferColumn());
         this.rays = makeRays(this.resolution, this.camera);
+        
     }
 
     public render(): void {
-        for (let col of this.cols) {
-            col.render();
-        }
+        for (let i=0; i < this.cols.length; i++) {
+            this.cols[i].render();
+        }        
     }
 
-    public add(edge: IEdge): void {        
+    public add(edge: IEdge, unclippedStart: Vector): void {        
         
-        let sray = makeRay(this.camera.position, subtract(edge.start.vector, this.camera.position));
+        let sray = makeRay(this.camera.position, subtract(edge.start.vector, this.camera.position));        
         let eray = makeRay(this.camera.position, subtract(edge.end.vector, this.camera.position));
-        let sproj = intersectRaySegment(sray, this.camera.screen)?.point;
-        let eproj = intersectRaySegment(eray, this.camera.screen)?.point;        
-        if (!sproj || !eproj){ return; }
+        
+        let sproj = intersectRayPlane(sray, createPlane(this.camera.screen))?.point;
+        //let sproj = intersectRaySegment(sray, this.camera.screen)?.point;
+        let eproj = intersectRayPlane(eray, createPlane(this.camera.screen))?.point;
+        //let eproj = intersectRaySegment(eray, this.camera.screen)?.point;
+        if (!sproj || !eproj) { 
+            drawSegment(this.context, sray.line, 'rgb(255,0,0)', 1);
+            drawSegment(this.context, eray.line, 'rgb(0,255,0)', 1);
+            drawSegment(this.context, this.camera.screen, 'rgb(255,255,0)', 1);  
+            return; 
+        }
                 
         let [pl,] = this.camera.screen;
         let screenLength = segmentLength(this.camera.screen);
@@ -144,16 +133,17 @@ export class ZBuffer {
         [scol, ecol] = [Math.min(scol,ecol), Math.max(scol, ecol)];        
         let rays = this.rays.slice(scol, ecol);    
         let hits = castRaysOnEdge(rays, edge);
-        let i = 0;
-        for (let c of hits) {
-            const wall = this.wallPainter.createWall(c, scol+i );            
+        for (let i = 0; i < hits.length; i++) {
+            if (hits[i].intersection === null) continue;
+            if ((getMaterial(hits[i].intersection.face, edge.material)?.color[3]||0)===0) continue;
+            const wall = this.wallPainter.createWall(hits[i], scol+i, unclippedStart );            
+            if (wall.height <= 0) continue;
             this.cols[scol+i].add({
                 isOpaque: (wall.material?.color[3]||0) === 1, 
-                distance: c.distance,
+                distance: hits[i].distance,
                 render: () => this.wallPainter.drawWall([wall])
             });            
-            i++;
-        }            
+        }        
     }
 
     public isFull(): boolean {   
@@ -161,36 +151,28 @@ export class ZBuffer {
     }
 }
 export class ZBufferColumn {
-    //private stack: ZBufferElement[];
     private heap: Heap<ZBufferElement>;
-    constructor(private col: number) {
-        //this.stack = [];
+    constructor() {        
         this.heap = new Heap<ZBufferElement>([], (a, b) => a.distance - b.distance);
     }
 
     public isFull(): boolean {
         return this.heap.heapSize > 0 && this.heap.max().isOpaque;
-        //return this.stack.length > 0 && this.stack[this.stack.length - 1].isOpaque;
     }
 
     public add(el: ZBufferElement): ZBufferColumn {
-        if (this.heap.heapSize === 0 || !this.heap.max().isOpaque) {
-            this.heap.insert(el);
-        }
-        // if (this.stack.length === 0 || !this.stack[this.stack.length - 1].isOpaque) {
-        //     this.stack.push(el);
-        // }
+        this.heap.insert(el);
         return this;
     }
 
     public render(): void {
-        while (this.heap.heapSize > 0) {
-            this.heap.extractMax().render();
-        }
-        // while (this.stack.length > 0) {
-        //     const el = this.stack.pop();
-        //     el.render();
+        let sorted = this.heap.sort();        
+        // for (let i = 0; i < sorted.length; i++) {
+        //     sorted[i].render();
         // }
+        for (let i = sorted.length-1; i >= 0; i--) {
+            sorted[i].render();
+        }        
     }
 }
 export type ZBufferElement = {

@@ -35,7 +35,7 @@ export class WallPainter {
 
     private mapToColumn = (column: number) => Math.floor(this.width - column * this.width / this.resolution);
 
-    public createWall = (hit: RayHit, rayIndex: number): WallProps => {
+    public createWall = (hit: RayHit, rayIndex: number, origin: Vector = null): WallProps => {
         const height = this.convertDistanceToWallHeight(hit.distance);
         const startRow = Math.floor((this.height - height) / 2);
         const endRow = Math.floor((this.height + height) / 2);
@@ -47,7 +47,7 @@ export class WallPainter {
             rowRange: [startRow, endRow],
             colRange: [this.mapToColumn(rayIndex), this.mapToColumn(rayIndex + 1)],
             intersection: hit.intersection?.point,
-            origin: hit.edge?.start.vector,
+            origin: origin ?? hit.edge?.start.vector,
             distance: hit.distance,
             length: hit.edge?.length,
         });
