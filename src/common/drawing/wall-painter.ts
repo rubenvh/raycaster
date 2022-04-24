@@ -45,7 +45,7 @@ export class WallPainter {
             edgeLuminosity: hit.edge?.luminosity || 0,
             material: lookupMaterialFor(hit.intersection, hit.edge),
             rowRange: [startRow, endRow],
-            colRange: [this.mapToColumn(rayIndex), this.mapToColumn(rayIndex + 1)],
+            colRange: [this.mapToColumn(rayIndex), this.mapToColumn(rayIndex +1)],
             intersection: hit.intersection?.point,
             origin: origin ?? hit.edge?.start.vector,
             distance: hit.distance,

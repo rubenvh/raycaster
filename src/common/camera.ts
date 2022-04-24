@@ -121,8 +121,9 @@ export const makeRays = (resolution: number, camera: ICamera): IRay[] => {
 };
 
 export const clip = (e: IEdge, camera: ICamera): IEdge => {
-    if (classifyPointToPlane(e.start.vector, camera.planes.camera) === PointToPlaneRelation.InFront
-        || classifyPointToPlane(e.end.vector, camera.planes.camera) === PointToPlaneRelation.InFront) {
+    let sh = classifyPointToPlane(e.start.vector, camera.planes.camera);
+    let eh = classifyPointToPlane(e.end.vector, camera.planes.camera);
+    if (sh === PointToPlaneRelation.InFront || eh === PointToPlaneRelation.InFront) {
         let [sl, sr, el, er] = [
             classifyPointToPlane(e.start.vector, camera.planes.left),
             classifyPointToPlane(e.start.vector, camera.planes.right),
@@ -133,8 +134,8 @@ export const clip = (e: IEdge, camera: ICamera): IEdge => {
         if (outsideView) { return NULL_EDGE; }
 
         let clipBoth = sl === sr && el === er && sl !== el; // completely crossing view (need clipping)
-        let clipStart = clipBoth || sl === sr && el !== er;
-        let clipEnd = clipBoth || sl !== sr && el === er;
+        let clipStart = sh !== PointToPlaneRelation.InFront || clipBoth || sl === sr && el !== er;
+        let clipEnd = eh !== PointToPlaneRelation.InFront || clipBoth || sl !== sr && el === er;
 
         return cloneEdge(e,
             clipStart ? intersectRaySegment(camera.cone.left, e.segment)?.point ?? intersectRaySegment(camera.cone.right, e.segment)?.point : null,

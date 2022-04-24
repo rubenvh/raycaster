@@ -74,26 +74,26 @@ export class TestCanvasRenderer {
             drawSegment(this.context, cone[0].line);
             drawSegment(this.context, cone[1].line);
 
-            let depth = 40;
-            let count = 0;
-            // TODO: pass direction into walk function so we can use it to ignore entire branch in some cases
-            walk(this.geometry.bsp, this.camera.position, (ps => {
-                ps.forEach(p => {
+            // let depth = 40;
+            // let count = 0;
+            // // TODO: pass direction into walk function so we can use it to ignore entire branch in some cases
+            // walk(this.geometry.bsp, this.camera.position, (ps => {
+            //     ps.forEach(p => {
 
-                    let increment = 0;
-                    p.edges.forEach(e => {
+            //         let increment = 0;
+            //         p.edges.forEach(e => {
 
-                        let clipped = clip(e, this.camera);
-                        if (clipped !== NULL_EDGE) {
-                            const c = 255 - count * 255 / depth;
-                            drawSegment(this.context, clipped.segment, `rgb(${c},${c},${c})`, 2);
-                            increment = increment || 1;
-                        }
-                    });
-                    count = count + increment;
-                });
-                return count <= depth;
-            }))
+            //             let clipped = clip(e, this.camera);
+            //             if (clipped !== NULL_EDGE) {
+            //                 const c = 255 - count * 255 / depth;
+            //                 drawSegment(this.context, clipped.segment, `rgb(${c},${c},${c})`, 2);
+            //                 increment = increment || 1;
+            //             }
+            //         });
+            //         count = count + increment;
+            //     });
+            //     return count <= depth;
+            // }))
         }
     };
 

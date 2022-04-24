@@ -10,16 +10,20 @@ import { walk } from '../../geometry/bsp/querying';
 import { distance } from '../../geometry/vertex';
 import { segmentLength } from '../../math/lineSegment';
 import { castRaysOnEdge } from '../raycasting/raycaster';
-import { WallPainter } from '../../drawing/wall-painter';
+import { WallPainter, WallProps } from '../../drawing/wall-painter';
 import { Heap } from '../../datastructures/heap';
 import { drawRect, drawSegment } from '../../drawing/drawing';
 import { createPlane } from '../../math/plane';
 import { getMaterial, isTranslucent } from '../../geometry/properties';
 import { IWorldConfigState } from '../../store/world-config';
+import { statisticsUpdated } from '../../store/stats';
+import { PriorityDeque } from 'priority-deque';
+
+const dispatch = useAppDispatch();
 
 export class ZBufferRenderer implements IRenderer {
 
-    private context: CanvasRenderingContext2D;
+    private context: CanvasRenderingContext2D;    
     private width: number;
     private height: number;
     private resolution = 640;
@@ -27,9 +31,10 @@ export class ZBufferRenderer implements IRenderer {
     private wallGeometry = EMPTY_GEOMETRY;
     private wallPainter: WallPainter;
     private worldConfig: IWorldConfigState;
+    private lastUpdated;
 
     constructor(private canvas: HTMLCanvasElement) {
-        this.context = canvas.getContext('2d');
+        this.context = canvas.getContext('2d');        
         this.context.imageSmoothingEnabled = false;
 
         this.canvas.width = this.resolution;
@@ -52,29 +57,67 @@ export class ZBufferRenderer implements IRenderer {
     }
 
     render(fps: number): void {
-
-        this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.drawSky()
-        this.drawFloor();
-
+        // construct a z-index buffer: 
+        const startZBuffering = performance.now();
         let buffer = new ZBuffer(this.resolution, this.camera, this.wallPainter, this.context);
-
-        // TODO: pass direction into walk function so we can use it to ignore entire branch in some cases
+        
+        let edgesTested: number = 0;
+        let count = 0;
+        let depth = 40;
+        let clippedSegments = [];
+        // TODO: can't we pass direction of camera to discard entire branches of the tree?
         walk(this.wallGeometry.bsp, this.camera.position, (ps => {
+            let increment = 0;
             for (let p of ps) {
                 for (let e of p.edges) {
                     if (e.material === null) continue;
                     const clipped = clip(e, this.camera);
                     if (clipped === NULL_EDGE) continue;
 
-                    buffer.add(clipped, e.start.vector);
+                    const c = 255 - count * 255 / depth;
+                    clippedSegments.push(() => drawSegment(this.context, clipped.segment, `rgb(${c},${0},${0})`, 2));
+                    increment = increment || 1;
+
+                    edgesTested++;
+                    buffer.add(clipped, e.start.vector);                    
+                    if (buffer.isFull()) return false;
                 }
-            }
+            }    
+            count = count + increment;
             return !buffer.isFull();
         }))
 
-
+        // draw floor + sky
+        const startDrawing = performance.now();
+        // this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        this.drawSky();
+        this.drawFloor();        
         buffer.render();
+        clippedSegments.forEach(x => x());
+        const endDrawing = performance.now();
+        
+        if (!this.lastUpdated || endDrawing - this.lastUpdated > 1000) {
+            this.lastUpdated = endDrawing;
+            dispatch(statisticsUpdated({
+                performance: {
+                    timing: {
+                        drawing: endDrawing - startDrawing,
+                        casting: 0,
+                        zbuffering: startDrawing - startZBuffering,
+                        total: endDrawing - startZBuffering
+                    },
+                    fps
+                },
+                intersections: { stats: { 
+                    polygons: new Set<String>(), 
+                    edgeTests: [edgesTested, edgesTested], 
+                    polygonTests: [0, 0], 
+                    edgeCount: 0, 
+                    polygonCount: 0, 
+                    edgePercentage: 0 } }
+            }));
+        }
+
     }      
 
     private drawSky = () => this.drawBackground('rgb(200,200,200)', 0, this.canvas.height / 2);
@@ -95,8 +138,7 @@ export class ZBufferRenderer implements IRenderer {
 
 export class ZBuffer {
     private cols: ZBufferColumn[];    
-    private rays: IRay[];
-    private debug = true;
+    private rays: IRay[];    
     constructor(private resolution: number, private camera: ICamera, private wallPainter: WallPainter, private context: CanvasRenderingContext2D) {
         this.cols = Array.from({ length: resolution }, () => new ZBufferColumn());
         this.rays = makeRays(this.resolution, this.camera);
@@ -104,80 +146,96 @@ export class ZBuffer {
     }
 
     public render(): void {
-        for (let i=0; i < this.cols.length; i++) {
-            this.cols[i].render();
-        }        
+
+        let stop = false;
+        while (!stop) {
+            stop = true;
+            let current_group: WallProps[] = [];
+            for (let i=0; i < this.cols.length; i++) {                
+                let cur = this.cols[i].shift();
+                if (cur) {
+                    stop = false;
+                    if (current_group.length === 0 || current_group[0].edgeId === cur.edgeId) {
+                        current_group.push(cur);
+                    } else {
+                        this.wallPainter.drawWall(current_group);
+                        current_group = [];
+                        current_group.push(cur);
+                    }
+                } else {
+                    if (current_group.length > 0) { this.wallPainter.drawWall(current_group); }
+                    current_group = [];
+                }               
+            }              
+            if (current_group.length > 0) { this.wallPainter.drawWall(current_group); }
+        }
     }
 
     public add(edge: IEdge, unclippedStart: Vector): void {        
         
         let sray = makeRay(this.camera.position, subtract(edge.start.vector, this.camera.position));        
-        let eray = makeRay(this.camera.position, subtract(edge.end.vector, this.camera.position));
-        
-        let sproj = intersectRayPlane(sray, createPlane(this.camera.screen))?.point;
-        //let sproj = intersectRaySegment(sray, this.camera.screen)?.point;
-        let eproj = intersectRayPlane(eray, createPlane(this.camera.screen))?.point;
-        //let eproj = intersectRaySegment(eray, this.camera.screen)?.point;
-        if (!sproj || !eproj) { 
-            drawSegment(this.context, sray.line, 'rgb(255,0,0)', 1);
-            drawSegment(this.context, eray.line, 'rgb(0,255,0)', 1);
-            drawSegment(this.context, this.camera.screen, 'rgb(255,255,0)', 1);  
-            return; 
-        }
+        let eray = makeRay(this.camera.position, subtract(edge.end.vector, this.camera.position));        
+        let sproj = intersectRayPlane(sray, createPlane(this.camera.screen))?.point;        
+        let eproj = intersectRayPlane(eray, createPlane(this.camera.screen))?.point;        
+        if (!sproj || !eproj) { return; }
                 
         let [pl,] = this.camera.screen;
         let screenLength = segmentLength(this.camera.screen);
-        let scol = Math.round(distance(pl, sproj)/screenLength * this.resolution);
-        let ecol = Math.round(distance(pl, eproj)/screenLength * this.resolution);
+        let scol = Math.ceil(distance(pl, sproj)/screenLength * this.resolution);
+        let ecol = Math.floor(distance(pl, eproj)/screenLength * this.resolution);
         
-        [scol, ecol] = [Math.min(scol,ecol), Math.max(scol, ecol)];        
-        let rays = this.rays.slice(scol, ecol);    
+        [scol, ecol] = [Math.max(0, Math.min(scol,ecol)-1), Math.min(this.resolution, Math.max(scol, ecol)+1)];
+        let rays = this.rays.slice(scol, ecol);            
         let hits = castRaysOnEdge(rays, edge);
-        for (let i = 0; i < hits.length; i++) {
+        for (let i = 0; i < hits.length; i++) {            
             if (hits[i].intersection === null) continue;
             if ((getMaterial(hits[i].intersection.face, edge.material)?.color[3]||0)===0) continue;
             const wall = this.wallPainter.createWall(hits[i], scol+i, unclippedStart );            
-            if (wall.height <= 0) continue;
-            this.cols[scol+i].add({
-                isOpaque: (wall.material?.color[3]||0) === 1, 
-                distance: hits[i].distance,
-                render: () => this.wallPainter.drawWall([wall])
-            });            
-        }        
-    }
-
-    public isFull(): boolean {   
-        return this.cols.every(c => c.isFull());     
-    }
-}
-export class ZBufferColumn {
-    private heap: Heap<ZBufferElement>;
-    constructor() {        
-        this.heap = new Heap<ZBufferElement>([], (a, b) => a.distance - b.distance);
+            if (wall.height <= 0) {continue;}
+            let col = this.cols[scol+i];            
+            col.add(wall);            
+        }    
     }
 
     public isFull(): boolean {
-        return this.heap.heapSize > 0 && this.heap.max().isOpaque;
+        let allFilled = true;
+        for (let c of this.cols) {             
+            allFilled = allFilled && c.isFull();
+        }
+        return allFilled;
+    }    
+}
+export class ZBufferColumn {
+    // private heap: Heap<WallProps>;
+    private queue: PriorityDeque<WallProps>;
+    
+    constructor() {        
+        // this.heap = new Heap<WallProps>([], (a, b) => a.distance - b.distance);                     
+        this.queue = new PriorityDeque<WallProps>({ compare: (a, b) => a.distance - b.distance });
     }
 
-    public add(el: ZBufferElement): ZBufferColumn {
-        this.heap.insert(el);
+    public isFull(): boolean {     
+        return this.queue.length > 0 && (this.queue.findMax().material?.color[3]||0) === 1;
+        // return this.heap.heapSize > 0 && (this.heap.max().material?.color[3]||0) === 1;
+    }
+    
+    public add(el: WallProps): ZBufferColumn {        
+        // this.heap.insert(el);
+        this.queue.push(el);
         return this;
     }
 
-    public render(): void {
-        let sorted = this.heap.sort();        
-        // for (let i = 0; i < sorted.length; i++) {
-        //     sorted[i].render();
-        // }
-        for (let i = sorted.length-1; i >= 0; i--) {
-            sorted[i].render();
-        }        
+    public shift(): WallProps {
+        return this.queue.shift();
+    }
+
+    public render(painter: WallPainter): void {
+        while (this.queue.length > 0) {
+            painter.drawWall([this.queue.shift()]);
+        }
+        // let sorted = this.heap.sort();     
+        // for (let i = sorted.length-1; i >= 0; i--) {
+        //     painter.drawWall([sorted[i]]);
+        // }           
     }
 }
-export type ZBufferElement = {
-    isOpaque: boolean;
-    distance: number;
-    render: () => void;
-}
-
