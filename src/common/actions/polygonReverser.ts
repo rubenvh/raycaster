@@ -1,10 +1,11 @@
 import { isPolygon, SelectableElement } from '../selection/selectable';
 import { IPolygon } from "../geometry/polygon";
 import { IActionHandler } from "./actions";
-import { ipcRenderer } from 'electron';
 import { connect } from '../store/store-connector';
 import * as actions from '../store/walls';
 import { useAppDispatch } from '../store';
+
+/// <reference path="../../renderer/electron.d.ts" />
 
 const dispatch = useAppDispatch();
 export class PolygonReverser implements IActionHandler {
@@ -22,7 +23,7 @@ export class PolygonReverser implements IActionHandler {
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
-        ipcRenderer.on('geometry_polygon_reverse', this.reverse);
+        window.electronAPI.on('geometry_polygon_reverse', this.reverse);
         return this;
     }
 

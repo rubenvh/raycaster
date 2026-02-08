@@ -4,10 +4,11 @@ import { snap, Vector } from '../math/vector';
 import { areClose } from '../geometry/vertex';
 import { IActionHandler } from './actions';
 import { ISpaceTranslator } from './geometrySelector';
-import { ipcRenderer } from 'electron';
 import { connect } from '../store/store-connector';
 import { useAppDispatch } from '../store';
 import { clonePolygon, createPolygon } from '../store/walls';
+
+/// <reference path="../../renderer/electron.d.ts" />
 
 const dispatch = useAppDispatch();
 export class PolygonCreator implements IActionHandler {
@@ -29,8 +30,8 @@ export class PolygonCreator implements IActionHandler {
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
-        ipcRenderer.on('geometry_polygon_clone', this.duplicatePolygon);
-        ipcRenderer.on('geometry_polygon_create', this.startCreation);        
+        window.electronAPI.on('geometry_polygon_clone', this.duplicatePolygon);
+        window.electronAPI.on('geometry_polygon_create', this.startCreation);        
         g.addEventListener('mousemove', this.prepareNextVertex);
         g.addEventListener('mouseup', this.decideNextVertex);
         g.addEventListener('contextmenu', this.cancel, false); 

@@ -99,8 +99,9 @@ export class WallPainter {
             color = `rgba(${shade},${shade},${shade},${(1 - start.material.luminosity).toFixed(2)})`;
         } else {
             // automatically decide fading amount based on the wall's distance to the camera
+            const horizonDistance = this.worldConfig.horizonDistance ?? 300;
             const addGradient = (step: number, w: WallProps, gradient: CanvasGradient): CanvasGradient => {
-                const fadeFactor = Math.min(this.worldConfig.horizonDistance, w.distance) / (this.worldConfig.horizonDistance + 10);
+                const fadeFactor = Math.min(horizonDistance, w.distance) / (horizonDistance + 10);
                 const fadeColor = `rgba(${shade},${shade},${shade},${fadeFactor.toFixed(2)})`;
                 gradient.addColorStop(step, fadeColor);
                 return gradient;

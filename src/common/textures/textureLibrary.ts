@@ -39,8 +39,8 @@ export class TextureLibrary {
         }
     }
     
-    public lookupTexture = (material: IMaterial): Texture|null => {        
-        if (!material?.texture) { return this._textures[0]; }
+public lookupTexture = (material: IMaterial): Texture|null => {        
+        if (!material?.texture) { return null; }
         const id = material.texture.id;
         return this.getTexture(id);
     }

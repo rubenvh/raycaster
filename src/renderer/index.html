@@ -2,11 +2,10 @@
 <html>
   <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:;">
     <title>Raycaster map editor</title>
     <link rel="stylesheet" href="../css/main.css" type="text/css">
-    <script>if (typeof module === 'object') {window.module = module; module = undefined;}</script>
     <script src="./dist/renderer-bundle.js" type="text/javascript"></script>
-    <script>if (window.module) module = window.module;</script>
   </head>
   <body> 
     <div class="container">

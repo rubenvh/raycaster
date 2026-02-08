@@ -33,9 +33,22 @@ module.exports = [
       filename: '[name]-bundle.js',
       path: path.resolve(__dirname, 'src/main/dist')
     },
+    node: {
+      __dirname: false,  // Use Node.js __dirname at runtime for correct preload path
+    },
   }),
   Object.assign({}, common_config, {
-    target: 'electron-renderer',
+    target: 'electron-preload',
+    entry: {
+      preload: './src/main/preload.ts',
+    },
+    output: {
+      filename: '[name]-bundle.js',
+      path: path.resolve(__dirname, 'src/main/dist')
+    },
+  }),
+  Object.assign({}, common_config, {
+    target: 'web',
     entry: {
       renderer: './src/renderer/renderer.ts',      
     },

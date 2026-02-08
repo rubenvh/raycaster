@@ -2,6 +2,8 @@ import {app, BrowserWindow, dialog, ipcMain, Menu} from 'electron'
 import { menu } from './mainmenu';
 import * as path from "path";
 import * as url from "url";
+import * as fs from "fs";
+import sizeOf from 'image-size';
 import __basedir from '../basepath';
 import { saveFile } from './dialogs';
 // import installExtension, { REDUX_DEVTOOLS } from 'electron-devtools-installer';
@@ -12,19 +14,23 @@ let mainWindow: Electron.BrowserWindow;
 
 function createWindow () {
   // Create the browser window.
+  // Note: __dirname in webpack with electron-main target points to the dist folder
+  const preloadPath = path.join(__dirname, 'preload-bundle.js');
+  console.log('Preload path:', preloadPath);
+  
   mainWindow = new BrowserWindow({width: 1920, height: 1080, show: false,  webPreferences: {
-    nodeIntegration: true,
-      contextIsolation: false,
-      enableRemoteModule: true,
-    //nodeIntegrationInWorker: true,
+    nodeIntegration: false,
+    contextIsolation: true,
+    preload: preloadPath,
   } });
 
   // and load the index.html of the app.
+  // __dirname points to src/main/dist, so we go up two levels to src, then to renderer
   mainWindow.loadURL(url.format({
-    pathname: path.join(__basedir, __dirname, "../renderer/index.html"),
+    pathname: path.join(__dirname, "../../renderer/index.html"),
     protocol: "file:",
     slashes: true,
-}));
+  }));
 
   // Open the DevTools.
   mainWindow.webContents.openDevTools()
@@ -41,6 +47,46 @@ function createWindow () {
 
   ipcMain.on('saveNew', () => {
     saveFile(dialog, mainWindow); 
+  });
+
+  // File system operations via IPC invoke (async request/response)
+  ipcMain.handle('fs:readFile', async (_event, filePath: string) => {
+    try {
+      const data = await fs.promises.readFile(filePath);
+      return data;
+    } catch (error) {
+      console.error('Error reading file:', filePath, error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('fs:writeFile', async (_event, filePath: string, data: string) => {
+    try {
+      await fs.promises.writeFile(filePath, data);
+    } catch (error) {
+      console.error('Error writing file:', filePath, error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('fs:readFileAsBuffer', async (_event, filePath: string) => {
+    try {
+      const data = await fs.promises.readFile(filePath);
+      return data;
+    } catch (error) {
+      console.error('Error reading file as buffer:', filePath, error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('fs:getImageSize', async (_event, filePath: string) => {
+    try {
+      const dimensions = sizeOf(filePath);
+      return { width: dimensions.width || 0, height: dimensions.height || 0 };
+    } catch (error) {
+      console.error('Error getting image size:', filePath, error);
+      throw error;
+    }
   });
 
   Menu.setApplicationMenu(menu);

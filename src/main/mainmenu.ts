@@ -48,11 +48,11 @@ const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
     label: 'Geometry',
     role: 'appMenu',
     submenu: [
-      {
+{
         label: 'Create polygon',
-        accelerator: 'Control+A',
+        accelerator: 'Control+Space',
         click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_polygon_create'); }}
-      },    
+      },
       {
         label: 'Clone polygon',
         accelerator: 'Control+D',

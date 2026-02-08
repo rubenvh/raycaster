@@ -4,10 +4,11 @@ import { IActionHandler } from "./actions";
 import { Vector } from '../math/vector';
 import { drawVector } from '../drawing/drawing';
 import { isEdge, SelectableElement, SelectedEdge } from '../selection/selectable';
-import { ipcRenderer } from 'electron';
 import { connect } from '../store/store-connector';
 import { useAppDispatch } from '../store';
 import { splitEdge } from '../store/walls';
+
+/// <reference path="../../renderer/electron.d.ts" />
 
 const dispatch = useAppDispatch();
 
@@ -33,7 +34,7 @@ export class EdgeSplitter implements IActionHandler {
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
-        ipcRenderer.on('geometry_edge_split', this.startSplitting);        
+        window.electronAPI.on('geometry_edge_split', this.startSplitting);        
         g.addEventListener('mousemove', this.selectCut);
         g.addEventListener('mouseup', this.cutEdge);
         g.addEventListener('contextmenu', this.cancel, false); 

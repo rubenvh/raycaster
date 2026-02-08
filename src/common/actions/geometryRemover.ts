@@ -1,11 +1,12 @@
 import { createVertexMap } from '../selection/selectable';
 import { IActionHandler } from './actions';
 import { SelectableElement } from '../selection/selectable';
-import { ipcRenderer } from 'electron';
 import { connect } from '../store/store-connector';
 import { useAppDispatch } from '../store';
 import { clearSelection } from '../store/selection';
 import { remove } from '../store/walls';
+
+/// <reference path="../../renderer/electron.d.ts" />
 
 const dispatch = useAppDispatch();
 
@@ -20,7 +21,7 @@ export class GeometryRemover implements IActionHandler {
     }
 
     register(_: GlobalEventHandlers): IActionHandler {        
-        ipcRenderer.on('geometry_remove', this.deleteSelection);
+        window.electronAPI.on('geometry_remove', this.deleteSelection);
         return this;
     }
 

@@ -1,6 +1,5 @@
 import { EMPTY_GEOMETRY, expandPolygon } from './../geometry/geometry';
 import { IPolygon } from './../geometry/polygon';
-import { ipcRenderer } from "electron";
 import { isEdge, SelectableElement, SelectedEdge } from "../selection/selectable";
 import { IActionHandler } from "./actions";
 import { ISpaceTranslator } from "./geometrySelector";
@@ -9,6 +8,8 @@ import { connect } from '../store/store-connector';
 import { useAppDispatch } from '../store';
 import * as actions from '../store/walls';
 import { clearSelection } from '../store/selection';
+
+/// <reference path="../../renderer/electron.d.ts" />
 
 const dispatch = useAppDispatch();
 export class PolygonExpander implements IActionHandler {
@@ -32,7 +33,7 @@ export class PolygonExpander implements IActionHandler {
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
-        ipcRenderer.on('geometry_polygon_expand', this.startExpanding);
+        window.electronAPI.on('geometry_polygon_expand', this.startExpanding);
         g.addEventListener('mousemove', this.selectExpansion);
         g.addEventListener('mouseup', this.finalizeExpansion);
         g.addEventListener('contextmenu', this.cancel, false); 

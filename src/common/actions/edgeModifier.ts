@@ -6,10 +6,11 @@ import { ITextureReference } from './../textures/model';
 import { IActionHandler } from "./actions";
 import { IEdge } from '../geometry/edge';
 import { isEdge, isPolygon, SelectableElement } from "../selection/selectable";
-import { ipcRenderer } from 'electron';
 import { applyTexture, Face, toggleTexture } from '../geometry/properties';
 import { connect } from '../store/store-connector';
 import { adaptEdges } from '../store/walls';
+
+/// <reference path="../../renderer/electron.d.ts" />
 
 const dispatch = useAppDispatch();
 export class EdgeModifier implements IActionHandler {
@@ -32,10 +33,10 @@ export class EdgeModifier implements IActionHandler {
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
-        ipcRenderer.on('geometry_edge_immaterial', this.toggleImmateriality);
-        ipcRenderer.on('geometry_edge_texture', this.toggleMaterialTexture);
-        ipcRenderer.on('geometry_edge_texture_scroll', (_, dir) => dir<0 ? this.previousTexture() : this.nextTexture());
-        ipcRenderer.on('geometry_edge_translucency', (_, dir) => dir<0 ? this.increaseTranslucency() : this.decreaseTranslucency());
+        window.electronAPI.on('geometry_edge_immaterial', this.toggleImmateriality);
+        window.electronAPI.on('geometry_edge_texture', this.toggleMaterialTexture);
+        window.electronAPI.on('geometry_edge_texture_scroll', (dir: number) => dir<0 ? this.previousTexture() : this.nextTexture());
+        window.electronAPI.on('geometry_edge_translucency', (dir: number) => dir<0 ? this.increaseTranslucency() : this.decreaseTranslucency());
         return this;
     }
 

@@ -1,4 +1,3 @@
-import { ipcRenderer } from "electron";
 import { useAppDispatch } from "../../store";
 import { connect } from "../../store/store-connector";
 import { updateBsp } from "../../store/walls";
@@ -6,13 +5,15 @@ import { EMPTY_GEOMETRY, IGeometry } from "../geometry";
 import { IBSPNode } from "./model";
 import { buildBspTree } from './creation'
 
+/// <reference path="../../../renderer/electron.d.ts" />
+
 const dispatch = useAppDispatch();
 
 export class BspGenerationStarter {
     private worker: Worker|null = null;
     private geometry: IGeometry = EMPTY_GEOMETRY;
     constructor() {         
-        ipcRenderer.on('bsp_generate', this.generateLocal);       
+        window.electronAPI.on('bsp_generate', this.generateLocal);       
         connect(state => {
             this.geometry = state.walls.geometry;
         });

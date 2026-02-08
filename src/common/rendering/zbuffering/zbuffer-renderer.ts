@@ -70,7 +70,7 @@ export class ZBufferRenderer implements IRenderer {
             let increment = 0;
             for (let p of ps) {
                 for (let e of p.edges) {
-                    if (e.material === null) continue;
+                    if (e.material == null) continue;
                     const clipped = clip(e, this.camera);
                     if (clipped === NULL_EDGE) continue;
 
@@ -79,8 +79,10 @@ export class ZBufferRenderer implements IRenderer {
                     increment = increment || 1;
 
                     edgesTested++;
-                    buffer.add(clipped, e.start.vector);                    
-                    if (buffer.isFull()) return false;
+                    buffer.add(clipped, e.start.vector);
+                    // Note: removed early termination based on buffer.isFull() because BSP walk 
+                    // doesn't guarantee front-to-back distance ordering (coplanar edges can be 
+                    // at any distance). Must process all edges and let the ZBuffer sort by distance.
                 }
             }    
             count = count + increment;
@@ -216,7 +218,6 @@ export class ZBufferColumn {
 
     public isFull(): boolean {     
         return this.queue.length > 0 && (this.queue.findMax().material?.color[3]||0) === 1;
-        // return this.heap.heapSize > 0 && (this.heap.max().material?.color[3]||0) === 1;
     }
     
     public add(el: WallProps): ZBufferColumn {        

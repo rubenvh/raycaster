@@ -79,6 +79,7 @@ export default class TextureLibraryElement extends HTMLElement {
             return option;
         });        
         
+        this.sourcesElement.innerHTML = '';
         this.sourcesElement.append(...items);
         this.sourcesElement.selectedIndex = 0;  
         this.sourceEditor.textureSource = this.sources[0];

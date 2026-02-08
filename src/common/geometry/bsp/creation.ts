@@ -9,7 +9,7 @@ const MIN_LEAF_SIZE = 1;
 
 export function buildBspTree(polygons: IPolygon[], depth: number = 0, maxDepth = MAX_DEPTH, previousSplitPlane: Plane = VOID_PLANE): IBSPNode {
     
-    if (polygons.length === null) return NULL_NODE;    
+    if (polygons.length === 0) return NULL_NODE;
 
     if (polygons.length <= 3 && polygons.every(p => isConvex(p)) || depth >= maxDepth) {    
         return createLeaf(polygons);

@@ -65,7 +65,10 @@ export function walk(tree: IBSPNode, p: Vector, map: (polygons: IPolygon[]) => b
     } else if (isSplitNode(tree)) {
         let [nearest, farthest] = classifyPointToPlane(p, tree.plane) !== PointToPlaneRelation.Behind ?
             [tree.front, tree.back] : [tree.back, tree.front]
-
+        
         return walk(nearest, p, map) && map(tree.coplanar) && walk(farthest, p, map);
+
     }
+    // NullBspNode - nothing to traverse, return true to continue chain
+    return true;
 }

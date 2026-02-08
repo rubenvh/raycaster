@@ -1,13 +1,14 @@
 import { EMPTY_GEOMETRY, IGeometry } from './../geometry/geometry';
 import { IPolygon } from './../geometry/polygon';
 import { isVertex, SelectableElement } from '../selection/selectable';
-import { ipcRenderer } from 'electron';
 import { IActionHandler } from './actions';
 import { IVertex } from '../geometry/vertex';
 import { connect } from '../store/store-connector';
 import { useAppDispatch } from '../store';
 import * as actions from '../store/walls';
 import { clearSelection } from '../store/selection';
+
+/// <reference path="../../renderer/electron.d.ts" />
 
 const dispatch = useAppDispatch();
 export class PolygonSplitter implements IActionHandler {
@@ -20,9 +21,9 @@ export class PolygonSplitter implements IActionHandler {
         });
     }
     register(g: GlobalEventHandlers): IActionHandler {
-        ipcRenderer.on('geometry_polygon_split', this.initiateSplit);
+        window.electronAPI.on('geometry_polygon_split', this.initiateSplit);
         return this;
-    }    
+    }
 
     handle(): void {}
     isActive = (): boolean => this.selectedElements.length === 2 && this.selectedElements.every(isVertex);

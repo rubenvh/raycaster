@@ -1,6 +1,5 @@
 import { ITextureSource } from './../textures/model';
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import sizeOf from 'image-size';       
 
 // Slice
 export type ITextureLibraryState = {sources: ITextureSource[]};
@@ -11,19 +10,37 @@ const slice = createSlice({
     initialize: (state, action: PayloadAction<ITextureSource[]>) => {      
       state.sources = action.payload;
     },
-    loadTexture: (_, action: PayloadAction<{buffer:Buffer, path: string, fileName: string}>) => {
-      const {path, buffer, fileName} = action.payload;
-      const base64 = Buffer.from(buffer).toString('base64');
-      const dimensions = sizeOf(path);
-      // TODO: get filename and use as id
-      var s: ITextureSource = {id: fileName, textureHeight: 0, textureWidth: 0, data: base64, totalHeight: dimensions.height, totalWidth: dimensions.width};
-      _.sources.push(s);      
+    loadTexture: (state, action: PayloadAction<{
+      buffer: ArrayBuffer | Uint8Array, 
+      fileName: string,
+      width: number,
+      height: number
+    }>) => {
+      const {buffer, fileName, width, height} = action.payload;
+      // Convert buffer to base64 - buffer from IPC is Uint8Array in renderer
+      const uint8Array = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
+      let binary = '';
+      for (let i = 0; i < uint8Array.length; i++) {
+        binary += String.fromCharCode(uint8Array[i]);
+      }
+      const base64 = btoa(binary);
+      const s: ITextureSource = {
+        id: fileName, 
+        textureHeight: 0, 
+        textureWidth: 0, 
+        data: base64, 
+        totalHeight: height, 
+        totalWidth: width
+      };
+      state.sources.push(s);      
     },
     adaptTexture: (state, action: PayloadAction<{id: string, textureHeight: number, textureWidth: number}>) => {
       const {id, textureHeight, textureWidth} = action.payload;
       const s = state.sources.find(_=>_.id === id);
-      s.textureHeight = textureHeight;
-      s.textureWidth = textureWidth;
+      if (s) {
+        s.textureHeight = textureHeight;
+        s.textureWidth = textureWidth;
+      }
     }
   },
 });

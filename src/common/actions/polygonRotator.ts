@@ -2,13 +2,14 @@ import { isPolygon, SelectableElement } from '../selection/selectable';
 import { IPolygon } from "../geometry/polygon";
 import { IActionHandler } from "./actions";
 import { ISpaceTranslator } from "./geometrySelector";
-import { ipcRenderer } from 'electron';
 import { drawSegment, drawVector } from '../drawing/drawing';
 import { EMPTY_GEOMETRY, rotatePolygon } from '../geometry/geometry';
 import { connect } from '../store/store-connector';
 import { useAppDispatch } from '../store';
 import * as actions from '../store/walls';
 import { Vector } from '../math/vector';
+
+/// <reference path="../../renderer/electron.d.ts" />
 
 const dispatch = useAppDispatch();
 export class PolygonRotator implements IActionHandler {
@@ -32,7 +33,7 @@ export class PolygonRotator implements IActionHandler {
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
-        ipcRenderer.on('geometry_polygon_rotate', this.startRotation);
+        window.electronAPI.on('geometry_polygon_rotate', this.startRotation);
         g.addEventListener('mousemove', this.selectRotation);
         g.addEventListener('mouseup', this.finalizeRotation);
         g.addEventListener('contextmenu', this.cancel, false); 
