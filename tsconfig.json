@@ -1,0 +1,29 @@
+{
+  "compileOnSave": false,
+  "compilerOptions": {
+    "target": "es2020",
+    "moduleResolution": "node",
+    "pretty": true,
+    "newLine": "LF",
+    "allowSyntheticDefaultImports": true,
+    "strict": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "sourceMap": true,
+    "skipLibCheck": true,
+    "allowJs": true,
+    "downlevelIteration": true,
+    "jsx": "preserve",
+    "lib": ["DOM", "ES2020"],
+    "noEmit": true
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "**/dist/**",
+    "**/*.test.ts",
+    "**/*.spec.ts"
+  ]
+}
