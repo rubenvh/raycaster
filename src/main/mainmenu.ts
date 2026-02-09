@@ -1,5 +1,10 @@
 import { importTexture, openFile, saveFile } from './dialogs';
-import { dialog, Menu } from "electron"
+import { dialog, Menu, BrowserWindow } from "electron"
+
+// Helper to safely cast BaseWindow to BrowserWindow for menu click handlers
+// In Electron 40+, menu click handlers receive BaseWindow, but we know our app uses BrowserWindow
+const asBrowserWindow = (win: Electron.BaseWindow | undefined): BrowserWindow | undefined => 
+  win as BrowserWindow | undefined;
 
 const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
   {
@@ -9,22 +14,22 @@ const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
       {
         label: 'New',
         accelerator: 'CommandOrControl+Shift+N',
-        click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('newFile'); }}
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('newFile'); }}
       },
       {
         label: 'Open',
         accelerator: 'CommandOrControl+Shift+O',
-        click: (_, focusedWindow) => { if (focusedWindow) { openFile(dialog, focusedWindow); }}
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { openFile(dialog, win); }}
       },
       {
         label: 'Save',
         accelerator: 'CommandOrControl+S',
-        click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('saveFile');}},
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('saveFile');}},
       },
       {
         label: 'Save as',
         accelerator: 'CommandOrControl+Shift+S',
-        click: (_, focusedWindow) => { if (focusedWindow) { saveFile(dialog, focusedWindow); }},
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { saveFile(dialog, win); }},
       }
     ]
   },
@@ -35,7 +40,7 @@ const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
       {
         label: 'Import',
         //accelerator: 'CommandOrControl+Shift+N',
-        click: (_, focusedWindow) => { if (focusedWindow) { importTexture(dialog, focusedWindow); }}
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { importTexture(dialog, win); }}
       },
       {
         label: 'Library',
@@ -51,32 +56,32 @@ const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
 {
         label: 'Create polygon',
         accelerator: 'Control+Space',
-        click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_polygon_create'); }}
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('geometry_polygon_create'); }}
       },
       {
         label: 'Clone polygon',
         accelerator: 'Control+D',
-        click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_polygon_clone'); }}
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('geometry_polygon_clone'); }}
       },      
       {
         label: 'Expand polygon',
         accelerator: 'Control+E',
-        click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_polygon_expand'); }}
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('geometry_polygon_expand'); }}
       },  
       {
         label: 'Split polygon',
         accelerator: 'Control+Shift+S',
-        click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_polygon_split'); }}
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('geometry_polygon_split'); }}
       },  
       {
         label: 'Rotate polygon',
         accelerator: 'Control+Shift+R',
-        click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_polygon_rotate'); }}
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('geometry_polygon_rotate'); }}
       }, 
       {
         label: 'Reverse polygon',
         accelerator: 'Control+Alt+R',
-        click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_polygon_reverse'); }}
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('geometry_polygon_reverse'); }}
       }, 
       {
         type: 'separator'
@@ -84,37 +89,37 @@ const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
       {
         label: 'Split edge',
         accelerator: 'Control+S',
-        click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_edge_split'); }}
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('geometry_edge_split'); }}
       },   
       {
         label: 'Toggle immaterial',
         accelerator: 'Control+I',
-        click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_edge_immaterial'); }}
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('geometry_edge_immaterial'); }}
       },
       {
         label: 'Toggle texture',
         accelerator: 'Control+T',
-        click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_edge_texture'); }}
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('geometry_edge_texture'); }}
       },
       {
         label: 'Next texture',
         accelerator: 'Control+PageUp',
-        click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_edge_texture_scroll', -1); }}
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('geometry_edge_texture_scroll', -1); }}
       },
       {
         label: 'Previous texture',
         accelerator: 'Control+PageDown',
-        click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_edge_texture_scroll', 1); }}
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('geometry_edge_texture_scroll', 1); }}
       },
       {
         label: 'Increase translucency',
         accelerator: 'Control+]',
-        click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_edge_translucency', -1); }}
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('geometry_edge_translucency', -1); }}
       },
       {
         label: 'Decrease translucency',
         accelerator: 'Control+[',
-        click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_edge_translucency', 1); }}
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('geometry_edge_translucency', 1); }}
       },
       {
         type: 'separator'
@@ -122,12 +127,12 @@ const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
       {
         label: 'Remove',
         accelerator: 'Control+X',
-        click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_remove'); }}
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('geometry_remove'); }}
       },
       {
         label: 'Adapt fading strategy',
         accelerator: 'Control+Shift+F',
-        click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('geometry_config_fadeOut'); }}
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('geometry_config_fadeOut'); }}
       },
       {
         type: 'separator'
@@ -135,8 +140,8 @@ const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
       {
         label: 'Recalculate BSP',
         accelerator: 'Control+R',
-        click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('bsp_generate'); }}
-      },   
+        click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('bsp_generate'); }}
+      },
     ]
   },
   {
@@ -145,12 +150,12 @@ const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
         {
           label: 'Undo',
           accelerator: 'Control+Z',
-          click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('undo'); }}
+          click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('undo'); }}
         },
         {
           label: 'Redo',
           accelerator: 'Control+Y',
-          click: (_, focusedWindow) => { if (focusedWindow) { focusedWindow.webContents.send('redo'); }}
+          click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) { win.webContents.send('redo'); }}
         },
         // {
         //   type: 'separator'
@@ -178,18 +183,20 @@ const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
     {
       label: 'View',
       submenu: [
-        {
+{
           label: 'Reload',
           accelerator: 'CmdOrCtrl+R',
           click (_, focusedWindow) {
-            if (focusedWindow) focusedWindow.reload()
+            const win = asBrowserWindow(focusedWindow);
+            if (win) win.reload()
           }
         },
         {
           label: 'Toggle Developer Tools',
           accelerator: process.platform === 'darwin' ? 'Alt+Command+I' : 'Ctrl+Shift+I',
           click (_, focusedWindow) {
-            if (focusedWindow) focusedWindow.webContents.toggleDevTools()
+            const win = asBrowserWindow(focusedWindow);
+            if (win) win.webContents.toggleDevTools()
           }
         },
         {

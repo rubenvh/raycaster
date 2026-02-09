@@ -20,7 +20,7 @@
   "license": "MIT",
   "dependencies": {
     "@reduxjs/toolkit": "^2.11.2",
-    "electron": "^28.1.0",
+    "electron": "^40.2.1",
     "guid-typescript": "^1.0.9",
     "image-size": "^2.0.2",
     "priority-deque": "^1.1.0",
