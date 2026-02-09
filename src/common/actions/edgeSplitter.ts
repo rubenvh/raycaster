@@ -17,11 +17,13 @@ export class EdgeSplitter implements IActionHandler {
     private isSplitting: boolean;
     private candidate: Vector;
     private selectedElements: SelectableElement[] = [];    
+    private unsubscribe: () => void;
+    private registeredElement: GlobalEventHandlers | null = null;
     
     constructor(
         private context: CanvasRenderingContext2D,
         private spaceTranslator: ISpaceTranslator) {
-            connect(s => {
+            this.unsubscribe = connect(s => {
                 this.selectedElements = s.selection.elements;
             });
     }
@@ -34,11 +36,22 @@ export class EdgeSplitter implements IActionHandler {
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
+        this.registeredElement = g;
         window.electronAPI.on('geometry_edge_split', this.startSplitting);        
         g.addEventListener('mousemove', this.selectCut);
         g.addEventListener('mouseup', this.cutEdge);
         g.addEventListener('contextmenu', this.cancel, false); 
         return this;
+    }
+
+    dispose(): void {
+        this.unsubscribe();
+        window.electronAPI.off('geometry_edge_split', this.startSplitting);
+        if (this.registeredElement) {
+            this.registeredElement.removeEventListener('mousemove', this.selectCut);
+            this.registeredElement.removeEventListener('mouseup', this.cutEdge);
+            this.registeredElement.removeEventListener('contextmenu', this.cancel, false);
+        }
     }
 
     handle(): void {

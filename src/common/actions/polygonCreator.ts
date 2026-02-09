@@ -17,11 +17,13 @@ export class PolygonCreator implements IActionHandler {
     private nextVertex: Vector;
     private selectedElements: SelectableElement[] = [];
     private duplicationCount: number = 0;
+    private unsubscribe: () => void;
+    private registeredElement: GlobalEventHandlers | null = null;
 
     constructor(
         private context: CanvasRenderingContext2D,
         private spaceTranslator: ISpaceTranslator) {
-            connect(s => {
+            this.unsubscribe = connect(s => {
                 if (this.selectedElements !== s.selection.elements) {
                     this.selectedElements = s.selection.elements;
                     this.duplicationCount = 0;
@@ -30,12 +32,24 @@ export class PolygonCreator implements IActionHandler {
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
+        this.registeredElement = g;
         window.electronAPI.on('geometry_polygon_clone', this.duplicatePolygon);
         window.electronAPI.on('geometry_polygon_create', this.startCreation);        
         g.addEventListener('mousemove', this.prepareNextVertex);
         g.addEventListener('mouseup', this.decideNextVertex);
         g.addEventListener('contextmenu', this.cancel, false); 
         return this;
+    }
+
+    dispose(): void {
+        this.unsubscribe();
+        window.electronAPI.off('geometry_polygon_clone', this.duplicatePolygon);
+        window.electronAPI.off('geometry_polygon_create', this.startCreation);
+        if (this.registeredElement) {
+            this.registeredElement.removeEventListener('mousemove', this.prepareNextVertex);
+            this.registeredElement.removeEventListener('mouseup', this.decideNextVertex);
+            this.registeredElement.removeEventListener('contextmenu', this.cancel, false);
+        }
     }
 
     handle(): void {

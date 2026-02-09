@@ -18,11 +18,13 @@ export class PolygonRotator implements IActionHandler {
     private candidates: IPolygon[] = [];
     private selectedElements: SelectableElement[] = [];
     private wallGeometry = EMPTY_GEOMETRY;
+    private unsubscribe: () => void;
+    private registeredElement: GlobalEventHandlers | null = null;
 
     constructor(
         private context: CanvasRenderingContext2D,
         private spaceTranslator: ISpaceTranslator) {
-            connect(s => {
+            this.unsubscribe = connect(s => {
                 this.selectedElements = s.selection.elements;
                 this.wallGeometry = s.walls.geometry;
             });
@@ -33,11 +35,22 @@ export class PolygonRotator implements IActionHandler {
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
+        this.registeredElement = g;
         window.electronAPI.on('geometry_polygon_rotate', this.startRotation);
         g.addEventListener('mousemove', this.selectRotation);
         g.addEventListener('mouseup', this.finalizeRotation);
         g.addEventListener('contextmenu', this.cancel, false); 
         return this;
+    }
+
+    dispose(): void {
+        this.unsubscribe();
+        window.electronAPI.off('geometry_polygon_rotate', this.startRotation);
+        if (this.registeredElement) {
+            this.registeredElement.removeEventListener('mousemove', this.selectRotation);
+            this.registeredElement.removeEventListener('mouseup', this.finalizeRotation);
+            this.registeredElement.removeEventListener('contextmenu', this.cancel, false);
+        }
     }
 
     handle(): void {

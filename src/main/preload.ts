@@ -98,5 +98,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
     if (validReceiveChannels.includes(channel)) {
       ipcRenderer.removeAllListeners(channel);
     }
+  },
+
+  // Alias for removeListener (common event emitter pattern)
+  off: (channel: string, callback: (...args: any[]) => void): void => {
+    if (validReceiveChannels.includes(channel)) {
+      const wrappedCallback = callbackMap.get(callback);
+      if (wrappedCallback) {
+        ipcRenderer.removeListener(channel, wrappedCallback);
+        callbackMap.delete(callback);
+      }
+    }
   }
 });

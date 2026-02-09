@@ -21,13 +21,21 @@ export class WorldLoader {
     private wallGeometry = EMPTY_GEOMETRY;
     private worldConfig: IWorldConfigState = {};
     private textureSources: ITextureSource[] = [];
+    private unsubscribe: () => void;
+
+    // Store handler references for cleanup
+    private openFileHandler = (arg: { filePaths: string[] }) => this.loadFile(arg.filePaths[0]);
+    private saveFileAsHandler = (arg: { filePath: string }) => this.saveFile(arg.filePath);
+    private saveFileHandler = () => this.save();
+    private newFileHandler = () => this.clear();
+    private importTextureHandler = (arg: { filePaths: string[] }) => this.importTexture(arg.filePaths[0]);
 
     constructor() {
-        window.electronAPI.on('openFile', (arg: { filePaths: string[] }) => this.loadFile(arg.filePaths[0]));
-        window.electronAPI.on('saveFileAs', (arg: { filePath: string }) => this.saveFile(arg.filePath));
-        window.electronAPI.on('saveFile', () => this.save());
-        window.electronAPI.on('newFile', () => this.clear());
-        window.electronAPI.on('importTexture', (arg: { filePaths: string[] }) => this.importTexture(arg.filePaths[0]));
+        window.electronAPI.on('openFile', this.openFileHandler);
+        window.electronAPI.on('saveFileAs', this.saveFileAsHandler);
+        window.electronAPI.on('saveFile', this.saveFileHandler);
+        window.electronAPI.on('newFile', this.newFileHandler);
+        window.electronAPI.on('importTexture', this.importTextureHandler);
 
         const loadedFile = localStorage.getItem('loadedFile');
         if (loadedFile) {
@@ -36,12 +44,21 @@ export class WorldLoader {
             this.clear();
         }
 
-        connect(state => {
+        this.unsubscribe = connect(state => {
             this.camera = state.player.camera;
             this.wallGeometry = state.walls.geometry;
             this.worldConfig = state.worldConfig;
             this.textureSources = state.textures.sources;            
-        })
+        });
+    }
+
+    dispose(): void {
+        this.unsubscribe();
+        window.electronAPI.off('openFile', this.openFileHandler);
+        window.electronAPI.off('saveFileAs', this.saveFileAsHandler);
+        window.electronAPI.off('saveFile', this.saveFileHandler);
+        window.electronAPI.off('newFile', this.newFileHandler);
+        window.electronAPI.off('importTexture', this.importTextureHandler);
     }
 
     private importTexture = async (path: string): Promise<void> => {

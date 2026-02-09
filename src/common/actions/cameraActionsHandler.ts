@@ -14,9 +14,11 @@ export class CameraActionsHandler implements IActionHandler {
         
     private flags: {[key in CameraAction]: Flag};
     private wallGeometry = EMPTY_GEOMETRY;
+    private unsubscribe: () => void;
+    private cleanupFunctions: (() => void)[] = [];
 
     constructor() {
-        connect(s => {            
+        this.unsubscribe = connect(s => {            
             this.wallGeometry = s.walls.geometry;
         });
     }
@@ -24,10 +26,17 @@ export class CameraActionsHandler implements IActionHandler {
     register(g: GlobalEventHandlers): IActionHandler {
         this.flags = CAMERA_ACTIONS.reduce((acc, x) => {
             const flag = makeFlag();
-            bindFlagToKey(g, x, flag);
+            const cleanup = bindFlagToKey(g, x, flag);
+            this.cleanupFunctions.push(cleanup);
             return ({...acc, [x]: flag});
         }, {} as {[key in CameraAction]: Flag});
         return this;        
+    }
+
+    dispose(): void {
+        this.unsubscribe();
+        this.cleanupFunctions.forEach(fn => fn());
+        this.cleanupFunctions = [];
     }
 
     handle() {

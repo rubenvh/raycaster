@@ -2,7 +2,7 @@
 // be executed in the renderer process for that window.
 // All of the Node.js APIs are available in this process.
 
-import { createCanvasHandlers, createGlobalActionHandlers } from '../common/actions/actionHandlerFactory';
+import { createCanvasHandlers, createGlobalActionHandlers, IDisposableHandlers } from '../common/actions/actionHandlerFactory';
 import { Renderer3d } from '../common/rendering/raycasting/renderer3d';
 import { ZBufferRenderer } from '../common/rendering/zbuffering/zbuffer-renderer';
 import { MapEditorRenderer } from '../common/editor/mapEditor';
@@ -34,21 +34,26 @@ window.addEventListener('load', (event) => {
         textureLibrary: document.getElementById('texture-library') as TextureLibraryElement,
     };
 
-    new WorldLoader();
-    new UndoService();
+    // Track all disposable resources for cleanup
+    const worldLoader = new WorldLoader();
+    const undoService = new UndoService();
     let renderers = [new Renderer3d(ui.view_3d.canvas), new ZBufferRenderer(ui.view_3d.canvas)];
     let mapEditor = new MapEditorRenderer(ui.view_2d.canvas);
-    let handlers = [...createGlobalActionHandlers(), ...createCanvasHandlers(ui.view_2d.canvas, mapEditor)];
+    const globalHandlers = createGlobalActionHandlers();
+    const canvasHandlers = createCanvasHandlers(ui.view_2d.canvas, mapEditor);
+    const handlers = [...globalHandlers.handlers, ...canvasHandlers.handlers];
 
     let testCanvas = new TestCanvasRenderer(ui.view_2d.canvas);//, mapEditor.context);
-    new BspGenerationStarter();
+    const bspStarter = new BspGenerationStarter();
 
-    connect(s => {
+    const unsubscribeStats = connect(s => {
         ui.stats.data = s.stats;
     });
 
     const times: number[] = [];
     let fps: number;
+    let animationFrameId: number;
+    
     function loop() {
         const now = performance.now();
         while (times.length > 0 && times[0] <= now - 1000) { times.shift(); }
@@ -56,9 +61,9 @@ window.addEventListener('load', (event) => {
         fps = times.length;
         redraw();
         update();
-        window.requestAnimationFrame(loop);
+        animationFrameId = window.requestAnimationFrame(loop);
     }
-    window.requestAnimationFrame(loop);
+    animationFrameId = window.requestAnimationFrame(loop);
 
     function redraw() {
         testCanvas.render(fps);
@@ -73,5 +78,25 @@ window.addEventListener('load', (event) => {
     function update() {
         handlers.forEach(_ => _.handle());
     }
+
+    // Cleanup function for when the window is unloaded
+    window.addEventListener('beforeunload', () => {
+        // Cancel animation frame
+        if (animationFrameId) {
+            window.cancelAnimationFrame(animationFrameId);
+        }
+        
+        // Dispose all handlers
+        globalHandlers.dispose();
+        canvasHandlers.dispose();
+        
+        // Dispose services
+        worldLoader.dispose();
+        undoService.dispose();
+        bspStarter.dispose();
+        
+        // Unsubscribe store connection
+        unsubscribeStats();
+    });
 });
 

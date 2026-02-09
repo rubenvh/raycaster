@@ -59,6 +59,13 @@ export interface ElectronAPI {
    * @param channel - The IPC channel name
    */
   removeAllListeners(channel: string): void;
+
+  /**
+   * Remove a specific listener from a channel (alias for removeListener).
+   * @param channel - The IPC channel name
+   * @param callback - The callback function to remove
+   */
+  off(channel: string, callback: (...args: any[]) => void): void;
 }
 
 declare global {

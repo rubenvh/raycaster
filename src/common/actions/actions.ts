@@ -29,27 +29,40 @@ export interface IActionHandler {
     register(g: GlobalEventHandlers): IActionHandler;    
     handle(): void;
     isActive(): boolean;
+    dispose(): void;
 }
 
-export function bindFlagToKey(g: GlobalEventHandlers, a: Action, flag: Flag) {
+export function bindFlagToKey(g: GlobalEventHandlers, a: Action, flag: Flag): () => void {
     const keyDefiniton = Keys[a];
-    g.addEventListener("keydown", (event: KeyboardEvent) => {           
+    const keydownHandler = (event: KeyboardEvent) => {           
         if (event.keyCode === keyDefiniton.key && !keyDefiniton.ctrl === !event.ctrlKey) {            
             activate(flag);
         }
-    }, false);
-    g.addEventListener("keyup", (event: KeyboardEvent) => {  
+    };
+    const keyupHandler = (event: KeyboardEvent) => {  
         if (event.keyCode === keyDefiniton.key) {             
           reset(flag);  
         }        
-    }, false);
+    };
+    g.addEventListener("keydown", keydownHandler, false);
+    g.addEventListener("keyup", keyupHandler, false);
+    
+    return () => {
+        g.removeEventListener("keydown", keydownHandler, false);
+        g.removeEventListener("keyup", keyupHandler, false);
+    };
 }
 
-export function bindCallbackToKey(g: GlobalEventHandlers, a: Action, c: ()=>void) {
-    const keyDefiniton = Keys[a];    
-    g.addEventListener("keydown", (event: KeyboardEvent) => {           
+export function bindCallbackToKey(g: GlobalEventHandlers, a: Action, c: ()=>void): () => void {
+    const keyDefiniton = Keys[a];
+    const keydownHandler = (event: KeyboardEvent) => {           
         if (event.keyCode === keyDefiniton.key && !keyDefiniton.ctrl === !event.ctrlKey) {            
             c();
         }
-    }, false);
+    };
+    g.addEventListener("keydown", keydownHandler, false);
+    
+    return () => {
+        g.removeEventListener("keydown", keydownHandler, false);
+    };
 }

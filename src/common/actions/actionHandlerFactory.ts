@@ -12,23 +12,32 @@ import { PolygonSplitter } from './polygonSplitter';
 import { PolygonRotator } from './polygonRotator';
 import { PolygonReverser } from './polygonReverser';
 
-export function createGlobalActionHandlers(): IActionHandler[] {
-    return [
+export interface IDisposableHandlers {
+    handlers: IActionHandler[];
+    dispose: () => void;
+}
+
+export function createGlobalActionHandlers(): IDisposableHandlers {
+    const handlers = [
         new CameraActionsHandler(),
         new GlobalActionsHandler(),
     ]
     .map(_ => _.register(window));
 
+    return {
+        handlers,
+        dispose: () => handlers.forEach(h => h.dispose())
+    };
 }
 
-export function createCanvasHandlers(canvas: HTMLCanvasElement, spaceTranslator: ISpaceTranslator): IActionHandler[] {
+export function createCanvasHandlers(canvas: HTMLCanvasElement, spaceTranslator: ISpaceTranslator): IDisposableHandlers {
     
     const blockingHandlers = [
         new EdgeSplitter(canvas.getContext('2d'), spaceTranslator),
         new PolygonExpander(canvas.getContext('2d'), spaceTranslator),
         new PolygonRotator(canvas.getContext('2d'), spaceTranslator)
     ];
-    return [
+    const handlers = [
             ...blockingHandlers,
             new GeometryMover(spaceTranslator, blockingHandlers),
             new GeometrySelector(canvas.getContext('2d'), spaceTranslator, blockingHandlers),
@@ -39,4 +48,9 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, spaceTranslator:
             new PolygonReverser(),
         ]
         .map(_ => _.register(canvas));
+    
+    return {
+        handlers,
+        dispose: () => handlers.forEach(h => h.dispose())
+    };
 }

@@ -8,13 +8,24 @@ import { toggleBspDrawing, toggleTestCanvas } from "../store/ui-config";
 const dispatch = useAppDispatch();
 
 export class GlobalActionsHandler implements IActionHandler {
+    private fadeOutHandler = () => dispatch(actions.toggleFadingStrategy());
+    private cleanupFunctions: (() => void)[] = [];
     
     register(g: GlobalEventHandlers): IActionHandler {
-        window.electronAPI.on('geometry_config_fadeOut', () => dispatch(actions.toggleFadingStrategy()));        
-        bindCallbackToKey(g, 'toggle_test_canvas', () => dispatch(toggleTestCanvas()));
-        bindCallbackToKey(g, 'toggle_draw_bsp', () => dispatch(toggleBspDrawing()));
+        window.electronAPI.on('geometry_config_fadeOut', this.fadeOutHandler);        
+        this.cleanupFunctions.push(
+            bindCallbackToKey(g, 'toggle_test_canvas', () => dispatch(toggleTestCanvas())),
+            bindCallbackToKey(g, 'toggle_draw_bsp', () => dispatch(toggleBspDrawing()))
+        );
         return this;        
     }
+
+    dispose(): void {
+        window.electronAPI.off('geometry_config_fadeOut', this.fadeOutHandler);
+        this.cleanupFunctions.forEach(fn => fn());
+        this.cleanupFunctions = [];
+    }
+
     handle() {}       
     isActive = (): boolean => true;
 }

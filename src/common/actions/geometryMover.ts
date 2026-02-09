@@ -15,18 +15,30 @@ export class GeometryMover implements IActionHandler {
     private isDragging: boolean = false;
     private origin: Vector;
     private selectedElements: SelectableElement[] = [];
+    private unsubscribe: () => void;
+    private registeredElement: GlobalEventHandlers | null = null;
     
     constructor(private spaceTranslator: ISpaceTranslator, private blockingHandlers: IActionHandler[] = []) {
-        connect(s => {
+        this.unsubscribe = connect(s => {
             this.selectedElements = s.selection.elements;    
         });
     }
     
     register(g: GlobalEventHandlers): IActionHandler {
+        this.registeredElement = g;
         g.addEventListener('mousedown', this.dragStart);
         g.addEventListener('mousemove', this.drag);
         g.addEventListener('mouseup', this.dragStop);
         return this;
+    }
+
+    dispose(): void {
+        this.unsubscribe();
+        if (this.registeredElement) {
+            this.registeredElement.removeEventListener('mousedown', this.dragStart);
+            this.registeredElement.removeEventListener('mousemove', this.drag);
+            this.registeredElement.removeEventListener('mouseup', this.dragStop);
+        }
     }
 
     handle(): void {}    

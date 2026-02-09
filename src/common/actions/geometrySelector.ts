@@ -15,20 +15,32 @@ export class GeometrySelector implements IActionHandler {
     private isDragging: boolean;
     private region: BoundingBox;
     private wallGeometry = EMPTY_GEOMETRY;
+    private unsubscribe: () => void;
+    private registeredElement: GlobalEventHandlers | null = null;
     
     constructor(
         private context: CanvasRenderingContext2D,
         private spaceTranslator: ISpaceTranslator, private blockingHandlers: IActionHandler[] = []) {    
-            connect(s => {               
+            this.unsubscribe = connect(s => {               
                 this.wallGeometry = s.walls.geometry;
             });
         }
     
-    register(g: GlobalEventHandlers): IActionHandler {        
+    register(g: GlobalEventHandlers): IActionHandler {
+        this.registeredElement = g;
         g.addEventListener('mousedown', this.selectOrDrag);
         g.addEventListener('mousemove', this.drag);
         g.addEventListener('mouseup', this.dragStop);    
         return this;
+    }
+
+    dispose(): void {
+        this.unsubscribe();
+        if (this.registeredElement) {
+            this.registeredElement.removeEventListener('mousedown', this.selectOrDrag);
+            this.registeredElement.removeEventListener('mousemove', this.drag);
+            this.registeredElement.removeEventListener('mouseup', this.dragStop);
+        }
     }
 
     handle(): void {

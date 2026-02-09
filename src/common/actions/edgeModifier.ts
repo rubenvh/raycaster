@@ -17,8 +17,12 @@ export class EdgeModifier implements IActionHandler {
     
     private selectedElements: SelectableElement[] = [];
     private texLib: TextureLibrary = textureLib;
+    private unsubscribe: () => void;
+    private textureScrollHandler = (dir: number) => dir<0 ? this.previousTexture() : this.nextTexture();
+    private translucencyHandler = (dir: number) => dir<0 ? this.increaseTranslucency() : this.decreaseTranslucency();
+
     constructor() {
-        connect(s => {
+        this.unsubscribe = connect(s => {
             this.selectedElements = s.selection.elements;                
         });
     }
@@ -35,9 +39,17 @@ export class EdgeModifier implements IActionHandler {
     register(g: GlobalEventHandlers): IActionHandler {
         window.electronAPI.on('geometry_edge_immaterial', this.toggleImmateriality);
         window.electronAPI.on('geometry_edge_texture', this.toggleMaterialTexture);
-        window.electronAPI.on('geometry_edge_texture_scroll', (dir: number) => dir<0 ? this.previousTexture() : this.nextTexture());
-        window.electronAPI.on('geometry_edge_translucency', (dir: number) => dir<0 ? this.increaseTranslucency() : this.decreaseTranslucency());
+        window.electronAPI.on('geometry_edge_texture_scroll', this.textureScrollHandler);
+        window.electronAPI.on('geometry_edge_translucency', this.translucencyHandler);
         return this;
+    }
+
+    dispose(): void {
+        this.unsubscribe();
+        window.electronAPI.off('geometry_edge_immaterial', this.toggleImmateriality);
+        window.electronAPI.off('geometry_edge_texture', this.toggleMaterialTexture);
+        window.electronAPI.off('geometry_edge_texture_scroll', this.textureScrollHandler);
+        window.electronAPI.off('geometry_edge_translucency', this.translucencyHandler);
     }
 
     handle(): void {}

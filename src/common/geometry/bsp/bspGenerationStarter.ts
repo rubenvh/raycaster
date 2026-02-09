@@ -12,11 +12,31 @@ const dispatch = useAppDispatch();
 export class BspGenerationStarter {
     private worker: Worker|null = null;
     private geometry: IGeometry = EMPTY_GEOMETRY;
+    private unsubscribe: () => void;
+    private workerMessageHandler: ((e: MessageEvent) => void) | null = null;
+
     constructor() {         
         window.electronAPI.on('bsp_generate', this.generateLocal);       
-        connect(state => {
+        this.unsubscribe = connect(state => {
             this.geometry = state.walls.geometry;
         });
+    }
+
+    dispose(): void {
+        this.unsubscribe();
+        window.electronAPI.off('bsp_generate', this.generateLocal);
+        this.terminateWorker();
+    }
+
+    private terminateWorker(): void {
+        if (this.worker) {
+            if (this.workerMessageHandler) {
+                this.worker.removeEventListener('message', this.workerMessageHandler);
+                this.workerMessageHandler = null;
+            }
+            this.worker.terminate();
+            this.worker = null;
+        }
     }
     
     private generateLocal = () => {
@@ -26,15 +46,15 @@ export class BspGenerationStarter {
 
     // TODO: this can be used for web worker based bsp generation (for now not needed)
     private generate = () =>{     
-        if (this.worker) { this.worker.terminate(); }
+        this.terminateWorker();
         this.worker = new Worker("../workers/dist/bspGenerator-bundle.js");
         this.worker.postMessage(this.geometry.polygons);
-        this.worker.addEventListener('message', (e) => {
+        this.workerMessageHandler = (e: MessageEvent) => {
             console.log('Finished bsp construction', e);            
             const bsp = (<MessageEvent<IBSPNode>>e).data;
             dispatch(updateBsp(bsp))
-            this.worker?.terminate();
-            this.worker = null;
-        });
+            this.terminateWorker();
+        };
+        this.worker.addEventListener('message', this.workerMessageHandler);
     }
 }

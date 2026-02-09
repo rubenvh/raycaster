@@ -18,11 +18,13 @@ export class PolygonExpander implements IActionHandler {
     private candidate: IPolygon;
     private selectedElements: SelectableElement[] = [];
     private wallGeometry = EMPTY_GEOMETRY;
+    private unsubscribe: () => void;
+    private registeredElement: GlobalEventHandlers | null = null;
     
     constructor(
         private context: CanvasRenderingContext2D,
         private spaceTranslator: ISpaceTranslator) {
-            connect(s => {                
+            this.unsubscribe = connect(s => {                
                 this.selectedElements = s.selection.elements;
                 this.wallGeometry = s.walls.geometry;
             });
@@ -33,11 +35,22 @@ export class PolygonExpander implements IActionHandler {
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
+        this.registeredElement = g;
         window.electronAPI.on('geometry_polygon_expand', this.startExpanding);
         g.addEventListener('mousemove', this.selectExpansion);
         g.addEventListener('mouseup', this.finalizeExpansion);
         g.addEventListener('contextmenu', this.cancel, false); 
         return this;
+    }
+
+    dispose(): void {
+        this.unsubscribe();
+        window.electronAPI.off('geometry_polygon_expand', this.startExpanding);
+        if (this.registeredElement) {
+            this.registeredElement.removeEventListener('mousemove', this.selectExpansion);
+            this.registeredElement.removeEventListener('mouseup', this.finalizeExpansion);
+            this.registeredElement.removeEventListener('contextmenu', this.cancel, false);
+        }
     }
 
     handle(): void {

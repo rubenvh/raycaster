@@ -13,9 +13,10 @@ const dispatch = useAppDispatch();
 export class GeometryRemover implements IActionHandler {
         
     private selectedElements: SelectableElement[] = [];
+    private unsubscribe: () => void;
     
     constructor() {
-        connect(s => {
+        this.unsubscribe = connect(s => {
             this.selectedElements = s.selection.elements;         
         });
     }
@@ -23,6 +24,11 @@ export class GeometryRemover implements IActionHandler {
     register(_: GlobalEventHandlers): IActionHandler {        
         window.electronAPI.on('geometry_remove', this.deleteSelection);
         return this;
+    }
+
+    dispose(): void {
+        this.unsubscribe();
+        window.electronAPI.off('geometry_remove', this.deleteSelection);
     }
 
     handle(): void {}
