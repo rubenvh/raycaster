@@ -14,29 +14,33 @@ export const storePolygon = (p: IPolygon): IStoredPolygon => ({
 });
 export const loadPolygon = (polygon: IStoredPolygon): IPolygon => {
     let [min, max]: BoundingBox = [[Infinity, Infinity], [-Infinity, -Infinity]];
+    const reduced = polygon.edges.reduce((acc, e) => {
+        [min, max] = [minimumComponents(min, e.start.vector), maximumComponents(max, e.start.vector)];
+        e.start = giveIdentity(e.start);
+        if (acc.previous && !areEqual(e.start, acc.previous.end)) { // TODO: areClose?
+            throw new Error(`polygon cannot contain jumps: start of edge should be equal to previous edge's end: ${acc.previous.end.vector} does not equal ${e.start.vector}`);
+        }
+        else {
+            e.start = giveIdentity(acc.previous && acc.previous.end || e.start);
+            e.end = giveIdentity(e.end);
+        }
+
+        let edge = giveIdentity(loadEdge(e));
+        return ({
+            first: acc.first || edge,
+            previous: edge,
+            edges: [...acc.edges, edge]
+        });
+    }, { edges: [] } as { first?: IEdge, previous?: IEdge, edges: IEdge[] });
+
+    // Close the polygon loop: merge last edge's end with first edge's start if they are close
+    if (reduced.first && reduced.previous && areClose(reduced.previous.end, reduced.first.start)) {
+        reduced.previous.end = reduced.first.start;
+    }
+
     const result = {
         ...polygon,
-        edges: polygon.edges.reduce((acc, e) => {
-            [min, max] = [minimumComponents(min, e.start.vector), maximumComponents(max, e.start.vector)];
-            e.start = giveIdentity(e.start);
-            // if (acc.first && areClose(e.end, acc.first.start)) {                
-            //     e.end = giveIdentity(acc.first.start);
-            // }
-            if (acc.previous && !areEqual(e.start, acc.previous.end)) { // TODO: areClose?
-                throw new Error(`polygon cannot contain jumps: start of edge should be equal to previous edge's end: ${acc.previous.end.vector} does not equal ${e.start.vector}`);
-            }
-            else {
-                e.start = giveIdentity(acc.previous && acc.previous.end || e.start);
-                e.end = giveIdentity(e.end);
-            }
-
-            let edge = giveIdentity(loadEdge(e));
-            return ({
-                first: acc.first || edge,
-                previous: edge,
-                edges: [...acc.edges, edge]
-            });
-        }, { edges: [] } as { first?: IEdge, previous?: IEdge, edges: IEdge[] }).edges,
+        edges: reduced.edges,
         vertices: []
     };
 
