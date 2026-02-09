@@ -1,5 +1,4 @@
-import { configureStore } from '@reduxjs/toolkit'
-import { combineReducers } from 'redux'
+import { configureStore, combineReducers } from '@reduxjs/toolkit'
 import stats from './stats'
 import {createLogger} from 'redux-logger'
 import selection from './selection'
@@ -28,7 +27,6 @@ const store = configureStore({
     serializableCheck: false
   }).concat(logger),
   devTools: process.env.NODE_ENV !== 'production',
-  enhancers: (defaultEnhancers) => [...defaultEnhancers]
 })
 export type RootState = ReturnType<typeof store.getState>
 export type AppDispatch = typeof store.dispatch
