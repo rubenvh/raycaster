@@ -1,7 +1,7 @@
 import { Texture } from "./texture";
 import 'jest-canvas-mock';
 import * as fs from "fs";
-import sizeOf from 'image-size';  
+import { imageSize } from 'image-size';  
 
 describe('texture tests', () => {
     let base64: string;
@@ -9,7 +9,7 @@ describe('texture tests', () => {
     beforeAll(() => {
         const path = "./assets/textures/001.jpg";        
         const buffer = fs.readFileSync(path);        
-        const dimensions = sizeOf(path);
+        const dimensions = imageSize(buffer);
         base64 = Buffer.from(buffer).toString('base64');        
         sut = new Texture({data: base64, textureWidth: 192, textureHeight: 192, totalHeight: dimensions.height, totalWidth: dimensions.width});
     });

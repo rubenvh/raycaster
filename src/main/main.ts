@@ -3,7 +3,7 @@ import { menu } from './mainmenu';
 import * as path from "path";
 import * as url from "url";
 import * as fs from "fs";
-import sizeOf from 'image-size';
+import { imageSize } from 'image-size';
 import __basedir from '../basepath';
 import { saveFile } from './dialogs';
 // import installExtension, { REDUX_DEVTOOLS } from 'electron-devtools-installer';
@@ -81,7 +81,9 @@ function createWindow () {
 
   ipcMain.handle('fs:getImageSize', async (_event, filePath: string) => {
     try {
-      const dimensions = sizeOf(filePath);
+      // image-size v2 requires buffer input, read file first
+      const buffer = await fs.promises.readFile(filePath);
+      const dimensions = imageSize(buffer);
       return { width: dimensions.width || 0, height: dimensions.height || 0 };
     } catch (error) {
       console.error('Error getting image size:', filePath, error);
