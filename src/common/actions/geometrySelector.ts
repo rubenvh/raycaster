@@ -43,7 +43,7 @@ export class GeometrySelector implements IActionHandler {
         }
     }
 
-    handle(): void {
+    handle(_deltaTime: number): void {
         if (this.isDragging) {
             drawBoundingBox(this.context, this.region, 'rgba(255,100,0,0.8)')
         }

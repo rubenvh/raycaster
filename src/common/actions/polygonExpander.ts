@@ -53,12 +53,12 @@ export class PolygonExpander implements IActionHandler {
         }
     }
 
-    handle(): void {
+    handle(_deltaTime: number): void {
         if (this.isActive() && this.candidate) {
             this.candidate.edges.forEach(e => drawSegment(this.context, e.segment, 'rgba(255, 150, 10, 0.7)'));
             this.candidate.vertices.forEach(v => drawVector(this.context, v.vector, 'rgba(255, 150, 10, 0.7)'));
         }
-    }     
+    }
     public isActive = () => this.isExpanding;
     private startExpanding = () => this.isExpanding = this.canActivate();
     private canActivate = () => this.selectedElements.length === 1 && isEdge(this.selectedElements[0]);

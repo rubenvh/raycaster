@@ -52,7 +52,7 @@ export class PolygonCreator implements IActionHandler {
         }
     }
 
-    handle(): void {
+    handle(_deltaTime: number): void {
         if (this.isCreating) {
             
             if (this.emergingPolygon.length > 0) {

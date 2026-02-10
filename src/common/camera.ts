@@ -56,8 +56,8 @@ export const freeMove = (ratio: number, camera: ICamera) => {
     let delta = vector.scale(ratio, camera.direction);
     return changeLocation(delta, camera);
 };
-export const move = (direction: 1 | -1, camera: ICamera, geometry: IGeometry): ICamera =>
-    constrainedMove(direction, camera, freeMove, makeDirectionRay, geometry);
+export const move = (direction: 1 | -1, camera: ICamera, geometry: IGeometry, speed: number = 0.15): ICamera =>
+    constrainedMove(direction, camera, freeMove, makeDirectionRay, geometry, speed);
 
 export const rotate = (angle: number, camera: ICamera) => {
     return makeCamera({
@@ -71,8 +71,8 @@ export const freeStrafe = (ratio: number, camera: ICamera) => {
     let n = vector.scale(Math.abs(ratio), vector.rotate(sign * Math.PI / 2, camera.direction));
     return changeLocation(n, camera);
 };
-export const strafe = (direction: 1 | -1, camera: ICamera, geometry: IGeometry): ICamera =>
-    constrainedMove(direction, camera, freeStrafe, makeStrafeRay, geometry);
+export const strafe = (direction: 1 | -1, camera: ICamera, geometry: IGeometry, speed: number = 0.15): ICamera =>
+    constrainedMove(direction, camera, freeStrafe, makeStrafeRay, geometry, speed);
 
 const changeLocation = (delta: vector.Vector, camera: ICamera): ICamera => {
     return makeCamera({ ...camera, position: vector.add(camera.position, delta) });
@@ -81,9 +81,10 @@ const changeLocation = (delta: vector.Vector, camera: ICamera): ICamera => {
 const constrainedMove = (direction: 1 | -1, cam: ICamera,
     mover: (ratio: number, cam: ICamera) => ICamera,
     raymaker: (direction: 1 | -1, cam: ICamera) => IRay,
-    geometry: IGeometry): ICamera => {
+    geometry: IGeometry,
+    speed: number): ICamera => {
 
-    let movementRatio = direction * 0.15;
+    let movementRatio = direction * speed;
     const hit = castCameraRay(raymaker(direction, cam), geometry);
     if (hit.distance >= 2) { // magic number 2 should actually depend on size of direction/plane vector and 0.15 scale increment above (prevent overshooting the wall)        
         // distance large enough: safe to move
@@ -106,7 +107,8 @@ const constrainedMove = (direction: 1 | -1, cam: ICamera,
     return constrainedMove(direction, cam,
         (_r, c) => changeLocation(target, c), // move function: change location to calculated target
         (_d, c) => makeRay(c.position, target),// ray creation function: cast ray from camera position to new target
-        geometry);
+        geometry,
+        speed);
 }
 
 

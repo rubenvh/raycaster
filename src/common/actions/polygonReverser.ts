@@ -33,7 +33,7 @@ export class PolygonReverser implements IActionHandler {
         window.electronAPI.off('geometry_polygon_reverse', this.reverse);
     }
 
-    handle(): void {
+    handle(_deltaTime: number): void {
     }
     public isActive = () => true;
 

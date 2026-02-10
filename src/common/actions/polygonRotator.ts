@@ -53,14 +53,14 @@ export class PolygonRotator implements IActionHandler {
         }
     }
 
-    handle(): void {
+    handle(_deltaTime: number): void {
         if (this.isActive() && this.candidates.length > 0) {
             this.candidates.forEach(p => {
                 p.edges.forEach(e => drawSegment(this.context, e.segment, 'rgba(255, 150, 10, 0.7)'));
                 p.vertices.forEach((v, i) => drawVector(this.context, v.vector, i === 0 ? 'rgba(50, 255, 10, 0.7)' : 'rgba(255, 150, 10, 0.7)'));
             });            
         }
-    }     
+    }
     public isActive = () => this.isRotating;
     private startRotation = () => this.isRotating = this.canActivate();
     private canActivate = () => this.selectedPolygons.length >= 1;

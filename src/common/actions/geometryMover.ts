@@ -41,7 +41,7 @@ export class GeometryMover implements IActionHandler {
         }
     }
 
-    handle(): void {}    
+    handle(_deltaTime: number): void {}    
     isActive = (): boolean => this.isDragging;
 
     private dragStart = (event: MouseEvent): boolean => {

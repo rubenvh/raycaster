@@ -53,14 +53,18 @@ window.addEventListener('load', (event) => {
     const times: number[] = [];
     let fps: number;
     let animationFrameId: number;
+    let lastFrameTime: number = performance.now();
     
     function loop() {
         const now = performance.now();
+        const deltaTime = (now - lastFrameTime) / 1000; // Convert to seconds
+        lastFrameTime = now;
+        
         while (times.length > 0 && times[0] <= now - 1000) { times.shift(); }
         times.push(now);
         fps = times.length;
         redraw();
-        update();
+        update(deltaTime);
         animationFrameId = window.requestAnimationFrame(loop);
     }
     animationFrameId = window.requestAnimationFrame(loop);
@@ -75,8 +79,8 @@ window.addEventListener('load', (event) => {
         });
     }
 
-    function update() {
-        handlers.forEach(_ => _.handle());
+    function update(deltaTime: number) {
+        handlers.forEach(_ => _.handle(deltaTime));
     }
 
     // Cleanup function for when the window is unloaded

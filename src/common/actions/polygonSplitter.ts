@@ -31,7 +31,7 @@ export class PolygonSplitter implements IActionHandler {
         window.electronAPI.off('geometry_polygon_split', this.initiateSplit);
     }
 
-    handle(): void {}
+    handle(_deltaTime: number): void {}
     isActive = (): boolean => this.selectedElements.length === 2 && this.selectedElements.every(isVertex);
 
     private get selectedVertices(): [IPolygon, [IVertex, IVertex]] {

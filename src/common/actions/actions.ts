@@ -27,7 +27,7 @@ const Keys: KeyMap = {
 
 export interface IActionHandler {
     register(g: GlobalEventHandlers): IActionHandler;    
-    handle(): void;
+    handle(deltaTime: number): void;
     isActive(): boolean;
     dispose(): void;
 }

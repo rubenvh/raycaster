@@ -1,6 +1,6 @@
 import { EMPTY_GEOMETRY } from "../geometry/geometry";
 import { useAppDispatch } from "../store";
-import { changeCameraAngle, changeCameraDepth, moveCamera, rotateCamera, strafeCamera } from "../store/player";
+import { CAMERA_MOVE_SPEED, CAMERA_ROTATION_SPEED, changeCameraAngle, changeCameraDepth, moveCamera, rotateCamera, strafeCamera } from "../store/player";
 import { connect } from "../store/store-connector";
 import { bindFlagToKey, Flag, IActionHandler, makeFlag } from "./actions";
 
@@ -39,15 +39,17 @@ export class CameraActionsHandler implements IActionHandler {
         this.cleanupFunctions = [];
     }
 
-    handle() {
-        // TODO: speed of movement is partially here (rotation) and partially inside camera
-        // (what about a running mode ? )        
-        if (this.flags.turnleft.value) dispatch(rotateCamera(-0.15));
-        if (this.flags.turnright.value) dispatch(rotateCamera(0.15));
-        if (this.flags.left.value) this.strafe(-1);
-        if (this.flags.right.value) this.strafe(1);
-        if (this.flags.up.value) this.move(1);
-        if (this.flags.down.value) this.move(-1);
+    handle(deltaTime: number) {
+        // Scale movement by deltaTime for frame-rate independent movement
+        const rotationAmount = CAMERA_ROTATION_SPEED * deltaTime;
+        const moveSpeed = CAMERA_MOVE_SPEED * deltaTime;
+        
+        if (this.flags.turnleft.value) dispatch(rotateCamera(-rotationAmount));
+        if (this.flags.turnright.value) dispatch(rotateCamera(rotationAmount));
+        if (this.flags.left.value) this.strafe(-1, moveSpeed);
+        if (this.flags.right.value) this.strafe(1, moveSpeed);
+        if (this.flags.up.value) this.move(1, moveSpeed);
+        if (this.flags.down.value) this.move(-1, moveSpeed);
 
         if (this.flags.camera_angle_up.value)   dispatch(changeCameraAngle( 1 ));
         if (this.flags.camera_angle_down.value) dispatch(changeCameraAngle(-1 ));
@@ -57,6 +59,6 @@ export class CameraActionsHandler implements IActionHandler {
 
     isActive = () => true;
 
-    private move = (direction: 1|-1) => dispatch(moveCamera({direction, geometry: this.wallGeometry}));
-    private strafe = (direction: 1|-1) => dispatch(strafeCamera({direction, geometry: this.wallGeometry}));     
+    private move = (direction: 1|-1, speed: number) => dispatch(moveCamera({direction, geometry: this.wallGeometry, speed}));
+    private strafe = (direction: 1|-1, speed: number) => dispatch(strafeCamera({direction, geometry: this.wallGeometry, speed}));     
 }

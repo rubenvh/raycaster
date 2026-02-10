@@ -52,7 +52,7 @@ export class EdgeModifier implements IActionHandler {
         window.electronAPI.off('geometry_edge_translucency', this.translucencyHandler);
     }
 
-    handle(): void {}
+    handle(_deltaTime: number): void {}
     isActive = (): boolean => true;
         
     private toggleImmateriality = () => this.adaptEdges(_ => {

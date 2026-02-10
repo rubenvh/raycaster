@@ -31,7 +31,7 @@ export class GeometryRemover implements IActionHandler {
         window.electronAPI.off('geometry_remove', this.deleteSelection);
     }
 
-    handle(): void {}
+    handle(_deltaTime: number): void {}
 
     public isActive = () => this.selectedElements.length > 0;
     

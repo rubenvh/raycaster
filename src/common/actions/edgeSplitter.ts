@@ -54,7 +54,7 @@ export class EdgeSplitter implements IActionHandler {
         }
     }
 
-    handle(): void {
+    handle(_deltaTime: number): void {
         if (this.isActive() && this.candidate) drawVector(this.context, this.candidate, 'rgb(255,0,0)');
     }
         
