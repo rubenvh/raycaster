@@ -1,7 +1,7 @@
 import { useAppDispatch } from "../store";
 import { bindCallbackToKey, IActionHandler } from "./actions";
 import * as actions from '../store/world-config';
-import { toggleBspDrawing, toggleTestCanvas } from "../store/ui-config";
+import { cycleBspDrawMode, toggleTestCanvas } from "../store/ui-config";
 
 /// <reference path="../../renderer/electron.d.ts" />
 
@@ -15,7 +15,7 @@ export class GlobalActionsHandler implements IActionHandler {
         window.electronAPI.on('geometry_config_fadeOut', this.fadeOutHandler);        
         this.cleanupFunctions.push(
             bindCallbackToKey(g, 'toggle_test_canvas', () => dispatch(toggleTestCanvas())),
-            bindCallbackToKey(g, 'toggle_draw_bsp', () => dispatch(toggleBspDrawing()))
+            bindCallbackToKey(g, 'toggle_draw_bsp', () => dispatch(cycleBspDrawMode()))
         );
         return this;        
     }
@@ -26,6 +26,6 @@ export class GlobalActionsHandler implements IActionHandler {
         this.cleanupFunctions = [];
     }
 
-    handle() {}       
+    handle(_deltaTime: number) {}       
     isActive = (): boolean => true;
 }

@@ -10,10 +10,11 @@ import { isSelectedEdge, isSelectedPolygon, isSelectedVertex, SelectableElement,
 import { IVertex } from '../geometry/vertex';
 import { normal } from '../math/lineSegment';
 import { CastingStats, EMPTY_STATS } from '../rendering/raycasting/raycaster';
-import { IUIConfigState } from '../store/ui-config';
+import { BspDrawMode, IUIConfigState } from '../store/ui-config';
 import { ISpaceTranslator } from '../actions/geometrySelector';
 import { Vector } from '../math/vector';
 import { ViewPort } from './viewport';
+import { IDetectedEdge } from '../store/stats';
 
 export class MapEditorRenderer implements ISpaceTranslator {
 
@@ -25,6 +26,7 @@ export class MapEditorRenderer implements ISpaceTranslator {
     private castingStats: CastingStats = EMPTY_STATS;
     private uiConfig: IUIConfigState = {};
     private scroll: ViewPort;
+    private detectedEdges: IDetectedEdge[] = [];
 
     elemLeft: number;
     elemTop: number;
@@ -50,6 +52,7 @@ export class MapEditorRenderer implements ISpaceTranslator {
             this.camera = s.player.camera;
             this.uiConfig = s.uiConfig;
             this.castingStats = s.stats.intersections.stats;
+            this.detectedEdges = s.stats.detectedEdges || [];
 
             if (s.walls.geometry !== this.wallGeometry) {
                 this.wallGeometry = s.walls.geometry;
@@ -78,8 +81,12 @@ export class MapEditorRenderer implements ISpaceTranslator {
             this.drawCamera(this._context, this.camera);
             this.drawGeometry(this._context, this.wallGeometry);
 
-            if (this.wallGeometry.bsp && this.uiConfig.drawBsp) {
-                this.drawBsp(this.wallGeometry.bsp);
+            if (this.wallGeometry.bsp) {
+                if (this.uiConfig.bspDrawMode === BspDrawMode.Planes) {
+                    this.drawBsp(this.wallGeometry.bsp);
+                } else if (this.uiConfig.bspDrawMode === BspDrawMode.DetectedEdges) {
+                    this.drawDetectedEdges(this._context);
+                }
             }
 
             this.scroll.drawForeground();
@@ -106,7 +113,7 @@ export class MapEditorRenderer implements ISpaceTranslator {
 
     private drawGeometry = (context: CanvasRenderingContext2D, geometry: IGeometry) => {
         geometry.polygons.forEach(p => {
-            const tested = this.uiConfig.drawBsp && this.castingStats?.polygons?.has(p.id);
+            const tested = this.uiConfig.bspDrawMode === BspDrawMode.DetectedEdges && this.castingStats?.polygons?.has(p.id);
             const selected = isSelectedPolygon(p.id, this.selectedElements);
             const highlighted = this.selectedTreeNode && selectedId(this.selectedTreeNode) === p.id;
             drawBoundingBox(context, p.boundingBox, tested ? Colors.POLYGON_TESTED : highlighted ? Colors.POLYGON_HIGHLIGHTED : selected ? Colors.POLYGON_SELECTED : Colors.POLYGON);
@@ -143,6 +150,15 @@ export class MapEditorRenderer implements ISpaceTranslator {
             this.drawBsp(tree.front, depth + 1, clipRegion.concat(frontClip));
             this.drawBsp(tree.back, depth + 1, clipRegion.concat(backClip));
         }
+    };
+
+    private drawDetectedEdges = (context: CanvasRenderingContext2D) => {
+        const maxDepth = 40;
+        this.detectedEdges.forEach(({ segment, depth }) => {
+            const c = 255 - depth * 255 / maxDepth;
+            const color = `rgba(${c}, 0, 0, 0.5)`;
+            drawSegment(context, segment, color, 2);
+        });
     };
 }
 
