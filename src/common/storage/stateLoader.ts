@@ -10,6 +10,7 @@ import * as wallActions  from '../store/walls';
 import * as worldActions  from '../store/world-config';
 import * as selectionActions  from '../store/selection';
 import * as textureActions from '../store/textures';
+import { getEmbeddedTextureSources } from '../textures/embedded-textures';
 
 /// <reference path="../../renderer/electron.d.ts" />
 
@@ -131,7 +132,11 @@ export class WorldLoader {
 
     private loadWorld = (w: any): void => {
         dispatch(selectionActions.clearSelection());
-        dispatch(textureActions.initialize(w.textureSources || [] ));
+        // Use saved texture sources, or fall back to embedded textures if none exist
+        const textureSources = (w.textureSources && w.textureSources.length > 0) 
+            ? w.textureSources 
+            : getEmbeddedTextureSources();
+        dispatch(textureActions.initialize(textureSources));
         dispatch(cameraActions.initializeCamera(w.camera ? makeCamera(w.camera): DEFAULT_CAMERA));
         dispatch(wallActions.loadWalls(w.geometry || EMPTY_GEOMETRY));
         dispatch(worldActions.initialize(w.config || {fadeOn: null}));         

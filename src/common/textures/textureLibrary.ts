@@ -50,5 +50,8 @@ public lookupTexture = (material: IMaterial): Texture|null => {
         const t = this.getTexture(id);
         return new Array(t?.parts || 0).fill(0).map((_, index) => ({id, index}));
     }
+
+    /** Wait for all textures to finish loading their images */
+    public waitForLoad = (): Promise<void[]> => Promise.all(this._textures.map(t => t.loaded));
 }
 export const textureLib = new TextureLibrary();

@@ -10,7 +10,12 @@ export class Texture {
     private totalHeight: number;
     private columns: number;
     private rows: number;
-    private _source: ITextureSource
+    private _source: ITextureSource;
+    private _loaded: Promise<void>;
+
+    /** Promise that resolves when the texture image has finished loading */
+    get loaded(): Promise<void> { return this._loaded; }
+
     constructor(source: ITextureSource) {
 
         this._source = { ...source };
@@ -19,11 +24,17 @@ export class Texture {
         this.canvas.height = this.totalHeight = this._source.totalHeight;
         this.context = this.canvas.getContext('2d');
 
-        const image = new Image();
-        image.onload = () => {
-            this.context.drawImage(image, 0, 0);
-        };
-        image.src = `data:image/png;base64,${source.data}`;
+        // Use mimeType from source if available, default to 'image/png' for backward compatibility
+        const mimeType = source.mimeType || 'image/png';
+        
+        this._loaded = new Promise<void>((resolve) => {
+            const image = new Image();
+            image.onload = () => {
+                this.context.drawImage(image, 0, 0);
+                resolve();
+            };
+            image.src = `data:${mimeType};base64,${source.data}`;
+        });
 
         this._source.textureHeight = this._source.textureHeight || this._source.totalHeight;
         this._source.textureWidth = this._source.textureWidth || this._source.totalWidth;

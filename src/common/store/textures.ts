@@ -24,11 +24,19 @@ const slice = createSlice({
         binary += String.fromCharCode(uint8Array[i]);
       }
       const base64 = btoa(binary);
+      // Determine MIME type from file extension
+      const extension = fileName.split('.').pop()?.toLowerCase();
+      const mimeType = extension === 'jpg' || extension === 'jpeg' 
+        ? 'image/jpeg' 
+        : extension === 'gif' 
+          ? 'image/gif' 
+          : 'image/png';
       const s: ITextureSource = {
         id: fileName, 
         textureHeight: 0, 
         textureWidth: 0, 
-        data: base64, 
+        data: base64,
+        mimeType,
         totalHeight: height, 
         totalWidth: width
       };

@@ -90,27 +90,31 @@ export default class TextureSelectorComponent extends HTMLElement {
         });
     }
 
-    private render() {
-        setTimeout(() => {
-            const imgs = this._sources
-                .reduce((acc, t) => acc.concat(textureLib.getTextureReferences(t.id).map(r => ({ textureFile: textureLib.getTexture(t.id), texture: r }))), [] as { textureFile: Texture, texture: ITextureReference }[])
-                .map(_ => {
-                    const img = document.createElement("img");
-                    img.src = _.textureFile.getTextureAsImage(_.texture);
-                    img.setAttribute('data-id', _.texture.id);
-                    img.setAttribute('data-index', _.texture.index.toString());
-                    img.classList.add('image');
-                    img.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        this.value = _.texture;                        
-                    });
-                    return img;
-                });
+    private async render() {
+        // Wait for all textures to load before rendering
+        const loadPromises = this._sources
+            .map(s => textureLib.getTexture(s.id)?.loaded)
+            .filter((p): p is Promise<void> => p != null);
+        await Promise.all(loadPromises);
 
-            this.imagesElement.innerHTML = '';
-            this.imagesElement.append(...imgs);
-            this.selectImage();
-        });
+        const imgs = this._sources
+            .reduce((acc, t) => acc.concat(textureLib.getTextureReferences(t.id).map(r => ({ textureFile: textureLib.getTexture(t.id), texture: r }))), [] as { textureFile: Texture, texture: ITextureReference }[])
+            .map(_ => {
+                const img = document.createElement("img");
+                img.src = _.textureFile.getTextureAsImage(_.texture);
+                img.setAttribute('data-id', _.texture.id);
+                img.setAttribute('data-index', _.texture.index.toString());
+                img.classList.add('image');
+                img.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    this.value = _.texture;                        
+                });
+                return img;
+            });
+
+        this.imagesElement.innerHTML = '';
+        this.imagesElement.append(...imgs);
+        this.selectImage();
     }
 }
 
