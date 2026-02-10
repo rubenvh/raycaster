@@ -1,9 +1,11 @@
 import { CastingStats, EMPTY_STATS } from '../rendering/raycasting/raycaster';
 import { createSlice } from '@reduxjs/toolkit'
+import { ILineSegment } from '../math/lineSegment';
 // Slice
 export type IPerformanceStatistics = { drawing: number, casting: number, zbuffering: number, total: number }
 export type IIntersectionStatistics = { stats: CastingStats }
-export type IStatsState = { performance: { timing: IPerformanceStatistics, fps: number }, intersections: IIntersectionStatistics }
+export type IDetectedEdge = { segment: ILineSegment; depth: number }
+export type IStatsState = { performance: { timing: IPerformanceStatistics, fps: number }, intersections: IIntersectionStatistics, detectedEdges: IDetectedEdge[] }
 const slice = createSlice({
   name: 'stats',
   initialState: {
@@ -12,6 +14,7 @@ const slice = createSlice({
       fps: 0
     },
     intersections: { stats: EMPTY_STATS },
+    detectedEdges: []
   } as IStatsState,
   reducers: {
     statisticsUpdated: (state, action) => {

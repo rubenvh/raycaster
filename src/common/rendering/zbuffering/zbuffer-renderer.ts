@@ -8,11 +8,11 @@ import { IRenderer } from '../renderer';
 import { IEdge, NULL_EDGE } from '../../geometry/edge';
 import { walk } from '../../geometry/bsp/querying';
 import { distance } from '../../geometry/vertex';
-import { segmentLength } from '../../math/lineSegment';
+import { ILineSegment, segmentLength } from '../../math/lineSegment';
 import { castRaysOnEdge } from '../raycasting/raycaster';
 import { WallPainter, WallProps } from '../../drawing/wall-painter';
 import { Heap } from '../../datastructures/heap';
-import { drawRect, drawSegment } from '../../drawing/drawing';
+import { drawRect } from '../../drawing/drawing';
 import { createPlane } from '../../math/plane';
 import { getMaterial, isTranslucent } from '../../geometry/properties';
 import { IWorldConfigState } from '../../store/world-config';
@@ -64,7 +64,7 @@ export class ZBufferRenderer implements IRenderer {
         let edgesTested: number = 0;
         let count = 0;
         let depth = 40;
-        let clippedSegments = [];
+        let clippedSegments: {segment: ILineSegment, depth: number}[] = [];
         // TODO: can't we pass direction of camera to discard entire branches of the tree?
         walk(this.wallGeometry.bsp, this.camera.position, (ps => {
             let increment = 0;
@@ -74,8 +74,7 @@ export class ZBufferRenderer implements IRenderer {
                     const clipped = clip(e, this.camera);
                     if (clipped === NULL_EDGE) continue;
 
-                    const c = 255 - count * 255 / depth;
-                    clippedSegments.push(() => drawSegment(this.context, clipped.segment, `rgb(${c},${0},${0})`, 2));
+                    clippedSegments.push({ segment: clipped.segment, depth: count });
                     increment = increment || 1;
 
                     edgesTested++;
@@ -95,7 +94,6 @@ export class ZBufferRenderer implements IRenderer {
         this.drawSky();
         this.drawFloor();        
         buffer.render();
-        clippedSegments.forEach(x => x());
         const endDrawing = performance.now();
         
         if (!this.lastUpdated || endDrawing - this.lastUpdated > 1000) {
@@ -116,7 +114,8 @@ export class ZBufferRenderer implements IRenderer {
                     polygonTests: [0, 0], 
                     edgeCount: 0, 
                     polygonCount: 0, 
-                    edgePercentage: 0 } }
+                    edgePercentage: 0 } },
+                detectedEdges: clippedSegments
             }));
         }
 
