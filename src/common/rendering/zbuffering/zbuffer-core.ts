@@ -34,6 +34,7 @@ interface BenchmarkWallEntry {
  */
 class BenchmarkZBufferColumn {
   private queue: PriorityDeque<BenchmarkWallEntry>;
+  private hasOpaqueWall: boolean = false;  // Track if any wall has alpha === 1
   
   constructor() {
     this.queue = new PriorityDeque<BenchmarkWallEntry>({ 
@@ -46,11 +47,15 @@ class BenchmarkZBufferColumn {
   }
 
   isFull(): boolean {
-    return this.queue.length > 0 && this.queue.findMax().alpha === 1;
+    return this.hasOpaqueWall;
   }
   
   add(entry: BenchmarkWallEntry): void {
     this.queue.push(entry);
+    // Track if we have any opaque wall (alpha === 1)
+    if (!this.hasOpaqueWall && entry.alpha === 1) {
+      this.hasOpaqueWall = true;
+    }
   }
 
   shift(): BenchmarkWallEntry | undefined {
@@ -59,6 +64,7 @@ class BenchmarkZBufferColumn {
   
   clear(): void {
     this.queue.clear();
+    this.hasOpaqueWall = false;
   }
 }
 

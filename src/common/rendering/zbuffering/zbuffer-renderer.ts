@@ -222,6 +222,7 @@ export class ZBuffer {
 export class ZBufferColumn {
     // private heap: Heap<WallProps>;
     private queue: PriorityDeque<WallProps>;
+    private hasOpaqueWall: boolean = false;  // Track if any wall has alpha === 1
     
     constructor() {        
         // this.heap = new Heap<WallProps>([], (a, b) => a.distance - b.distance);                     
@@ -230,15 +231,20 @@ export class ZBufferColumn {
 
     public clear(): void {
         this.queue.clear();
+        this.hasOpaqueWall = false;
     }
 
     public isFull(): boolean {     
-        return this.queue.length > 0 && (this.queue.findMax().material?.color[3]||0) === 1;
+        return this.hasOpaqueWall;
     }
     
     public add(el: WallProps): ZBufferColumn {        
         // this.heap.insert(el);
-        this.queue.push(el);        
+        this.queue.push(el);
+        // Track if we have any opaque wall (alpha === 1)
+        if (!this.hasOpaqueWall && (el.material?.color[3] || 0) === 1) {
+            this.hasOpaqueWall = true;
+        }
         return this;
     }
 
