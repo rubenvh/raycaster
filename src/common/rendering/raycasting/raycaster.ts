@@ -40,9 +40,9 @@ const castRays = (rays: IRay[], geometry: IGeometry,
         const _ = rays[i];
         const collisions = detectCollisions(_, geometry, options);
 
-        const result = collisions.hits
-            .filter(needsRendering)
-            .sort((a, b) => a.distance - b.distance);
+        // Single-pass filter and insert in sorted order
+        // This avoids creating an intermediate filtered array and then sorting
+        const result = filterAndSortHits(collisions.hits);
 
         stats = accumulateStats(stats, collisions.stats);
 
@@ -51,6 +51,34 @@ const castRays = (rays: IRay[], geometry: IGeometry,
             : { stats: collisions.stats, hits: result });
     }
     return ({ castedRays, stats });
+};
+
+/**
+ * Single-pass filter and sort: filters hits that need rendering and inserts them in sorted order.
+ * Avoids creating intermediate arrays from .filter().sort() chain.
+ */
+const filterAndSortHits = (hits: RayHit[]): RayHit[] => {
+    const result: RayHit[] = [];
+    for (let i = 0, n = hits.length; i < n; i++) {
+        const hit = hits[i];
+        if (!needsRendering(hit)) continue;
+        
+        // Binary search to find insertion point for sorted order
+        let lo = 0;
+        let hi = result.length;
+        const dist = hit.distance;
+        while (lo < hi) {
+            const mid = (lo + hi) >>> 1;
+            if (result[mid].distance < dist) {
+                lo = mid + 1;
+            } else {
+                hi = mid;
+            }
+        }
+        // Insert at the found position
+        result.splice(lo, 0, hit);
+    }
+    return result;
 };
 
 export const castRaysOnEdge = (rays: IRay[], edge: IEdge): RayHit[] => {
