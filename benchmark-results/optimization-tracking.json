@@ -1,0 +1,443 @@
+{
+  "startedAt": "2026-02-12T17:14:10.332Z",
+  "baseline": {
+    "zbuffer": {
+      "avgMs": 7.308843055555576,
+      "ci95Ms": 1.0601838181390177,
+      "cv": 75.31123808326137,
+      "testCases": 16
+    },
+    "raycaster": {
+      "avgMs": 47.69858465277778,
+      "ci95Ms": 1.0303970603038761,
+      "cv": 14.738040463566989,
+      "testCases": 16
+    }
+  },
+  "tasks": [
+    {
+      "taskId": "T1",
+      "name": "spread-operator",
+      "description": "Replace push(...hits) with for loop in addIntersections",
+      "timestamp": "2026-02-12T17:16:56.545Z",
+      "before": {
+        "zbuffer": {
+          "avgMs": 7.308843055555576,
+          "ci95Ms": 1.0601838181390177,
+          "cv": 75.31123808326137,
+          "testCases": 16
+        },
+        "raycaster": {
+          "avgMs": 47.69858465277778,
+          "ci95Ms": 1.0303970603038761,
+          "cv": 14.738040463566989,
+          "testCases": 16
+        }
+      },
+      "after": {
+        "zbuffer": {
+          "avgMs": 7.44717875000006,
+          "ci95Ms": 1.0384387043999503,
+          "cv": 73.1488100638885,
+          "testCases": 16
+        },
+        "raycaster": {
+          "avgMs": 51.49857020833339,
+          "ci95Ms": 1.0606728142005026,
+          "cv": 13.83114807422345,
+          "testCases": 16
+        }
+      },
+      "delta": {
+        "zbuffer": {
+          "deltaMs": 0.13833569444448468,
+          "deltaPercent": 1.8927167185418405,
+          "significant": false
+        },
+        "raycaster": {
+          "deltaMs": 3.799985555555608,
+          "deltaPercent": 7.966663126836221,
+          "significant": true
+        }
+      }
+    },
+    {
+      "taskId": "T1b",
+      "name": "spread-operator-v2",
+      "description": "Use push.apply instead of for loop for array merging",
+      "timestamp": "2026-02-12T17:19:13.111Z",
+      "before": {
+        "zbuffer": {
+          "avgMs": 7.44717875000006,
+          "ci95Ms": 1.0384387043999503,
+          "cv": 73.1488100638885,
+          "testCases": 16
+        },
+        "raycaster": {
+          "avgMs": 51.49857020833339,
+          "ci95Ms": 1.0606728142005026,
+          "cv": 13.83114807422345,
+          "testCases": 16
+        }
+      },
+      "after": {
+        "zbuffer": {
+          "avgMs": 7.539690069444508,
+          "ci95Ms": 1.0874448449981822,
+          "cv": 76.22970455927279,
+          "testCases": 16
+        },
+        "raycaster": {
+          "avgMs": 46.950179583333366,
+          "ci95Ms": 1.0112129990702807,
+          "cv": 15.00145176258792,
+          "testCases": 16
+        }
+      },
+      "delta": {
+        "zbuffer": {
+          "deltaMs": 0.09251131944444779,
+          "deltaPercent": 1.242233099943345,
+          "significant": false
+        },
+        "raycaster": {
+          "deltaMs": -4.548390625000025,
+          "deltaPercent": -8.832071660630325,
+          "significant": true
+        }
+      }
+    },
+    {
+      "taskId": "T2",
+      "name": "intersect-ray-plane",
+      "description": "Add scratch vectors to intersectRayPlane",
+      "timestamp": "2026-02-12T17:21:48.259Z",
+      "before": {
+        "zbuffer": {
+          "avgMs": 7.539690069444508,
+          "ci95Ms": 1.0874448449981822,
+          "cv": 76.22970455927279,
+          "testCases": 16
+        },
+        "raycaster": {
+          "avgMs": 46.950179583333366,
+          "ci95Ms": 1.0112129990702807,
+          "cv": 15.00145176258792,
+          "testCases": 16
+        }
+      },
+      "after": {
+        "zbuffer": {
+          "avgMs": 7.256833750000033,
+          "ci95Ms": 1.0541111101879004,
+          "cv": 76.89074950530208,
+          "testCases": 16
+        },
+        "raycaster": {
+          "avgMs": 48.909913611110824,
+          "ci95Ms": 1.035454592298943,
+          "cv": 15.05671005810511,
+          "testCases": 16
+        }
+      },
+      "delta": {
+        "zbuffer": {
+          "deltaMs": -0.2828563194444751,
+          "deltaPercent": -3.7515642796881536,
+          "significant": false
+        },
+        "raycaster": {
+          "deltaMs": 1.9597340277774578,
+          "deltaPercent": 4.174071420321329,
+          "significant": true
+        }
+      }
+    },
+    {
+      "taskId": "T3",
+      "name": "filter-sort-single-pass",
+      "description": "Single-pass filter+sort with binary insertion",
+      "timestamp": "2026-02-12T17:24:02.336Z",
+      "before": {
+        "zbuffer": {
+          "avgMs": 7.256833750000033,
+          "ci95Ms": 1.0541111101879004,
+          "cv": 76.89074950530208,
+          "testCases": 16
+        },
+        "raycaster": {
+          "avgMs": 48.909913611110824,
+          "ci95Ms": 1.035454592298943,
+          "cv": 15.05671005810511,
+          "testCases": 16
+        }
+      },
+      "after": {
+        "zbuffer": {
+          "avgMs": 7.2591915972221965,
+          "ci95Ms": 1.1203853403395627,
+          "cv": 80.45448667715004,
+          "testCases": 16
+        },
+        "raycaster": {
+          "avgMs": 41.09159548611109,
+          "ci95Ms": 0.8850718006217453,
+          "cv": 13.814101978202485,
+          "testCases": 16
+        }
+      },
+      "delta": {
+        "zbuffer": {
+          "deltaMs": 0.0023578472221634783,
+          "deltaPercent": 0.032491404700617094,
+          "significant": false
+        },
+        "raycaster": {
+          "deltaMs": -7.818318124999735,
+          "deltaPercent": -15.98513991900336,
+          "significant": true
+        }
+      }
+    },
+    {
+      "taskId": "T4",
+      "name": "foreach-to-forof",
+      "description": "Replace forEach on Sets with for...of",
+      "timestamp": "2026-02-12T17:31:40.544Z",
+      "before": {
+        "zbuffer": {
+          "avgMs": 7.2591915972221965,
+          "ci95Ms": 1.1203853403395627,
+          "cv": 80.45448667715004,
+          "testCases": 16
+        },
+        "raycaster": {
+          "avgMs": 41.09159548611109,
+          "ci95Ms": 0.8850718006217453,
+          "cv": 13.814101978202485,
+          "testCases": 16
+        }
+      },
+      "after": {
+        "zbuffer": {
+          "avgMs": 7.214800694444407,
+          "ci95Ms": 1.0009238581275386,
+          "cv": 73.0436936020209,
+          "testCases": 16
+        },
+        "raycaster": {
+          "avgMs": 46.30401590277776,
+          "ci95Ms": 1.0729413391263911,
+          "cv": 17.873274880277748,
+          "testCases": 16
+        }
+      },
+      "delta": {
+        "zbuffer": {
+          "deltaMs": -0.04439090277778934,
+          "deltaPercent": -0.6115130339689061,
+          "significant": false
+        },
+        "raycaster": {
+          "deltaMs": 5.212420416666674,
+          "deltaPercent": 12.684882042189056,
+          "significant": true
+        }
+      }
+    },
+    {
+      "taskId": "T5",
+      "name": "cache-opaque-flag",
+      "description": "Cache hasOpaqueWall flag in ZBufferColumn.isFull()",
+      "timestamp": "2026-02-12T17:36:29.100Z",
+      "before": {
+        "zbuffer": {
+          "avgMs": 7.214800694444407,
+          "ci95Ms": 1.0009238581275386,
+          "cv": 73.0436936020209,
+          "testCases": 16
+        },
+        "raycaster": {
+          "avgMs": 46.30401590277776,
+          "ci95Ms": 1.0729413391263911,
+          "cv": 17.873274880277748,
+          "testCases": 16
+        }
+      },
+      "after": {
+        "zbuffer": {
+          "avgMs": 2.4548917361110605,
+          "ci95Ms": 0.3448858104980555,
+          "cv": 66.2815854116352,
+          "testCases": 16
+        },
+        "raycaster": {
+          "avgMs": 45.49388729166668,
+          "ci95Ms": 0.9440293755876661,
+          "cv": 17.16047845845385,
+          "testCases": 16
+        }
+      },
+      "delta": {
+        "zbuffer": {
+          "deltaMs": -4.759908958333346,
+          "deltaPercent": -65.97422659226893,
+          "significant": true
+        },
+        "raycaster": {
+          "deltaMs": -0.8101286111110824,
+          "deltaPercent": -1.7495860678954263,
+          "significant": false
+        }
+      }
+    },
+    {
+      "taskId": "T6-T7",
+      "name": "cache-screen-values",
+      "description": "Cache screenLength, screenPlane, and screenLeft in ZBuffer",
+      "timestamp": "2026-02-12T17:39:11.636Z",
+      "before": {
+        "zbuffer": {
+          "avgMs": 2.4548917361110605,
+          "ci95Ms": 0.3448858104980555,
+          "cv": 66.2815854116352,
+          "testCases": 16
+        },
+        "raycaster": {
+          "avgMs": 45.49388729166668,
+          "ci95Ms": 0.9440293755876661,
+          "cv": 17.16047845845385,
+          "testCases": 16
+        }
+      },
+      "after": {
+        "zbuffer": {
+          "avgMs": 2.45095375000006,
+          "ci95Ms": 0.37204596013412394,
+          "cv": 76.08869969261934,
+          "testCases": 16
+        },
+        "raycaster": {
+          "avgMs": 46.1011646527778,
+          "ci95Ms": 1.018976137912387,
+          "cv": 14.307985057274843,
+          "testCases": 16
+        }
+      },
+      "delta": {
+        "zbuffer": {
+          "deltaMs": -0.003937986111000491,
+          "deltaPercent": -0.16041384037729045,
+          "significant": false
+        },
+        "raycaster": {
+          "deltaMs": 0.607277361111116,
+          "deltaPercent": 1.3348548503182178,
+          "significant": false
+        }
+      }
+    },
+    {
+      "taskId": "T8",
+      "name": "reuse-scratch-rays",
+      "description": "Reuse scratch ray objects in ZBuffer.add()",
+      "timestamp": "2026-02-12T17:41:50.855Z",
+      "before": {
+        "zbuffer": {
+          "avgMs": 2.45095375000006,
+          "ci95Ms": 0.37204596013412394,
+          "cv": 76.08869969261934,
+          "testCases": 16
+        },
+        "raycaster": {
+          "avgMs": 46.1011646527778,
+          "ci95Ms": 1.018976137912387,
+          "cv": 14.307985057274843,
+          "testCases": 16
+        }
+      },
+      "after": {
+        "zbuffer": {
+          "avgMs": 2.5903663194443225,
+          "ci95Ms": 0.4308206893881137,
+          "cv": 74.61378576302508,
+          "testCases": 16
+        },
+        "raycaster": {
+          "avgMs": 49.33216993055562,
+          "ci95Ms": 0.9904923728849538,
+          "cv": 15.636281238843885,
+          "testCases": 16
+        }
+      },
+      "delta": {
+        "zbuffer": {
+          "deltaMs": 0.1394125694442625,
+          "deltaPercent": 5.688094662914757,
+          "significant": false
+        },
+        "raycaster": {
+          "deltaMs": 3.2310052777778253,
+          "deltaPercent": 7.008511177782453,
+          "significant": true
+        }
+      }
+    },
+    {
+      "taskId": "T8-revert",
+      "name": "revert-scratch-rays",
+      "description": "Reverted T8 - scratch ray reuse caused regression",
+      "timestamp": "2026-02-12T17:44:09.333Z",
+      "before": {
+        "zbuffer": {
+          "avgMs": 2.5903663194443225,
+          "ci95Ms": 0.4308206893881137,
+          "cv": 74.61378576302508,
+          "testCases": 16
+        },
+        "raycaster": {
+          "avgMs": 49.33216993055562,
+          "ci95Ms": 0.9904923728849538,
+          "cv": 15.636281238843885,
+          "testCases": 16
+        }
+      },
+      "after": {
+        "zbuffer": {
+          "avgMs": 2.4533856250000645,
+          "ci95Ms": 0.33894682589956837,
+          "cv": 65.08869206531364,
+          "testCases": 16
+        },
+        "raycaster": {
+          "avgMs": 47.10282993055553,
+          "ci95Ms": 1.0730343330558023,
+          "cv": 14.14488378887351,
+          "testCases": 16
+        }
+      },
+      "delta": {
+        "zbuffer": {
+          "deltaMs": -0.13698069444425798,
+          "deltaPercent": -5.288081975743209,
+          "significant": false
+        },
+        "raycaster": {
+          "deltaMs": -2.229340000000093,
+          "deltaPercent": -4.519039002619004,
+          "significant": true
+        }
+      }
+    }
+  ],
+  "cumulative": {
+    "zbuffer": {
+      "deltaMs": -4.855457430555511,
+      "deltaPercent": -66.43264048288457
+    },
+    "raycaster": {
+      "deltaMs": -0.595754722222253,
+      "deltaPercent": -1.2489987419103818
+    }
+  }
+}
