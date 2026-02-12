@@ -143,11 +143,22 @@ export class ZBufferRenderer implements IRenderer {
 
 export class ZBuffer {
     private cols: ZBufferColumn[];    
-    private rays: IRay[];    
+    private rays: IRay[];
+    // Cached values that only change when camera changes
+    private screenLength: number;
+    private screenPlane: ReturnType<typeof createPlane>;
+    private screenLeft: Vector;
+    
     constructor(private resolution: number, private camera: ICamera, private wallPainter: WallPainter, private context: CanvasRenderingContext2D) {
         this.cols = Array.from({ length: resolution }, () => new ZBufferColumn());
         this.rays = makeRays(this.resolution, this.camera);
-        
+        this.updateCachedValues();
+    }
+    
+    private updateCachedValues(): void {
+        this.screenLength = segmentLength(this.camera.screen);
+        this.screenPlane = createPlane(this.camera.screen);
+        this.screenLeft = this.camera.screen[0];
     }
 
     public render(): void {
@@ -180,14 +191,12 @@ export class ZBuffer {
         
         let sray = makeRay(this.camera.position, subtract(edge.start.vector, this.camera.position));        
         let eray = makeRay(this.camera.position, subtract(edge.end.vector, this.camera.position));        
-        let sproj = intersectRayPlane(sray, createPlane(this.camera.screen))?.point;        
-        let eproj = intersectRayPlane(eray, createPlane(this.camera.screen))?.point;        
+        let sproj = intersectRayPlane(sray, this.screenPlane)?.point;        
+        let eproj = intersectRayPlane(eray, this.screenPlane)?.point;        
         if (!sproj || !eproj) { return; }
                 
-        let [pl,] = this.camera.screen;
-        let screenLength = segmentLength(this.camera.screen);
-        let scol = Math.ceil(distance(pl, sproj)/screenLength * this.resolution);
-        let ecol = Math.floor(distance(pl, eproj)/screenLength * this.resolution);
+        let scol = Math.ceil(distance(this.screenLeft, sproj)/this.screenLength * this.resolution);
+        let ecol = Math.floor(distance(this.screenLeft, eproj)/this.screenLength * this.resolution);
         
         [scol, ecol] = [Math.max(0, Math.min(scol,ecol)-1), Math.min(this.resolution, Math.max(scol, ecol)+1)];
         let hits = castRaysOnEdgeRange(this.rays, scol, ecol, edge);
@@ -217,6 +226,7 @@ export class ZBuffer {
     public updateCamera(camera: ICamera): void {
         this.camera = camera;
         this.rays = makeRays(this.resolution, this.camera);
+        this.updateCachedValues();
     }
 }
 export class ZBufferColumn {
