@@ -53,6 +53,24 @@ export interface BenchmarkResult {
     avgEdgesTested: number;
     /** Average number of visible edges per frame */
     avgEdgesVisible: number;
+    
+    // Statistical rigor metrics
+    /** Standard deviation of frame times in ms */
+    stdDevMs: number;
+    /** Coefficient of variation (stddev/mean * 100) - measures relative variability */
+    coeffOfVariation: number;
+    /** 95% confidence interval half-width (mean ± this value) */
+    confidence95Ms: number;
+    
+    // Warmup-excluded metrics (more accurate for comparison)
+    /** Number of warmup frames excluded from warmup-excluded metrics */
+    warmupFrames: number;
+    /** Average frame time excluding warmup frames */
+    avgExcludingWarmup: number;
+    /** Standard deviation excluding warmup frames */
+    stdDevExcludingWarmup: number;
+    /** 95% CI half-width excluding warmup frames */
+    ci95ExcludingWarmup: number;
   };
   /** Per-frame metrics for detailed analysis */
   frames: RenderMetrics[];

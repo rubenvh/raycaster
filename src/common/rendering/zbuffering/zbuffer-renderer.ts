@@ -9,7 +9,7 @@ import { IEdge, NULL_EDGE } from '../../geometry/edge';
 import { walk } from '../../geometry/bsp/querying';
 import { distance } from '../../geometry/vertex';
 import { ILineSegment, segmentLength } from '../../math/lineSegment';
-import { castRaysOnEdge } from '../raycasting/raycaster';
+import { castRaysOnEdgeRange } from '../raycasting/raycaster';
 import { WallPainter, WallProps } from '../../drawing/wall-painter';
 import { Heap } from '../../datastructures/heap';
 import { drawRect } from '../../drawing/drawing';
@@ -32,7 +32,8 @@ export class ZBufferRenderer implements IRenderer {
     private wallPainter: WallPainter;
     private worldConfig: IWorldConfigState;
     private lastUpdated;
-
+    private buffer: ZBuffer;  // Persistent buffer
+    
     constructor(private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');        
         this.context.imageSmoothingEnabled = false;
@@ -42,6 +43,8 @@ export class ZBufferRenderer implements IRenderer {
         this.width = this.canvas.width;
         this.height = this.canvas.height;
         this.wallPainter = new WallPainter(this.context, this.resolution, this.height, this.width);
+        // Initialize buffer after wallPainter is created
+        this.buffer = new ZBuffer(this.resolution, this.camera, this.wallPainter, this.context);
         connect(s => {
             this.camera = s.player.camera;            
             if (this.wallGeometry != s.walls.geometry) {
@@ -59,7 +62,8 @@ export class ZBufferRenderer implements IRenderer {
     render(fps: number): void {
         // construct a z-index buffer: 
         const startZBuffering = performance.now();
-        let buffer = new ZBuffer(this.resolution, this.camera, this.wallPainter, this.context);
+        this.buffer.clear();
+        this.buffer.updateCamera(this.camera);
         
         let edgesTested: number = 0;
         let count = 0;
@@ -78,14 +82,14 @@ export class ZBufferRenderer implements IRenderer {
                     increment = increment || 1;
 
                     edgesTested++;
-                    buffer.add(clipped, e.start.vector);
+                    this.buffer.add(clipped, e.start.vector);
                     // Note: removed early termination based on buffer.isFull() because BSP walk 
                     // doesn't guarantee front-to-back distance ordering (coplanar edges can be 
                     // at any distance). Must process all edges and let the ZBuffer sort by distance.
                 }
             }    
             count = count + increment;
-            return !buffer.isFull();
+            return !this.buffer.isFull();
         }))
 
         // draw floor + sky
@@ -93,7 +97,7 @@ export class ZBufferRenderer implements IRenderer {
         // this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.drawSky();
         this.drawFloor();        
-        buffer.render();
+        this.buffer.render();
         const endDrawing = performance.now();
         
         if (!this.lastUpdated || endDrawing - this.lastUpdated > 1000) {
@@ -186,9 +190,8 @@ export class ZBuffer {
         let ecol = Math.floor(distance(pl, eproj)/screenLength * this.resolution);
         
         [scol, ecol] = [Math.max(0, Math.min(scol,ecol)-1), Math.min(this.resolution, Math.max(scol, ecol)+1)];
-        let rays = this.rays.slice(scol, ecol);            
-        let hits = castRaysOnEdge(rays, edge);
-        for (let i = 0; i < hits.length; i++) {            
+        let hits = castRaysOnEdgeRange(this.rays, scol, ecol, edge);
+        for (let i = 0; i < hits.length; i++) {
             if (hits[i].intersection === null) continue;
             if ((getMaterial(hits[i].intersection.face, edge.material)?.color[3]||0)===0) continue;
             const wall = this.wallPainter.createWall(hits[i], scol+i, unclippedStart );            
@@ -205,6 +208,16 @@ export class ZBuffer {
         }
         return allFilled;
     }    
+
+     public clear(): void {
+        for (let i = 0; i < this.cols.length; i++) {
+            this.cols[i].clear();
+        }
+    }
+    public updateCamera(camera: ICamera): void {
+        this.camera = camera;
+        this.rays = makeRays(this.resolution, this.camera);
+    }
 }
 export class ZBufferColumn {
     // private heap: Heap<WallProps>;
@@ -215,13 +228,17 @@ export class ZBufferColumn {
         this.queue = new PriorityDeque<WallProps>({ compare: (a, b) => a.distance - b.distance });
     }
 
+    public clear(): void {
+        this.queue.clear();
+    }
+
     public isFull(): boolean {     
         return this.queue.length > 0 && (this.queue.findMax().material?.color[3]||0) === 1;
     }
     
     public add(el: WallProps): ZBufferColumn {        
         // this.heap.insert(el);
-        this.queue.push(el);
+        this.queue.push(el);        
         return this;
     }
 

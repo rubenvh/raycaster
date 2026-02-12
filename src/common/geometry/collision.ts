@@ -1,7 +1,7 @@
 import { Plane } from './../math/plane';
 import { ILineSegment } from './../math/lineSegment';
 import { distanceToMidPoint, ILine } from "../math/lineSegment";
-import { add, cross, dot, normalize, perpendicular, scale, subtract, Vector } from "../math/vector";
+import { add, cross, dot, normalize, perpendicular, scale, subtract, Vector, subtractInto, scaleInto, addInto } from "../math/vector";
 import { IEdge } from "./edge";
 import { BoundingBox, IPolygon } from "./polygon";
 import { distance, IVertex } from "./vertex";
@@ -82,18 +82,31 @@ export const detectCollisionAt = (vector: Vector, polygons: IPolygon[]): VertexC
     .sort(distanceComparer)[0];
 } 
 
+// Scratch vectors for intersection calculations (reused to avoid allocations in hot paths)
+const _v1: Vector = [0, 0];
+const _v2: Vector = [0, 0];
+const _point: Vector = [0, 0];
+
 export const intersectRaySegment = (ray: IRay, s: ILineSegment): Intersection => {    
-    let v1 = subtract(ray.position, s[0]);
-    let v2 = subtract(s[1], s[0]);    
-    let c = cross(v2, v1);    
-    let d_v2 = dot(v2, ray.dperp);
-    let d_v1 = dot(v1, ray.dperp);
+    // Reuse scratch vectors instead of allocating new ones
+    subtractInto(_v1, ray.position, s[0]);
+    subtractInto(_v2, s[1], s[0]);
+    
+    let c = cross(_v2, _v1);    
+    let d_v2 = dot(_v2, ray.dperp);
+    let d_v1 = dot(_v1, ray.dperp);
     let t1 = c / d_v2;
     let t2 = d_v1 / d_v2;
-    if (t1 >=  0 && t2 >= 0 && t2 <= 1) return ({
-        point: add(ray.position, scale(t1, ray.dn)),
-        face: c < 0 ? Face.exterior : Face.interior
-    });
+    
+    if (t1 >= 0 && t2 >= 0 && t2 <= 1) {
+        // Calculate intersection point using scratch vector, then copy out for return
+        scaleInto(_point, t1, ray.dn);
+        addInto(_point, ray.position, _point);
+        return {
+            point: [_point[0], _point[1]], // Copy to new array for safe return
+            face: c < 0 ? Face.exterior : Face.interior
+        };
+    }
     return null;
 };
 

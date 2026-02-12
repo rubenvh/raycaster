@@ -56,16 +56,31 @@ class BenchmarkZBufferColumn {
   shift(): BenchmarkWallEntry | undefined {
     return this.queue.shift();
   }
+  
+  clear(): void {
+    this.queue.clear();
+  }
 }
 
 /**
  * Pure ZBuffer renderer core implementing IRendererCore.
  * 
  * Performs BSP walk and visibility determination without actual drawing.
+ * Supports buffer reuse mode (Task 4 optimization) for reduced allocations.
  */
 export class ZBufferCore implements IRendererCore {
   readonly name = 'ZBuffer (BSP)';
   readonly requiresBsp = true;
+  
+  // Reusable buffers (only used when reuseBuffers is true)
+  private cols: BenchmarkZBufferColumn[] | null = null;
+  private rays: IRay[] | null = null;
+  private lastResolution: number = 0;
+  
+  /**
+   * @param reuseBuffers - If true, reuses internal buffers between renders (Task 4 optimization)
+   */
+  constructor(private reuseBuffers: boolean = false) {}
 
   render(geometry: IGeometry, camera: ICamera, resolution: number): RenderResult {
     const startTime = performance.now();
@@ -73,14 +88,42 @@ export class ZBufferCore implements IRendererCore {
     let edgesTested = 0;
     let edgesVisible = 0;
     
-    // Create rays for the resolution
-    const rays = makeRays(resolution, camera);
+    // Get or create rays
+    let rays: IRay[];
+    if (this.reuseBuffers) {
+      if (!this.rays || this.lastResolution !== resolution) {
+        this.rays = makeRays(resolution, camera);
+        this.lastResolution = resolution;
+      } else {
+        // Update rays for new camera position
+        this.rays = makeRays(resolution, camera);
+      }
+      rays = this.rays;
+    } else {
+      rays = makeRays(resolution, camera);
+    }
     
-    // Create column buffers
-    const cols: BenchmarkZBufferColumn[] = Array.from(
-      { length: resolution }, 
-      () => new BenchmarkZBufferColumn()
-    );
+    // Get or create column buffers
+    let cols: BenchmarkZBufferColumn[];
+    if (this.reuseBuffers) {
+      if (!this.cols || this.cols.length !== resolution) {
+        this.cols = Array.from(
+          { length: resolution }, 
+          () => new BenchmarkZBufferColumn()
+        );
+      } else {
+        // Clear existing columns for reuse
+        for (const col of this.cols) {
+          col.clear();
+        }
+      }
+      cols = this.cols;
+    } else {
+      cols = Array.from(
+        { length: resolution }, 
+        () => new BenchmarkZBufferColumn()
+      );
+    }
     
     // Walk BSP tree and collect visible edges
     if (geometry.bsp) {

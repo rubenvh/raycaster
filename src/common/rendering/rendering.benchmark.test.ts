@@ -6,7 +6,11 @@
  * 
  * Run with: npm test -- --testPathPattern=benchmark
  * 
+ * To save current results as baseline:
+ *   npm test -- --testPathPattern=benchmark --updateBaseline
+ * 
  * Results are written to benchmark-results/rendering-metrics.json
+ * Baseline is stored in benchmark-results/baseline.json
  */
 
 import 'jest-canvas-mock';
@@ -32,6 +36,12 @@ import {
   CameraPath 
 } from '../testing/camera-path';
 import { loadTextureSources } from '../testing/texture-loader';
+import {
+  compareToBaseline,
+  formatComparisonReport,
+  loadBaseline,
+  saveBaseline,
+} from './benchmark-comparison';
 
 // ============================================================================
 // Configuration
@@ -41,6 +51,10 @@ import { loadTextureSources } from '../testing/texture-loader';
 const RESULTS_DIR = path.join(__dirname, '../../../benchmark-results');
 /** Output file for benchmark metrics */
 const RESULTS_FILE = path.join(RESULTS_DIR, 'rendering-metrics.json');
+/** Baseline file for comparison */
+const BASELINE_FILE = path.join(RESULTS_DIR, 'baseline.json');
+/** Check if UPDATE_BASELINE env var is set (use: UPDATE_BASELINE=1 npm run test:benchmark) */
+const UPDATE_BASELINE = process.env.UPDATE_BASELINE === '1' || process.env.UPDATE_BASELINE === 'true';
 
 /** Map size configurations */
 const SIZE_CONFIGS = [
@@ -55,6 +69,9 @@ const MATERIAL_CONFIGS: MaterialPreset[] = ['fast', 'textured', 'translucent', '
 
 /** Number of frames to render per test */
 const FRAME_COUNT = 100;
+
+/** Number of warmup frames to exclude from statistical analysis */
+const WARMUP_FRAMES = 10;
 
 /** Screen resolution (width in pixels) */
 const RESOLUTION = 640;
@@ -85,6 +102,38 @@ function average(arr: number[]): number {
 }
 
 /**
+ * Calculate standard deviation of an array of numbers.
+ */
+function stdDev(arr: number[]): number {
+  if (arr.length === 0) return 0;
+  const avg = average(arr);
+  const variance = arr.reduce((sum, val) => sum + Math.pow(val - avg, 2), 0) / arr.length;
+  return Math.sqrt(variance);
+}
+
+/**
+ * Calculate coefficient of variation (CV) as a percentage.
+ * CV = (stddev / mean) * 100
+ * Higher CV indicates more variability relative to the mean.
+ */
+function coeffOfVariation(arr: number[]): number {
+  if (arr.length === 0) return 0;
+  const avg = average(arr);
+  if (avg === 0) return 0;
+  return (stdDev(arr) / avg) * 100;
+}
+
+/**
+ * Calculate 95% confidence interval half-width.
+ * This is the "±" value: mean ± CI95 gives the interval.
+ */
+function confidence95(arr: number[]): number {
+  if (arr.length === 0) return 0;
+  const se = stdDev(arr) / Math.sqrt(arr.length);
+  return 1.96 * se; // 1.96 for 95% CI (z-score)
+}
+
+/**
  * Create a benchmark result from collected frame metrics.
  */
 function createBenchmarkResult(
@@ -101,6 +150,9 @@ function createBenchmarkResult(
   const edgesTested = frameMetrics.map(m => m.edgesTested);
   const edgesVisible = frameMetrics.map(m => m.edgesVisible);
 
+  // Calculate warmup-excluded metrics
+  const timesNoWarmup = times.slice(WARMUP_FRAMES);
+
   return {
     timestamp: new Date().toISOString(),
     config: {
@@ -109,12 +161,24 @@ function createBenchmarkResult(
       frameCount: FRAME_COUNT,
     },
     metrics: {
+      // Basic metrics (all frames)
       avgFrameTimeMs: average(times),
       minFrameTimeMs: Math.min(...times),
       maxFrameTimeMs: Math.max(...times),
       p95FrameTimeMs: percentile(times, 95),
       avgEdgesTested: average(edgesTested),
       avgEdgesVisible: average(edgesVisible),
+      
+      // Statistical rigor metrics (all frames)
+      stdDevMs: stdDev(times),
+      coeffOfVariation: coeffOfVariation(times),
+      confidence95Ms: confidence95(times),
+      
+      // Warmup-excluded metrics (more reliable for comparison)
+      warmupFrames: WARMUP_FRAMES,
+      avgExcludingWarmup: average(timesNoWarmup),
+      stdDevExcludingWarmup: stdDev(timesNoWarmup),
+      ci95ExcludingWarmup: confidence95(timesNoWarmup),
     },
     frames: frameMetrics,
   };
@@ -188,24 +252,45 @@ describe('Rendering Performance Benchmark', () => {
     console.log(`Total test cases: ${allResults.length}`);
     console.log(`${'='.repeat(60)}\n`);
 
-    // Print summary table
-    console.log('Summary (avg frame time in ms):');
-    console.log('-'.repeat(80));
+    // Print summary table with statistical metrics
+    console.log('Summary (avg frame time excluding warmup, with 95% CI):');
+    console.log('-'.repeat(90));
     
-    const grouped = new Map<string, Map<string, number>>();
+    const grouped = new Map<string, Map<string, { avg: number; ci: number; cv: number }>>();
     for (const result of allResults) {
       const key = `${result.config.mapName}-${result.config.materialPreset}`;
       if (!grouped.has(key)) {
         grouped.set(key, new Map());
       }
-      grouped.get(key)!.set(result.config.renderer, result.metrics.avgFrameTimeMs);
+      grouped.get(key)!.set(result.config.renderer, {
+        avg: result.metrics.avgExcludingWarmup,
+        ci: result.metrics.ci95ExcludingWarmup,
+        cv: result.metrics.coeffOfVariation,
+      });
     }
 
-    for (const [key, rendererTimes] of grouped) {
-      const times = Array.from(rendererTimes.entries())
-        .map(([r, t]) => `${r}: ${t.toFixed(2)}ms`)
+    for (const [key, rendererStats] of grouped) {
+      const stats = Array.from(rendererStats.entries())
+        .map(([r, s]) => `${r}: ${s.avg.toFixed(2)}±${s.ci.toFixed(2)}ms`)
         .join(', ');
-      console.log(`${key}: ${times}`);
+      console.log(`${key}: ${stats}`);
+    }
+    
+    // Baseline comparison
+    console.log('');
+    const baseline = loadBaseline(BASELINE_FILE);
+    if (baseline) {
+      console.log('Comparing against baseline...');
+      const comparisons = compareToBaseline(allResults, baseline.results, WARMUP_FRAMES);
+      console.log(formatComparisonReport(comparisons));
+    } else {
+      console.log('No baseline found. Run with --updateBaseline to create one.');
+    }
+    
+    // Save as baseline if requested
+    if (UPDATE_BASELINE) {
+      saveBaseline(report, BASELINE_FILE);
+      console.log(`\nBaseline saved to: ${BASELINE_FILE}`);
     }
   });
 
@@ -260,16 +345,23 @@ describe('Rendering Performance Benchmark', () => {
 
             allResults.push(result);
 
-            // Log results
+            // Log results with statistical metrics
+            const m = result.metrics;
             console.log(
-              `  ${renderer.name}: avg=${result.metrics.avgFrameTimeMs.toFixed(2)}ms, ` +
-              `p95=${result.metrics.p95FrameTimeMs.toFixed(2)}ms, ` +
-              `edges=${result.metrics.avgEdgesTested.toFixed(0)}`
+              `  ${renderer.name}: avg=${m.avgExcludingWarmup.toFixed(2)}ms ` +
+              `(±${m.ci95ExcludingWarmup.toFixed(2)}ms), ` +
+              `CV=${m.coeffOfVariation.toFixed(1)}%, ` +
+              `edges=${m.avgEdgesTested.toFixed(0)}`
             );
 
             // Soft assertions - warn but don't fail
-            if (result.metrics.avgFrameTimeMs > 16.67) {
-              console.warn(`    ⚠️  Below 60fps target (${(1000 / result.metrics.avgFrameTimeMs).toFixed(1)} fps)`);
+            if (m.avgExcludingWarmup > 16.67) {
+              console.warn(`    ⚠️  Below 60fps target (${(1000 / m.avgExcludingWarmup).toFixed(1)} fps)`);
+            }
+            
+            // Warn if high variance makes comparison unreliable
+            if (m.coeffOfVariation > 50) {
+              console.warn(`    ⚠️  High variance (CV=${m.coeffOfVariation.toFixed(1)}%) - comparisons may be unreliable`);
             }
 
             // Basic sanity checks that should pass

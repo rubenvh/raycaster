@@ -54,15 +54,26 @@ const castRays = (rays: IRay[], geometry: IGeometry,
 };
 
 export const castRaysOnEdge = (rays: IRay[], edge: IEdge): RayHit[] => {
-    
-    let hits: RayHit[] = [];
-    for (let i = 0, n = rays.length; i < n; i++) {
-        const _ = rays[i];
-        const hit = intersectRayEdge(edge, _);
-               
-        hits.push((!hit?.intersection)
-            ? { ray:_, edge: null, intersection: null, polygon: null, distance: Number.POSITIVE_INFINITY }
-            : hit);
+    return castRaysOnEdgeRange(rays, 0, rays.length, edge);
+};
+
+/**
+ * Cast rays on an edge within a specified range, avoiding array slice allocation.
+ * @param rays The full array of rays
+ * @param start Start index (inclusive)
+ * @param end End index (exclusive)
+ * @param edge The edge to test against
+ * @returns Array of RayHit results for the specified range
+ */
+export const castRaysOnEdgeRange = (rays: IRay[], start: number, end: number, edge: IEdge): RayHit[] => {
+    const length = end - start;
+    const hits: RayHit[] = new Array(length);
+    for (let i = 0; i < length; i++) {
+        const ray = rays[start + i];
+        const hit = intersectRayEdge(edge, ray);
+        hits[i] = (!hit?.intersection)
+            ? { ray, edge: null, intersection: null, polygon: null, distance: Number.POSITIVE_INFINITY }
+            : hit;
     }
     return hits;
 };

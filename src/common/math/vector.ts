@@ -32,7 +32,26 @@ const minimumComponents = (u: Vector, v: Vector): Vector => [Math.min(u[0], v[0]
 const maximumComponents = (u: Vector, v: Vector): Vector => [Math.max(u[0], v[0]), Math.max(u[1], v[1])];
 const round = (u: Vector): Vector => [Math.round(u[0]), Math.round(u[1])];
 
-export { ZERO, areEqual, dot, norm, normSqr, normalize, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, cross, perpendicular, copyIn, snap, minimumComponents, maximumComponents, round };
+// In-place operations (mutate output vector to avoid allocations in hot paths)
+const subtractInto = (out: Vector, u: Vector, v: Vector): Vector => {
+    out[0] = u[0] - v[0];
+    out[1] = u[1] - v[1];
+    return out;
+};
+
+const addInto = (out: Vector, u: Vector, v: Vector): Vector => {
+    out[0] = u[0] + v[0];
+    out[1] = u[1] + v[1];
+    return out;
+};
+
+const scaleInto = (out: Vector, k: number, u: Vector): Vector => {
+    out[0] = k * u[0];
+    out[1] = k * u[1];
+    return out;
+};
+
+export { ZERO, areEqual, dot, norm, normSqr, normalize, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, cross, perpendicular, copyIn, snap, minimumComponents, maximumComponents, round, subtractInto, addInto, scaleInto };
 
 const createRotation = (angle: number): [Vector, Vector] => [
     [Math.cos(angle), -1 * Math.sin(angle)],
