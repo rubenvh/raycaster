@@ -86,6 +86,7 @@ export const detectCollisionAt = (vector: Vector, polygons: IPolygon[]): VertexC
 const _v1: Vector = [0, 0];
 const _v2: Vector = [0, 0];
 const _point: Vector = [0, 0];
+const _planePoint: Vector = [0, 0]; // Scratch vector for intersectRayPlane
 
 export const intersectRaySegment = (ray: IRay, s: ILineSegment): Intersection => {    
     // Reuse scratch vectors instead of allocating new ones
@@ -115,10 +116,15 @@ export const intersectRayPlane = (ray: IRay, plane: Plane): Intersection => {
     if (denom === 0) { return null;  }
     const dist = plane.d - dot(plane.n, ray.position);
     const t = dist / denom;    
-    if (t >= 0) return ({
-        point: add(ray.position, scale(t, ray.direction)),
-        face: denom < 0 ? Face.exterior : Face.interior
-    });
+    if (t >= 0) {
+        // Use scratch vector then copy to avoid allocation in hot path
+        scaleInto(_planePoint, t, ray.direction);
+        addInto(_planePoint, ray.position, _planePoint);
+        return {
+            point: [_planePoint[0], _planePoint[1]], // Copy to new array for safe return
+            face: denom < 0 ? Face.exterior : Face.interior
+        };
+    }
     return null;
 }
 
