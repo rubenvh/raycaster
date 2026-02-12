@@ -40,8 +40,14 @@ export function intersectUntilBlocked(tree: SplitBspNode, ray: IRay, face: Face,
 }
 
 const addIntersections = (target: PolygonIntersections, source: PolygonIntersections): PolygonIntersections => {
-    target.hits.push(...source.hits);
-    source.polygonIds.forEach(_ => target.polygonIds.add(_));
+    // Use push.apply for efficient array concatenation without spread operator allocation
+    if (source.hits.length > 0) {
+        Array.prototype.push.apply(target.hits, source.hits);
+    }
+    // Use for...of instead of forEach for better performance
+    for (const id of source.polygonIds) {
+        target.polygonIds.add(id);
+    }
     target.edgeCount += source.edgeCount;
     target.polygonCount += source.polygonCount;
     target.stop = target.stop || source.stop;
