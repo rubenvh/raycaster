@@ -107,7 +107,10 @@ export const castRaysOnEdgeRange = (rays: IRay[], start: number, end: number, ed
 };
 
 const accumulateStats = (stats: CastingStats, iStats: IntersectionStats): CastingStats => {
-    iStats.polygons.forEach(x => stats.polygons.add(x));
+    // Use for...of instead of forEach for better performance
+    for (const x of iStats.polygons) {
+        stats.polygons.add(x);
+    }
     return ({
         polygons: stats.polygons,
         edgeTests: [Math.min(stats.edgeTests[0], iStats.testedEdges), Math.max(stats.edgeTests[1], iStats.testedEdges)],
