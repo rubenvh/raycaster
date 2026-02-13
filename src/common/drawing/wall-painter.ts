@@ -81,10 +81,17 @@ export class WallPainter {
         const start = wallProps[wallProps.length - 1];
         const end = wallProps[0];
 
+        // Apply material's alpha/translucency to texture
+        const alpha = start.material?.color[3] ?? 1;
+        context.globalAlpha = alpha;
+
         // draw texture
         texture.drawTexture(context, wallProps);
         // apply luminosity to texture
         drawTrapezoid(context, this.getTrapezoid(start, end), `rgba(0,0,0,${1 - this.getLumen(start)}`);
+
+        // Restore globalAlpha to default
+        context.globalAlpha = 1;
     }
 
     private applyFading = (context: CanvasRenderingContext2D, wallProps: WallProps[]) => {

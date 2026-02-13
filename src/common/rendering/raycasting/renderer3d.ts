@@ -220,10 +220,17 @@ export class Renderer3d implements IRenderer {
         const start = wallProps[wallProps.length - 1];
         const end = wallProps[0];
 
+        // Apply material's alpha/translucency to texture
+        const alpha = start.material?.color[3] ?? 1;
+        this.context.globalAlpha = alpha;
+
         // draw texture
         texture.drawTexture(this.context, wallProps);
         // apply luminosity to texture
         drawTrapezoid(this.context, getTrapezoid(start, end), `rgba(0,0,0,${1 - this.getLumen(start)}`);
+
+        // Restore globalAlpha to default
+        this.context.globalAlpha = 1;
     }
 
     private applyFading = (wallProps: WallProps[]) => {
