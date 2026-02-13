@@ -16,6 +16,7 @@ import { IStoredEdge } from '../geometry/edge';
 import { ITextureReference } from '../textures/model';
 import { Color } from '../geometry/properties';
 import { getValidTextureReferences } from './texture-loader';
+import { SeededRandom } from './seeded-random';
 
 /**
  * Configuration for the map generator.
@@ -103,34 +104,6 @@ export const MATERIAL_PRESETS = {
 } as const;
 
 export type MaterialPreset = keyof typeof MATERIAL_PRESETS;
-
-/**
- * Seeded random number generator for reproducible map generation.
- */
-class SeededRandom {
-  private seed: number;
-  
-  constructor(seed: number) {
-    this.seed = seed;
-  }
-  
-  /** Generate next random number in [0, 1) */
-  next(): number {
-    // Linear congruential generator
-    this.seed = (this.seed * 1103515245 + 12345) & 0x7fffffff;
-    return this.seed / 0x7fffffff;
-  }
-  
-  /** Generate random integer in [min, max] inclusive */
-  nextInt(min: number, max: number): number {
-    return Math.floor(this.next() * (max - min + 1)) + min;
-  }
-  
-  /** Generate random boolean with given probability of true */
-  nextBool(probability: number = 0.5): boolean {
-    return this.next() < probability;
-  }
-}
 
 /**
  * Generate a complex map with the specified number of polygons.
