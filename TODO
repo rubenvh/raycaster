@@ -1,5 +1,3 @@
-- STORAGE: store BSP representation inside saved map files
-- REDUX-STORE: when an edge is selected then moving the camera is slowed down
 - GEOMETRY: create edit polygon component => mostly a batch edit of its edges
 - GEOMETRY: allow batch edit multiple edges (via tree view checkboxes)
 - IMPROVE: bsp representation should only be removed when physically changing the geometry (moving, adding, deleting elements)
