@@ -11,6 +11,10 @@ import { PolygonExpander } from './polygonExpander';
 import { PolygonSplitter } from './polygonSplitter';
 import { PolygonRotator } from './polygonRotator';
 import { PolygonReverser } from './polygonReverser';
+import { PolygonTransformer } from './polygonTransformer';
+import { EdgeOperations } from './edgeOperations';
+import { VertexOperations } from './vertexOperations';
+import { PolygonGenerator } from './polygonGenerator';
 
 export interface IDisposableHandlers {
     handlers: IActionHandler[];
@@ -35,7 +39,8 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, spaceTranslator:
     const blockingHandlers = [
         new EdgeSplitter(canvas.getContext('2d'), spaceTranslator),
         new PolygonExpander(canvas.getContext('2d'), spaceTranslator),
-        new PolygonRotator(canvas.getContext('2d'), spaceTranslator)
+        new PolygonRotator(canvas.getContext('2d'), spaceTranslator),
+        new PolygonGenerator(canvas.getContext('2d'), spaceTranslator)
     ];
     const handlers = [
             ...blockingHandlers,
@@ -46,6 +51,9 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, spaceTranslator:
             new PolygonSplitter(),
             new EdgeModifier(),
             new PolygonReverser(),
+            new PolygonTransformer(),
+            new EdgeOperations(),
+            new VertexOperations(),
         ]
         .map(_ => _.register(canvas));
     

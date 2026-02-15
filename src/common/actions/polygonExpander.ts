@@ -1,6 +1,6 @@
 import { EMPTY_GEOMETRY, expandPolygon } from './../geometry/geometry';
 import { IPolygon } from './../geometry/polygon';
-import { isEdge, SelectableElement, SelectedEdge } from "../selection/selectable";
+import { isEdge, isPolygon, isVertex, SelectableElement } from "../selection/selectable";
 import { IActionHandler } from "./actions";
 import { ISpaceTranslator } from "./geometrySelector";
 import { drawSegment, drawVector } from '../drawing/drawing';
@@ -8,6 +8,8 @@ import { connect } from '../store/store-connector';
 import { useAppDispatch } from '../store';
 import * as actions from '../store/walls';
 import { clearSelection } from '../store/selection';
+import { IEdge } from '../geometry/edge';
+import { IEntityKey } from '../geometry/entity';
 
 /// <reference path="../../renderer/electron.d.ts" />
 
@@ -30,8 +32,19 @@ export class PolygonExpander implements IActionHandler {
             });
         }
    
-    private get selectedEdge(): SelectedEdge {
-        return this.selectedElements.length === 1 ? this.selectedElements.filter(isEdge)[0] : null;
+    private get selectedElement(): SelectableElement | null {
+        return this.selectedElements.length === 1 ? this.selectedElements[0] : null;
+    }
+
+    private get selectedPolygonId(): IEntityKey | null {
+        const el = this.selectedElement;
+        if (!el) return null;
+        return el.polygon.id;
+    }
+
+    private get selectedEdgeOrNull(): IEdge | null {
+        const el = this.selectedElement;
+        return el && isEdge(el) ? el.edge : null;
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
@@ -61,7 +74,10 @@ export class PolygonExpander implements IActionHandler {
     }
     public isActive = () => this.isExpanding;
     private startExpanding = () => this.isExpanding = this.canActivate();
-    private canActivate = () => this.selectedElements.length === 1 && isEdge(this.selectedElements[0]);
+    private canActivate = () => {
+        const el = this.selectedElement;
+        return el != null && (isEdge(el) || isVertex(el) || isPolygon(el));
+    }
     private cancel = () => {
         this.isExpanding = false;
         this.candidate = null;
@@ -69,15 +85,15 @@ export class PolygonExpander implements IActionHandler {
 
     private selectExpansion = (event: MouseEvent): boolean => {
         if (!this.isActive()) { return false; }        
-        [this.candidate, ] = expandPolygon(this.selectedEdge.edge, this.selectedEdge.polygon.id, this.calculateTarget(event), this.wallGeometry);
+        [this.candidate, ] = expandPolygon(this.selectedEdgeOrNull, this.selectedPolygonId, this.calculateTarget(event), this.wallGeometry);
         return true;
-    };    
+    };
 
     private finalizeExpansion = (event: MouseEvent): boolean => {
         if (event.button !== 0) { return false; }
         if (!this.isActive()) { return false; }
         event.stopImmediatePropagation();                
-        const expansionRequest = {edge: this.selectedEdge.edge, polygon: this.selectedEdge.polygon.id, direction: this.calculateTarget(event)};
+        const expansionRequest = {edge: this.selectedEdgeOrNull, polygon: this.selectedPolygonId, direction: this.calculateTarget(event)};
         dispatch(clearSelection());
         dispatch(actions.expandPolygon(expansionRequest));        
         this.cancel();
