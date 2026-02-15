@@ -9,6 +9,7 @@ import { MapEditorRenderer } from '../common/editor/mapEditor';
 import { WorldLoader } from '../common/storage/stateLoader';
 import { UndoService } from '../common/actions/undoService';
 import { connect } from '../common/store/store-connector';
+import { isEdge, isPolygon, isVertex, SelectableElement } from '../common/selection/selectable';
 import { BspGenerationStarter } from '../common/geometry/bsp/bspGenerationStarter';
 import { loadComponents } from './components';
 import GeometrySelectionComponent from './components/geometrySelectionComponent';
@@ -48,6 +49,31 @@ window.addEventListener('load', (event) => {
 
     const unsubscribeStats = connect(s => {
         ui.stats.data = s.stats;
+    });
+
+    // Send selection state to main process for dynamic menu enable/disable
+    let lastSelectionKind = '';
+    let lastSelectionCount = -1;
+    const unsubscribeSelection = connect(s => {
+        const elements = s.selection.elements;
+        const count = elements.length;
+        let kind: string;
+        if (count === 0) {
+            kind = 'none';
+        } else if (elements.every(isPolygon)) {
+            kind = count > 1 ? 'polygons' : 'polygon';
+        } else if (elements.every(isEdge)) {
+            kind = 'edge';
+        } else if (elements.every(isVertex)) {
+            kind = count > 1 ? 'vertices' : 'vertex';
+        } else {
+            kind = 'mixed';
+        }
+        if (kind !== lastSelectionKind || count !== lastSelectionCount) {
+            lastSelectionKind = kind;
+            lastSelectionCount = count;
+            window.electronAPI.send('selection-state', { kind, count });
+        }
     });
 
     const times: number[] = [];
@@ -99,8 +125,9 @@ window.addEventListener('load', (event) => {
         undoService.dispose();
         bspStarter.dispose();
         
-        // Unsubscribe store connection
+        // Unsubscribe store connections
         unsubscribeStats();
+        unsubscribeSelection();
     });
 });
 

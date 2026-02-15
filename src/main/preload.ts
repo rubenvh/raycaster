@@ -19,12 +19,34 @@ const validReceiveChannels = [
   'geometry_polygon_rotate',
   'geometry_polygon_expand',
   'geometry_polygon_reverse',
+  'geometry_polygon_flip_h',
+  'geometry_polygon_flip_v',
+  'geometry_polygon_scale_up',
+  'geometry_polygon_scale_down',
+  'geometry_polygon_regularize',
+  'geometry_polygon_convex_hull',
+  'geometry_polygon_inset',
+  'geometry_polygon_merge',
+  'geometry_polygon_generate',
+  'geometry_polygon_generate_sides',
+  'geometry_polygon_align_top',
+  'geometry_polygon_align_bottom',
+  'geometry_polygon_align_left',
+  'geometry_polygon_align_right',
+  'geometry_polygon_align_center_h',
+  'geometry_polygon_align_center_v',
   'geometry_remove',
   'geometry_edge_split',
   'geometry_edge_immaterial',
   'geometry_edge_texture',
   'geometry_edge_texture_scroll',
   'geometry_edge_translucency',
+  'geometry_edge_subdivide',
+  'geometry_edge_inset',
+  'geometry_vertex_bevel',
+  'geometry_vertex_align_h',
+  'geometry_vertex_align_v',
+  'geometry_vertex_weld',
   // BSP operations
   'bsp_generate',
   'bsp_cancel',
@@ -33,6 +55,7 @@ const validReceiveChannels = [
 // Whitelist of valid channels for sending messages to main process
 const validSendChannels = [
   'saveNew',
+  'selection-state',
 ];
 
 // Type for the callback function

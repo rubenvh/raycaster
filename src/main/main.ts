@@ -1,5 +1,6 @@
 import {app, BrowserWindow, dialog, ipcMain, Menu} from 'electron'
-import { menu } from './mainmenu';
+import { buildMenu, SelectionState } from './mainmenu';
+import { destroyHelpWindow } from './menu-tooltip';
 import * as path from "path";
 import * as url from "url";
 import * as fs from "fs";
@@ -42,6 +43,7 @@ function createWindow () {
     // Dereference the window object, usually you would store windows
     // in an array if your app supports multi windows, this is the time
     // when you should delete the corresponding element.
+    destroyHelpWindow();
     mainWindow = null as any;
   })
 
@@ -91,7 +93,18 @@ function createWindow () {
     }
   });
 
-  Menu.setApplicationMenu(menu);
+  // Build and set the initial menu with no selection
+  let currentSelection: SelectionState = { kind: 'none', count: 0 };
+  Menu.setApplicationMenu(buildMenu(currentSelection));
+
+  // Listen for selection state updates from renderer
+  ipcMain.on('selection-state', (_event, state: SelectionState) => {
+    // Only rebuild menu if selection kind or count actually changed
+    if (state.kind !== currentSelection.kind || state.count !== currentSelection.count) {
+      currentSelection = state;
+      Menu.setApplicationMenu(buildMenu(currentSelection));
+    }
+  });
 }
 
 // This method will be called when Electron has finished
