@@ -5,7 +5,21 @@ import { IEdge } from './../geometry/edge';
 import { IStoredGeometry, loadGeometry, IGeometry, transformEdges, moveVertices, removeVertex, addPolygon, duplicatePolygons, 
   splitEdge as doSplitEdge,
   expandPolygon as doExpandPolygon, reversePolygon as doReversePolygon, splitPolygon as doSplitPolygon,
-  rotatePolygon as doRotatePolygon } from './../geometry/geometry';
+  rotatePolygon as doRotatePolygon,
+  subdivideEdge as doSubdivideEdge,
+  extrudeEdge as doExtrudeEdge,
+  bevelVertex as doBevelVertex,
+  insetEdge as doInsetEdge,
+  flipPolygon as doFlipPolygon,
+  scalePolygon as doScalePolygon,
+  regularizePolygon as doRegularizePolygon,
+  convexHull as doConvexHull,
+  insetPolygon as doInsetPolygon,
+  mergePolygons as doMergePolygons,
+  alignVertices as doAlignVertices,
+  alignPolygons as doAlignPolygons,
+  weldVertices as doWeldVertices,
+  createRegularPolygon as doCreateRegularPolygon } from './../geometry/geometry';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { EMPTY_GEOMETRY } from '../geometry/geometry';
 import { Vector } from '../math/vector';
@@ -72,7 +86,7 @@ const slice = createSlice({
         state.geometry);
       undoableUpdate(state, duplicated);
     },
-    expandPolygon: (state, action: PayloadAction<{edge: IEdge, polygon: IEntityKey, direction: Vector}>) => {
+    expandPolygon: (state, action: PayloadAction<{edge: IEdge | null, polygon: IEntityKey, direction: Vector}>) => {
       const {edge, polygon, direction} = action.payload;
       const [,expanded] = doExpandPolygon(edge, polygon, direction, state.geometry);
       undoableUpdate(state, expanded);
@@ -95,6 +109,56 @@ const slice = createSlice({
     },
     updateBsp: (state, action: PayloadAction<IBSPNode>) => {
       state.geometry.bsp = action.payload;
+    },
+    subdivideEdge: (state, action: PayloadAction<{edge: IEdge, polygon: IEntityKey, segments: number}>) => {
+      const {edge, polygon, segments} = action.payload;
+      undoableUpdate(state, doSubdivideEdge(edge, polygon, segments, state.geometry));
+    },
+    extrudeEdge: (state, action: PayloadAction<{edge: IEdge, polygon: IEntityKey, direction: Vector}>) => {
+      const {edge, polygon, direction} = action.payload;
+      undoableUpdate(state, doExtrudeEdge(edge, polygon, direction, state.geometry));
+    },
+    bevelVertex: (state, action: PayloadAction<{vertex: IVertex, polygon: IEntityKey, distance: number, segments: number}>) => {
+      const {vertex, polygon, distance, segments} = action.payload;
+      undoableUpdate(state, doBevelVertex(vertex, polygon, distance, segments, state.geometry));
+    },
+    insetEdge: (state, action: PayloadAction<{edge: IEdge, polygon: IEntityKey, depth: number, splitRatio: number}>) => {
+      const {edge, polygon, depth, splitRatio} = action.payload;
+      undoableUpdate(state, doInsetEdge(edge, polygon, depth, splitRatio, state.geometry));
+    },
+    flipPolygon: (state, action: PayloadAction<{polygons: IEntityKey[], axis: 'horizontal' | 'vertical'}>) => {
+      const {polygons, axis} = action.payload;
+      undoableUpdate(state, doFlipPolygon(polygons, axis, state.geometry));
+    },
+    scalePolygon: (state, action: PayloadAction<{polygons: IEntityKey[], scaleX: number, scaleY: number}>) => {
+      const {polygons, scaleX, scaleY} = action.payload;
+      undoableUpdate(state, doScalePolygon(polygons, scaleX, scaleY, state.geometry));
+    },
+    regularizePolygon: (state, action: PayloadAction<{polygon: IEntityKey}>) => {
+      undoableUpdate(state, doRegularizePolygon(action.payload.polygon, state.geometry));
+    },
+    convexHull: (state, action: PayloadAction<{polygon: IEntityKey}>) => {
+      undoableUpdate(state, doConvexHull(action.payload.polygon, state.geometry));
+    },
+    insetPolygon: (state, action: PayloadAction<{polygon: IEntityKey, distance: number}>) => {
+      const [, result] = doInsetPolygon(action.payload.polygon, action.payload.distance, state.geometry);
+      undoableUpdate(state, result);
+    },
+    mergePolygons: (state, action: PayloadAction<{polygons: IEntityKey[]}>) => {
+      undoableUpdate(state, doMergePolygons(action.payload.polygons, state.geometry));
+    },
+    alignVertices: (state, action: PayloadAction<{axis: 'horizontal' | 'vertical', verticesMap: IVertexMap}>) => {
+      undoableUpdate(state, doAlignVertices(action.payload.axis, action.payload.verticesMap, state.geometry));
+    },
+    alignPolygons: (state, action: PayloadAction<{polygons: IEntityKey[], direction: 'top' | 'bottom' | 'left' | 'right' | 'center-h' | 'center-v'}>) => {
+      undoableUpdate(state, doAlignPolygons(action.payload.polygons, action.payload.direction, state.geometry));
+    },
+    weldVertices: (state, action: PayloadAction<{verticesMap: IVertexMap}>) => {
+      undoableUpdate(state, doWeldVertices(action.payload.verticesMap, state.geometry));
+    },
+    createRegularPolygon: (state, action: PayloadAction<{center: Vector, radius: number, sides: number}>) => {
+      const {center, radius, sides} = action.payload;
+      undoableUpdate(state, doCreateRegularPolygon(center, radius, sides, state.geometry));
     }
   },
 });
@@ -112,4 +176,7 @@ const undoableUpdate = (state: IWallState, geometry: IGeometry) => {
 export default slice.reducer
 // Actions
 export const { undo, redo, loadWalls, updateWalls, adaptEdges, splitEdge, move, remove, createPolygon, clonePolygon, 
-              expandPolygon, reversePolygon, splitPolygon, rotatePolygon, editVertex, updateBsp } = slice.actions
+              expandPolygon, reversePolygon, splitPolygon, rotatePolygon, editVertex, updateBsp,
+              subdivideEdge, extrudeEdge, bevelVertex, insetEdge, flipPolygon, scalePolygon,
+              regularizePolygon, convexHull, insetPolygon, mergePolygons, alignVertices, alignPolygons,
+              weldVertices, createRegularPolygon } = slice.actions

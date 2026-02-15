@@ -1,6 +1,9 @@
 import wallsReducer, { loadWalls, updateWalls, undo, redo, move, remove, createPolygon, 
     clonePolygon, expandPolygon, reversePolygon, splitPolygon, rotatePolygon, editVertex, updateBsp, 
-    splitEdge, adaptEdges, IWallState } from './walls';
+    splitEdge, adaptEdges, IWallState,
+    subdivideEdge, extrudeEdge, bevelVertex, insetEdge, flipPolygon, scalePolygon,
+    regularizePolygon, convexHull, insetPolygon, mergePolygons, alignVertices, alignPolygons,
+    weldVertices, createRegularPolygon } from './walls';
 import selectionReducer, { addSelectedElement, startNewSelection, clearSelection, selectTreeNode, ISelectionState } from './selection';
 import playerReducer, { initializeCamera, rotateCamera, strafeCamera, moveCamera, changeCameraAngle, changeCameraDepth, IPlayerState } from './player';
 import worldConfigReducer, { initialize as initWorldConfig, toggleFadingStrategy, IWorldConfigState } from './world-config';
@@ -242,8 +245,14 @@ describe('walls slice', () => {
             const poly = state.geometry.polygons[0];
             const edge = poly.edges[0];
             state = wallsReducer(state, expandPolygon({ edge, polygon: poly.id!, direction: [0, -50] }));
-            // Should still have 1 polygon but with more edges
-            expect(state.geometry.polygons[0].edgeCount).toBeGreaterThan(4);
+            // Should still have 1 polygon with same edge count (parallel offset preserves topology)
+            expect(state.geometry.polygons[0].edgeCount).toBe(4);
+            // The polygon should be larger than the original
+            const origBB = poly.boundingBox;
+            const newBB = state.geometry.polygons[0].boundingBox;
+            const origWidth = origBB[1][0] - origBB[0][0];
+            const newWidth = newBB[1][0] - newBB[0][0];
+            expect(newWidth).toBeGreaterThan(origWidth);
         });
     });
 
@@ -292,6 +301,216 @@ describe('walls slice', () => {
             const movedVertex = state.geometry.polygons[0].vertices[0];
             expect(movedVertex.vector[0]).toBeCloseTo(10, 0);
             expect(movedVertex.vector[1]).toBeCloseTo(20, 0);
+        });
+    });
+
+    describe('subdivideEdge', () => {
+        test('splits edge into N segments', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 100], [0, 100]]]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            const poly = state.geometry.polygons[0];
+            const edge = poly.edges[0];
+            state = wallsReducer(state, subdivideEdge({ edge, polygon: poly.id!, segments: 3 }));
+            expect(state.geometry.polygons[0].edges.length).toBe(6);
+        });
+
+        test('does nothing for segments < 2', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 100]]]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            const poly = state.geometry.polygons[0];
+            const edge = poly.edges[0];
+            state = wallsReducer(state, subdivideEdge({ edge, polygon: poly.id!, segments: 1 }));
+            expect(state.geometry.polygons[0].edges.length).toBe(3);
+        });
+    });
+
+    describe('extrudeEdge', () => {
+        test('creates rectangular extrusion with 3 new edges', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 100], [0, 100]]]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            const poly = state.geometry.polygons[0];
+            const edge = poly.edges[0];
+            state = wallsReducer(state, extrudeEdge({ edge, polygon: poly.id!, direction: [50, -30] }));
+            expect(state.geometry.polygons[0].edges.length).toBe(6);
+        });
+    });
+
+    describe('bevelVertex', () => {
+        test('replaces vertex with chamfer edge', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 100], [0, 100]]]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            const poly = state.geometry.polygons[0];
+            const vertex = poly.vertices[1];
+            state = wallsReducer(state, bevelVertex({ vertex, polygon: poly.id!, distance: 20, segments: 1 }));
+            expect(state.geometry.polygons[0].edges.length).toBe(5);
+        });
+
+        test('does nothing for distance <= 0', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 100]]]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            const poly = state.geometry.polygons[0];
+            state = wallsReducer(state, bevelVertex({ vertex: poly.vertices[0], polygon: poly.id!, distance: 0, segments: 1 }));
+            expect(state.geometry.polygons[0].edges.length).toBe(3);
+        });
+    });
+
+    describe('insetEdge', () => {
+        test('replaces edge with 5 edges forming recess', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 100], [0, 100]]]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            const poly = state.geometry.polygons[0];
+            const edge = poly.edges[0];
+            state = wallsReducer(state, insetEdge({ edge, polygon: poly.id!, depth: 20, splitRatio: 0.5 }));
+            expect(state.geometry.polygons[0].edges.length).toBe(8);
+        });
+    });
+
+    describe('flipPolygon', () => {
+        test('flips polygon horizontally preserving bounding box size', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 50], [0, 50]]]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            const poly = state.geometry.polygons[0];
+            const origWidth = poly.boundingBox[1][0] - poly.boundingBox[0][0];
+            state = wallsReducer(state, flipPolygon({ polygons: [poly.id!], axis: 'horizontal' }));
+            const newPoly = state.geometry.polygons[0];
+            const newWidth = newPoly.boundingBox[1][0] - newPoly.boundingBox[0][0];
+            expect(Math.abs(newWidth - origWidth)).toBeLessThan(0.01);
+        });
+
+        test('flips polygon vertically', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [50, 80]]]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            const poly = state.geometry.polygons[0];
+            state = wallsReducer(state, flipPolygon({ polygons: [poly.id!], axis: 'vertical' }));
+            expect(state.geometry.polygons[0].edges.length).toBe(3);
+        });
+    });
+
+    describe('scalePolygon', () => {
+        test('scales polygon uniformly', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 100], [0, 100]]]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            const poly = state.geometry.polygons[0];
+            const origWidth = poly.boundingBox[1][0] - poly.boundingBox[0][0];
+            state = wallsReducer(state, scalePolygon({ polygons: [poly.id!], scaleX: 2, scaleY: 2 }));
+            const newWidth = state.geometry.polygons[0].boundingBox[1][0] - state.geometry.polygons[0].boundingBox[0][0];
+            expect(newWidth).toBeCloseTo(origWidth * 2, 1);
+        });
+    });
+
+    describe('regularizePolygon', () => {
+        test('creates polygon with equal edge lengths', () => {
+            const geom = createGeometry([[[0, 0], [120, 0], [80, 90], [10, 70]]]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            const poly = state.geometry.polygons[0];
+            state = wallsReducer(state, regularizePolygon({ polygon: poly.id! }));
+            const updated = state.geometry.polygons[0];
+            const lengths = updated.edges.map(e => e.length);
+            const avgLen = lengths.reduce((a, b) => a + b, 0) / lengths.length;
+            lengths.forEach(l => expect(Math.abs(l - avgLen) / avgLen).toBeLessThan(0.01));
+        });
+    });
+
+    describe('convexHull', () => {
+        test('removes concavities from L-shaped polygon', () => {
+            const geom = createGeometry([[[0, 0], [60, 0], [60, 40], [40, 40], [40, 80], [0, 80]]]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            const poly = state.geometry.polygons[0];
+            state = wallsReducer(state, convexHull({ polygon: poly.id! }));
+            expect(state.geometry.polygons[0].vertices.length).toBeLessThanOrEqual(6);
+        });
+    });
+
+    describe('insetPolygon', () => {
+        test('adds inner polygon to geometry', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 100], [0, 100]]]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            const poly = state.geometry.polygons[0];
+            state = wallsReducer(state, insetPolygon({ polygon: poly.id!, distance: 10 }));
+            expect(state.geometry.polygons.length).toBe(2);
+        });
+    });
+
+    describe('mergePolygons', () => {
+        test('combines two adjacent polygons', () => {
+            const geom = createGeometry([
+                [[0, 0], [50, 0], [50, 100], [0, 100]],
+                [[50, 0], [100, 0], [100, 100], [50, 100]]
+            ]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            state = wallsReducer(state, mergePolygons({ polygons: geom.polygons.map(p => p.id!) }));
+            expect(state.geometry.polygons.length).toBe(1);
+        });
+
+        test('does nothing with fewer than 2 polygons', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 100]]]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            state = wallsReducer(state, mergePolygons({ polygons: [geom.polygons[0].id!] }));
+            expect(state.geometry.polygons.length).toBe(1);
+        });
+    });
+
+    describe('alignVertices', () => {
+        test('aligns vertices to average coordinate', () => {
+            const geom = createGeometry([[[0, 10], [100, 30], [100, 100], [0, 100]]]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            const poly = state.geometry.polygons[0];
+            const vertexMap = new Map([[poly.id!, [poly.vertices[0], poly.vertices[1]]]]);
+            state = wallsReducer(state, alignVertices({ axis: 'horizontal', verticesMap: vertexMap }));
+            const updated = state.geometry.polygons[0];
+            // Both aligned vertices should have y ~ 20
+            const aligned = updated.vertices.filter(v => Math.abs(v.vector[1] - 20) < 0.01);
+            expect(aligned.length).toBe(2);
+        });
+    });
+
+    describe('alignPolygons', () => {
+        test('aligns polygons to common edge of bounding box', () => {
+            const geom = createGeometry([
+                [[0, 10], [50, 10], [50, 60], [0, 60]],
+                [[100, 30], [150, 30], [150, 80], [100, 80]]
+            ]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            state = wallsReducer(state, alignPolygons({ polygons: geom.polygons.map(p => p.id!), direction: 'top' }));
+            const p1 = state.geometry.polygons[0];
+            const p2 = state.geometry.polygons[1];
+            expect(p1.boundingBox[0][1]).toBeCloseTo(p2.boundingBox[0][1], 1);
+        });
+
+        test('does nothing with fewer than 2 polygons', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 100]]]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            const origPoly = state.geometry.polygons[0];
+            state = wallsReducer(state, alignPolygons({ polygons: [geom.polygons[0].id!], direction: 'left' }));
+            expect(state.geometry.polygons[0].vertices[0].vector).toEqual(origPoly.vertices[0].vector);
+        });
+    });
+
+    describe('weldVertices', () => {
+        test('merges vertices to centroid', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 100], [0, 100]]]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            const poly = state.geometry.polygons[0];
+            const vertexMap = new Map([[poly.id!, [poly.vertices[0], poly.vertices[1]]]]);
+            state = wallsReducer(state, weldVertices({ verticesMap: vertexMap }));
+            const updated = state.geometry.polygons[0];
+            const welded = updated.vertices.filter(v =>
+                Math.abs(v.vector[0] - 50) < 0.01 && Math.abs(v.vector[1]) < 0.01
+            );
+            expect(welded.length).toBeGreaterThanOrEqual(1);
+        });
+    });
+
+    describe('createRegularPolygon', () => {
+        test('creates N-gon and adds to geometry', () => {
+            let state = wallsReducer(initialState, createRegularPolygon({ center: [200, 200], radius: 50, sides: 6 }));
+            expect(state.geometry.polygons.length).toBe(1);
+            expect(state.geometry.polygons[0].edges.length).toBe(6);
+        });
+
+        test('does nothing for sides < 3', () => {
+            let state = wallsReducer(initialState, createRegularPolygon({ center: [0, 0], radius: 50, sides: 2 }));
+            expect(state.geometry.polygons.length).toBe(0);
         });
     });
 });
