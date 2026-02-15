@@ -1,6 +1,6 @@
 import { 
     createPolygon, IPolygon, isConvex, loadPolygon, storePolygon,
-    BoundingBox, normalize, merge, contains, containsEdge, containsVertex, centerOf
+    BoundingBox, normalize, merge, contains, containsEdge, containsVertex, centerOf, signedArea
 } from './polygon';
 import { makeEdge } from './edge';
 import { makeVertex } from './vertex';
@@ -229,6 +229,30 @@ describe('polygon tests', () => {
             it('handles negative coordinates', () => {
                 const box: BoundingBox = [[-10, -10], [10, 10]];
                 expect(centerOf(box)).toEqual([0, 0]);
+            });
+        });
+
+        describe('signedArea', () => {
+            it('returns positive area for CCW polygon', () => {
+                // CCW square: (0,0) -> (100,0) -> (100,100) -> (0,100)
+                const polygon = createPolygon([[0, 0], [100, 0], [100, 100], [0, 100]]);
+                expect(signedArea(polygon)).toBeGreaterThan(0);
+            });
+
+            it('returns negative area for CW polygon', () => {
+                // CW square: (0,0) -> (0,100) -> (100,100) -> (100,0)
+                const polygon = createPolygon([[0, 0], [0, 100], [100, 100], [100, 0]]);
+                expect(signedArea(polygon)).toBeLessThan(0);
+            });
+
+            it('returns correct magnitude for unit square', () => {
+                const polygon = createPolygon([[0, 0], [1, 0], [1, 1], [0, 1]]);
+                expect(Math.abs(signedArea(polygon))).toBeCloseTo(1);
+            });
+
+            it('returns correct area for triangle', () => {
+                const polygon = createPolygon([[0, 0], [4, 0], [0, 3]]);
+                expect(Math.abs(signedArea(polygon))).toBeCloseTo(6);
             });
         });
     });    

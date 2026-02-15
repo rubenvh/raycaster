@@ -76,6 +76,24 @@ export const containsVertex = (vertex: IVertex, box: BoundingBox) => contains(bo
 export const centerOf = (box: BoundingBox) => midpoint(box);
 
 /**
+ * Computes the signed area of a polygon using the shoelace formula.
+ * Positive = counter-clockwise winding, Negative = clockwise winding.
+ * @param polygon
+ * @returns signed area (positive for CCW, negative for CW)
+ */
+export const signedArea = (polygon: IPolygon): number => {
+    const verts = polygon.vertices;
+    const n = verts.length;
+    let area = 0;
+    for (let i = 0; i < n; i++) {
+        const curr = verts[i].vector;
+        const next = verts[(i + 1) % n].vector;
+        area += curr[0] * next[1] - next[0] * curr[1];
+    }
+    return area / 2;
+};
+
+/**
  * This function determines whether a polygon is convex or concave.
  * @param polygon 
  * @returns true when polygon is convex
