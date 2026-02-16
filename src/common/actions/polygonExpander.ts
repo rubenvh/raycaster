@@ -52,13 +52,15 @@ export class PolygonExpander implements IActionHandler {
         window.electronAPI.on('geometry_polygon_expand', this.startExpanding);
         g.addEventListener('mousemove', this.selectExpansion);
         g.addEventListener('mouseup', this.finalizeExpansion);
-        g.addEventListener('contextmenu', this.cancel, false); 
+        g.addEventListener('contextmenu', this.cancel, false);
+        window.addEventListener('keydown', this.handleKeyDown, false);
         return this;
     }
 
     dispose(): void {
         this.unsubscribe();
         window.electronAPI.off('geometry_polygon_expand', this.startExpanding);
+        window.removeEventListener('keydown', this.handleKeyDown, false);
         if (this.registeredElement) {
             this.registeredElement.removeEventListener('mousemove', this.selectExpansion);
             this.registeredElement.removeEventListener('mouseup', this.finalizeExpansion);
@@ -73,6 +75,11 @@ export class PolygonExpander implements IActionHandler {
         }
     }
     public isActive = () => this.isExpanding;
+    private handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape' && this.isExpanding) {
+            this.cancel();
+        }
+    };
     private startExpanding = () => this.isExpanding = this.canActivate();
     private canActivate = () => {
         const el = this.selectedElement;

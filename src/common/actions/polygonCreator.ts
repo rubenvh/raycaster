@@ -1,12 +1,13 @@
-import { isPolygon, SelectableElement } from '../selection/selectable';
+import { isPolygon, SelectableElement, selectPolygon } from '../selection/selectable';
 import { drawSegment, drawVector } from './../drawing/drawing';
 import { snap, Vector } from '../math/vector';
 import { areClose } from '../geometry/vertex';
 import { IActionHandler } from './actions';
 import { ISpaceTranslator } from './geometrySelector';
 import { connect } from '../store/store-connector';
-import { useAppDispatch } from '../store';
+import store, { useAppDispatch } from '../store';
 import { clonePolygon, createPolygon } from '../store/walls';
+import { clearSelection, startNewSelection } from '../store/selection';
 
 /// <reference path="../../renderer/electron.d.ts" />
 
@@ -37,7 +38,8 @@ export class PolygonCreator implements IActionHandler {
         window.electronAPI.on('geometry_polygon_create', this.startCreation);        
         g.addEventListener('mousemove', this.prepareNextVertex);
         g.addEventListener('mouseup', this.decideNextVertex);
-        g.addEventListener('contextmenu', this.cancel, false); 
+        g.addEventListener('contextmenu', this.cancel, false);
+        window.addEventListener('keydown', this.handleKeyDown, false);
         return this;
     }
 
@@ -45,6 +47,7 @@ export class PolygonCreator implements IActionHandler {
         this.unsubscribe();
         window.electronAPI.off('geometry_polygon_clone', this.duplicatePolygon);
         window.electronAPI.off('geometry_polygon_create', this.startCreation);
+        window.removeEventListener('keydown', this.handleKeyDown, false);
         if (this.registeredElement) {
             this.registeredElement.removeEventListener('mousemove', this.prepareNextVertex);
             this.registeredElement.removeEventListener('mouseup', this.decideNextVertex);
@@ -69,8 +72,16 @@ export class PolygonCreator implements IActionHandler {
     }
 
     public isActive = () => this.isCreating;
-    private startCreation = () => this.isCreating = this.canActivate();
-    private canActivate = () => this.selectedElements.length === 0;
+    private handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape' && this.isCreating) {
+            this.cancel();
+        }
+    };
+    private startCreation = () => {
+        // Clear any existing selection so polygon creation can start from any state
+        dispatch(clearSelection());
+        this.isCreating = true;
+    };
     private cancel = () => {
         this.isCreating = false;
         this.nextVertex = null;
@@ -90,6 +101,12 @@ export class PolygonCreator implements IActionHandler {
         this.emergingPolygon.push(this.nextVertex);
         if (this.emergingPolygon.length > 2 && areClose(this.emergingPolygon[0], this.emergingPolygon[this.emergingPolygon.length-1], 5)) {          
             dispatch(createPolygon(this.emergingPolygon));
+            // Select the newly created polygon (it's the last one in the geometry)
+            const geometry = store.getState().walls.geometry;
+            const newPolygon = geometry.polygons[geometry.polygons.length - 1];
+            if (newPolygon) {
+                dispatch(startNewSelection({ elements: [selectPolygon(newPolygon)], geometry }));
+            }
             this.cancel();
         }
         
@@ -97,10 +114,19 @@ export class PolygonCreator implements IActionHandler {
     };
 
     private duplicatePolygon = () => {        
-        let oldPolygonSelection = this.selectedElements.filter(isPolygon);        
+        let oldPolygonSelection = this.selectedElements.filter(isPolygon);
+        if (oldPolygonSelection.length === 0) return;
         dispatch(clonePolygon({
             polygons: oldPolygonSelection.map(x => x.polygon), 
             displacementIndex: ++this.duplicationCount
-        }));        
+        }));
+        // Select the newly cloned polygons (they are appended at the end of the polygon list)
+        const geometry = store.getState().walls.geometry;
+        const cloneCount = oldPolygonSelection.length;
+        const newPolygons = geometry.polygons.slice(-cloneCount);
+        dispatch(startNewSelection({
+            elements: newPolygons.map(p => selectPolygon(p)),
+            geometry
+        }));
     }
 }

@@ -93,7 +93,7 @@ export function buildMenu(sel: SelectionState = NO_SELECTION): Electron.Menu {
     { key: 'createPolygon', accelerator: 'Ctrl+Space' },
     { key: 'clonePolygon', accelerator: 'Ctrl+D' },
     { key: 'expandPolygon', accelerator: 'Ctrl+E' },
-    { key: 'splitPolygon', accelerator: 'Ctrl+Shift+S' },
+    { key: 'splitPolygon', accelerator: 'Ctrl+Shift+P' },
     { key: 'rotatePolygon', accelerator: 'Ctrl+Shift+R' },
     { key: 'reversePolygon', accelerator: 'Ctrl+Alt+R' },
   ];
@@ -117,7 +117,7 @@ export function buildMenu(sel: SelectionState = NO_SELECTION): Electron.Menu {
     { key: 'alignCenterV' },
   ];
   const edgeKeys: HelpEntry[] = [
-    { key: 'splitEdge', accelerator: 'Ctrl+S' },
+    { key: 'splitEdge', accelerator: 'Ctrl+Shift+E' },
     { key: 'subdivideEdge', accelerator: 'Ctrl+Alt+S' },
     { key: 'insetEdge', accelerator: 'Ctrl+Alt+E' },
     { key: 'immaterial', accelerator: 'Ctrl+I' },
@@ -169,6 +169,7 @@ export function buildMenu(sel: SelectionState = NO_SELECTION): Electron.Menu {
         },
         {
           label: 'Library',
+          enabled: false,
         },
       ]
     },
@@ -184,7 +185,7 @@ export function buildMenu(sel: SelectionState = NO_SELECTION): Electron.Menu {
             geoItem('Create', 'geometry_polygon_create', 'createPolygon', sel, { accelerator: 'Control+Space' }),
             geoItem('Clone', 'geometry_polygon_clone', 'clonePolygon', sel, { accelerator: 'Control+D' }),
             geoItem('Expand', 'geometry_polygon_expand', 'expandPolygon', sel, { accelerator: 'Control+E' }),
-            geoItem('Split', 'geometry_polygon_split', 'splitPolygon', sel, { accelerator: 'Control+Shift+S' }),
+            geoItem('Split', 'geometry_polygon_split', 'splitPolygon', sel, { accelerator: 'Control+Shift+P' }),
             geoItem('Rotate', 'geometry_polygon_rotate', 'rotatePolygon', sel, { accelerator: 'Control+Shift+R' }),
             geoItem('Reverse winding', 'geometry_polygon_reverse', 'reversePolygon', sel, { accelerator: 'Control+Alt+R' }),
             { type: 'separator' },
@@ -235,7 +236,7 @@ export function buildMenu(sel: SelectionState = NO_SELECTION): Electron.Menu {
         {
           label: 'Edge',
           submenu: [
-            geoItem('Split', 'geometry_edge_split', 'splitEdge', sel, { accelerator: 'Control+S' }),
+            geoItem('Split', 'geometry_edge_split', 'splitEdge', sel, { accelerator: 'Control+Shift+E' }),
             geoItem('Subdivide', 'geometry_edge_subdivide', 'subdivideEdge', sel, { accelerator: 'Control+Alt+S' }),
             geoItem('Inset', 'geometry_edge_inset', 'insetEdge', sel, { accelerator: 'Control+Alt+E' }),
             { type: 'separator' },
@@ -274,7 +275,7 @@ export function buildMenu(sel: SelectionState = NO_SELECTION): Electron.Menu {
 
         { type: 'separator' },
 
-        geoItem('Recalculate BSP', 'bsp_generate', 'bsp', sel, { accelerator: 'Control+R' }),
+        geoItem('Recalculate BSP', 'bsp_generate', 'bsp', sel, { accelerator: 'Control+B' }),
       ]
     },
 

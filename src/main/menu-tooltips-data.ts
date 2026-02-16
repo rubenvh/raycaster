@@ -60,18 +60,21 @@ const tooltips: Record<string, MenuTooltip> = {
     requires: 'polygon',
     requiresDescription: 'Select a polygon',
     ascii:
-`Cut polygon along a line:
+`Click two non-adjacent vertices
+to split polygon along a line:
 
   ┌───────┐       ┌───┬───┐
   │       │  ──►  │ A │ B │
   │       │       │   │   │
-  └───────┘       └───┴───┘`
+  └───────┘       └───┴───┘
+
+  ESC / Right-click to cancel`
   },
 
   rotatePolygon: {
     title: 'Rotate Polygon',
-    requires: 'any',
-    requiresDescription: 'Select a polygon, edge, or vertex',
+    requires: 'polygon',
+    requiresDescription: 'Select one or more polygons',
     ascii:
 `Drag to rotate around center:
 
@@ -449,8 +452,8 @@ const tooltips: Record<string, MenuTooltip> = {
 
   fadeStrategy: {
     title: 'Adapt Fading Strategy',
-    requires: 'any',
-    requiresDescription: 'Any selection',
+    requires: 'none',
+    requiresDescription: 'Always available',
     ascii:
 `Cycle distance fade mode:
 

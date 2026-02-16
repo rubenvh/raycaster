@@ -24,7 +24,7 @@ export const createGeometry = (polygonCollection: vector.Vector[][]): IGeometry 
     return ({polygons, edgeCount: countEdges(polygons), bounds: findBounds(polygons)});
 };
 export const addPolygon = (p: IPolygon, geometry: IGeometry): IGeometry => ({...geometry, 
-    polygons: [...geometry.polygons, p], edgeCount: geometry.edgeCount+1});
+    polygons: [...geometry.polygons, p], edgeCount: geometry.edgeCount+1, bsp: null});
 const countEdges = (ps : IPolygon[]): number => ps.reduce((acc, p) => acc + p.edgeCount, 0);
 const findBounds = (ps : IPolygon[]): vector.Vector => ps.reduce((acc, p) => vector.maximumComponents(acc, p.boundingBox[1]), [0,0] as vector.Vector);
 export const detectCollisionAt = (vector: vector.Vector, geometry: IGeometry): collision.Collision => {
@@ -131,7 +131,7 @@ export const duplicatePolygons = (poligons: IPolygon[], delta: vector.Vector, ge
     const newPoligons = poligons.map(p => 
         loadPolygon(giveIdentity<IStoredPolygon>({edges: p.edges.map(e => duplicateEdge(e, delta))})));
     return [
-        {...geometry, polygons: [...geometry.polygons, ...newPoligons]},
+        {...geometry, polygons: [...geometry.polygons, ...newPoligons], bsp: null},
         newPoligons];
 };
 

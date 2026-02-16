@@ -37,6 +37,7 @@ export class PolygonGenerator implements IActionHandler {
         g.addEventListener('mousedown', this.setCenter);
         g.addEventListener('mouseup', this.finalize);
         g.addEventListener('contextmenu', this.cancel, false);
+        window.addEventListener('keydown', this.handleKeyDown, false);
         return this;
     }
 
@@ -44,6 +45,7 @@ export class PolygonGenerator implements IActionHandler {
         this.unsubscribe();
         window.electronAPI.off('geometry_polygon_generate', this.startGeneration);
         window.electronAPI.off('geometry_polygon_generate_sides', this.setSides);
+        window.removeEventListener('keydown', this.handleKeyDown, false);
         if (this.registeredElement) {
             this.registeredElement.removeEventListener('mousemove', this.trackMouse);
             this.registeredElement.removeEventListener('mousedown', this.setCenter);
@@ -72,6 +74,12 @@ export class PolygonGenerator implements IActionHandler {
     }
 
     public isActive = () => this.isGenerating;
+
+    private handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape' && this.isGenerating) {
+            this.cancel();
+        }
+    };
 
     private startGeneration = () => {
         if (this.selectedElements.length > 0) return;

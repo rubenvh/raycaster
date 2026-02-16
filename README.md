@@ -131,10 +131,10 @@ Map files are stored as JSON. Several sample maps are available in `assets/maps/
 
 | Shortcut | Action | Requires |
 |----------|--------|----------|
-| `Ctrl+Space` | Create polygon | Nothing selected. Click to place vertices; close by clicking near the first vertex. |
+| `Ctrl+Space` | Create polygon | Click to place vertices; close by clicking near the first vertex. Any existing selection is cleared automatically. |
 | `Ctrl+D` | Clone polygon | Polygon(s) selected. Creates a displaced copy. |
 | `Ctrl+E` | Expand polygon | One edge selected. Extrudes a new polygon from the selected edge. |
-| `Ctrl+Shift+S` | Split polygon | Two vertices selected in the same polygon. Splits the polygon along the line between them. |
+| `Ctrl+Shift+P` | Split polygon | Two vertices selected in the same polygon. Splits the polygon along the line between them. |
 | `Ctrl+Shift+R` | Rotate polygon | Polygon(s) selected. Move the mouse to rotate, click to confirm. |
 | `Ctrl+Alt+R` | Reverse polygon | Polygon(s) selected. Reverses vertex winding order. |
 
@@ -142,7 +142,7 @@ Map files are stored as JSON. Several sample maps are available in `assets/maps/
 
 | Shortcut | Action | Requires |
 |----------|--------|----------|
-| `Ctrl+S` | Split edge | One edge selected. Click on the edge to split it into two. |
+| `Ctrl+Shift+E` | Split edge | One edge selected. Click on the edge to split it into two. |
 | `Ctrl+I` | Toggle immaterial | Edge(s) selected. Toggles passable-but-visible flag. |
 | `Ctrl+T` | Toggle texture | Edge(s) selected. Toggles texture on/off. |
 | `Ctrl+PageUp` | Next texture | Edge(s) selected. Cycles through available textures. |
@@ -156,7 +156,7 @@ Map files are stored as JSON. Several sample maps are available in `assets/maps/
 |----------|--------|
 | `Ctrl+X` | Remove selected geometry |
 | `Ctrl+Shift+F` | Toggle distance-based fading |
-| `Ctrl+R` | Recalculate BSP tree |
+| `Ctrl+B` | Recalculate BSP tree |
 
 ### Edit
 
@@ -167,7 +167,7 @@ Map files are stored as JSON. Several sample maps are available in `assets/maps/
 
 ## BSP Tree
 
-The 3D renderer uses Binary Space Partitioning for efficient rendering. BSP generation is **not automatic** -- you must trigger it manually via `Ctrl+R` or the Geometry menu.
+The 3D renderer uses Binary Space Partitioning for efficient rendering. BSP generation is **not automatic** -- you must trigger it manually via `Ctrl+B` or the Geometry menu.
 
 Whenever you modify the geometry (move edges, add polygons, etc.), the existing BSP tree is invalidated and must be recalculated. Without a valid BSP, the Z-buffer renderer will not render.
 

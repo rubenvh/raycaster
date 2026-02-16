@@ -40,13 +40,15 @@ export class EdgeSplitter implements IActionHandler {
         window.electronAPI.on('geometry_edge_split', this.startSplitting);        
         g.addEventListener('mousemove', this.selectCut);
         g.addEventListener('mouseup', this.cutEdge);
-        g.addEventListener('contextmenu', this.cancel, false); 
+        g.addEventListener('contextmenu', this.cancel, false);
+        window.addEventListener('keydown', this.handleKeyDown, false);
         return this;
     }
 
     dispose(): void {
         this.unsubscribe();
         window.electronAPI.off('geometry_edge_split', this.startSplitting);
+        window.removeEventListener('keydown', this.handleKeyDown, false);
         if (this.registeredElement) {
             this.registeredElement.removeEventListener('mousemove', this.selectCut);
             this.registeredElement.removeEventListener('mouseup', this.cutEdge);
@@ -59,6 +61,11 @@ export class EdgeSplitter implements IActionHandler {
     }
         
     public isActive = () => this.isSplitting;
+    private handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape' && this.isSplitting) {
+            this.cancel();
+        }
+    };
     private startSplitting = () => this.isSplitting = this.canActivate();
     private canActivate = () => this.selectedGeometry.length === 1 && isEdge(this.selectedGeometry[0]);
     private cancel = () => {

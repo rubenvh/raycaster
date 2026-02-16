@@ -39,13 +39,15 @@ export class PolygonRotator implements IActionHandler {
         window.electronAPI.on('geometry_polygon_rotate', this.startRotation);
         g.addEventListener('mousemove', this.selectRotation);
         g.addEventListener('mouseup', this.finalizeRotation);
-        g.addEventListener('contextmenu', this.cancel, false); 
+        g.addEventListener('contextmenu', this.cancel, false);
+        window.addEventListener('keydown', this.handleKeyDown, false);
         return this;
     }
 
     dispose(): void {
         this.unsubscribe();
         window.electronAPI.off('geometry_polygon_rotate', this.startRotation);
+        window.removeEventListener('keydown', this.handleKeyDown, false);
         if (this.registeredElement) {
             this.registeredElement.removeEventListener('mousemove', this.selectRotation);
             this.registeredElement.removeEventListener('mouseup', this.finalizeRotation);
@@ -62,6 +64,11 @@ export class PolygonRotator implements IActionHandler {
         }
     }
     public isActive = () => this.isRotating;
+    private handleKeyDown = (event: KeyboardEvent) => {
+        if (event.key === 'Escape' && this.isRotating) {
+            this.cancel();
+        }
+    };
     private startRotation = () => this.isRotating = this.canActivate();
     private canActivate = () => this.selectedPolygons.length >= 1;
     private cancel = () => {

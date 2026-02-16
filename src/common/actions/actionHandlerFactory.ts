@@ -40,7 +40,8 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, spaceTranslator:
         new EdgeSplitter(canvas.getContext('2d'), spaceTranslator),
         new PolygonExpander(canvas.getContext('2d'), spaceTranslator),
         new PolygonRotator(canvas.getContext('2d'), spaceTranslator),
-        new PolygonGenerator(canvas.getContext('2d'), spaceTranslator)
+        new PolygonGenerator(canvas.getContext('2d'), spaceTranslator),
+        new PolygonSplitter(canvas.getContext('2d'), spaceTranslator)
     ];
     const handlers = [
             ...blockingHandlers,
@@ -48,7 +49,6 @@ export function createCanvasHandlers(canvas: HTMLCanvasElement, spaceTranslator:
             new GeometrySelector(canvas.getContext('2d'), spaceTranslator, blockingHandlers),
             new GeometryRemover(),
             new PolygonCreator(canvas.getContext('2d'), spaceTranslator),
-            new PolygonSplitter(),
             new EdgeModifier(),
             new PolygonReverser(),
             new PolygonTransformer(),
