@@ -47,10 +47,12 @@ export default class VertexEditorComponent extends HTMLElement {
 
         connect(state => {
             const selectedElement = state.selection.treeSelection;            
-            if (isVertex(selectedElement))
-                this.updateVertex(
-                    queryVertex(selectedElement.vertex.id, selectedElement.polygon.id, state.walls.geometry),
-                    selectedElement.polygon.id);
+            if (isVertex(selectedElement)) {
+                const vertex = queryVertex(selectedElement.vertex.id, selectedElement.polygon.id, state.walls.geometry);
+                if (vertex) {
+                    this.updateVertex(vertex, selectedElement.polygon.id);
+                }
+            }
         });
     } 
 

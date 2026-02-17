@@ -1255,7 +1255,7 @@ describe('geometry tests', () => {
     });
 
     describe('weldVertices', () => {
-        it('merges vertices to their centroid', () => {
+        it('merges two adjacent vertices to centroid and removes zero-length edge', () => {
             const geometry = createGeometry([[[0, 0], [100, 0], [100, 100], [0, 100]]]);
             const polygon = geometry.polygons[0];
             const v1 = polygon.vertices[0]; // (0, 0)
@@ -1265,11 +1265,29 @@ describe('geometry tests', () => {
             const result = weldVertices(vertexMap, geometry);
             const updated = result.polygons.find(p => p.id === polygon.id)!;
 
-            // Both vertices should now be at centroid (50, 0)
+            // The edge between v1 and v2 should be removed (zero-length)
+            expect(updated.edges.length).toBe(3);
+            // The welded vertex should be at centroid (50, 0)
             const weldedVerts = updated.vertices.filter(v =>
                 Math.abs(v.vector[0] - 50) < 0.01 && Math.abs(v.vector[1]) < 0.01
             );
-            expect(weldedVerts.length).toBeGreaterThanOrEqual(1);
+            expect(weldedVerts.length).toBe(1);
+        });
+
+        it('merges three adjacent vertices and removes zero-length edges', () => {
+            // Pentagon: 5 vertices, weld 3 adjacent ones
+            const geometry = createGeometry([[[0, 0], [100, 0], [100, 100], [50, 150], [0, 100]]]);
+            const polygon = geometry.polygons[0];
+            const v0 = polygon.vertices[0]; // (0, 0)
+            const v1 = polygon.vertices[1]; // (100, 0)
+            const v2 = polygon.vertices[2]; // (100, 100)
+
+            const vertexMap: IVertexMap = new Map([[polygon.id, [v0, v1, v2]]]);
+            const result = weldVertices(vertexMap, geometry);
+            const updated = result.polygons.find(p => p.id === polygon.id)!;
+
+            // Two edges between the three welded vertices should be removed
+            expect(updated.edges.length).toBe(3);
         });
 
         it('does nothing with fewer than 2 vertices', () => {
@@ -1280,6 +1298,17 @@ describe('geometry tests', () => {
             const result = weldVertices(vertexMap, geometry);
 
             expect(result).toBe(geometry);
+        });
+
+        it('removes polygon when all vertices are welded', () => {
+            const geometry = createGeometry([[[0, 0], [100, 0], [100, 100]]]);
+            const polygon = geometry.polygons[0];
+
+            const vertexMap: IVertexMap = new Map([[polygon.id, polygon.vertices]]);
+            const result = weldVertices(vertexMap, geometry);
+
+            // All edges become zero-length, polygon should be removed
+            expect(result.polygons.length).toBe(0);
         });
     });
 

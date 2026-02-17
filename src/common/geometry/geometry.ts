@@ -887,7 +887,7 @@ export const weldVertices = (map: IVertexMap, geometry: IGeometry): IGeometry =>
     if (count < 2) return geometry;
     const centroid: vector.Vector = [sumX / count, sumY / count];
 
-    return adaptPolygons(Array.from(map.keys()), geometry, p => {
+    const result = adaptPolygons(Array.from(map.keys()), geometry, p => {
         const vertices = map.get(p.id) || [];
         const vertexIds = new Set(vertices.map(v => v.id));
         return p.edges.map(e => cloneEdge(e)).reduce((acc, e) => {
@@ -897,9 +897,14 @@ export const weldVertices = (map: IVertexMap, geometry: IGeometry): IGeometry =>
             if (vertexIds.has(e.end.id)) {
                 vector.copyIn(e.end.vector, centroid);
             }
+            // Skip zero-length edges (both endpoints welded to same point)
+            if (vertexIds.has(e.start.id) && vertexIds.has(e.end.id)) {
+                return acc;
+            }
             return acc.concat(e);
         }, [] as IEdge[]);
     });
+    return {...result, polygons: result.polygons.filter(_ => _.edgeCount > 0)};
 };
 
 // ============================================================================

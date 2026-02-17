@@ -3,6 +3,7 @@ import { IActionHandler } from './actions';
 import { connect } from '../store/store-connector';
 import { useAppDispatch } from '../store';
 import * as actions from '../store/walls';
+import { clearSelection } from '../store/selection';
 import { IVertex, IVertexMap } from '../geometry/vertex';
 
 /// <reference path="../../renderer/electron.d.ts" />
@@ -64,6 +65,7 @@ export class VertexOperations implements IActionHandler {
     private weldVertices = () => {
         const map = this.selectedVertexMap;
         if (map.size === 0) return;
+        dispatch(clearSelection());
         dispatch(actions.weldVertices({ verticesMap: map }));
     };
 }
