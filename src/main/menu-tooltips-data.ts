@@ -1,7 +1,7 @@
 // Tooltip descriptions for each geometry menu operation.
 // Each entry contains an ASCII art example and the selection requirement.
 
-export type SelectionType = 'none' | 'any' | 'polygon' | 'polygons' | 'edge' | 'vertex' | 'vertices';
+export type SelectionType = 'none' | 'any' | 'polygon' | 'polygons' | 'edge' | 'edgeOrPolygon' | 'vertex' | 'vertices';
 
 export interface MenuTooltip {
   title: string;
@@ -220,8 +220,8 @@ to split polygon along a line:
      ╱──╲      Click: set center
     ╱    ╲     Drag:  set radius
    │  ·   │    Release: create
-    ╲    ╱     Default: hexagon
-     ╲──╱`
+    ╲    ╱     Scroll: adjust sides (3-32)
+     ╲──╱      Default: hexagon (6)`
   },
 
   // === Alignment ===
@@ -358,8 +358,8 @@ to split polygon along a line:
 
   immaterial: {
     title: 'Toggle Immaterial',
-    requires: 'edge',
-    requiresDescription: 'Select one or more edges',
+    requires: 'edgeOrPolygon',
+    requiresDescription: 'Select one or more edges or polygons',
     ascii:
 `Toggle wall passability:
 
@@ -372,8 +372,8 @@ to split polygon along a line:
 
   texture: {
     title: 'Toggle Texture',
-    requires: 'edge',
-    requiresDescription: 'Select one or more edges',
+    requires: 'edgeOrPolygon',
+    requiresDescription: 'Select one or more edges or polygons',
     ascii:
 `Toggle texture on/off:
 
@@ -383,13 +383,30 @@ to split polygon along a line:
   └─────────┘    └─────────┘`
   },
 
+  // === Translucency ===
+  translucency: {
+    title: 'Adjust Translucency',
+    requires: 'edgeOrPolygon',
+    requiresDescription: 'Select one or more edges or polygons',
+    ascii:
+`Change edge transparency:
+
+  ████████  alpha = 1.0 (opaque)
+  ▓▓▓▓▓▓▓▓  alpha = 0.7
+  ▒▒▒▒▒▒▒▒  alpha = 0.4
+  ░░░░░░░░  alpha = 0.1 (nearly invisible)
+
+  Increase: more transparent
+  Decrease: more opaque`
+  },
+
   // === Vertex Operations ===
   bevelVertex: {
     title: 'Bevel Vertex',
     requires: 'vertex',
-    requiresDescription: 'Select exactly one vertex',
+    requiresDescription: 'Select one or more vertices',
     ascii:
-`Replace sharp corner with edge:
+`Replace sharp corners with edges:
 
   │            │
   └──── V      └───╲

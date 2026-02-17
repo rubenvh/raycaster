@@ -59,10 +59,17 @@ export class EdgeModifier implements IActionHandler {
         _.immaterial = !_.immaterial;
         return _;
     });
-    private toggleMaterialTexture = () => this.adaptEdges(_ => { 
-        _.material = applyTexture(Face.interior, _.material, {id: this.texLib.textures[0].path, index: 0}, toggleTexture);
-        return _;
-    });
+    private toggleMaterialTexture = () => {
+        const firstTexture = this.texLib.textures[0];
+        const ref: ITextureReference | null = firstTexture ? {id: firstTexture.id, index: 0} : null;
+        this.adaptEdges(_ => {
+            const m = getMaterial(Face.interior, _.material);
+            if (!m) return _;
+            if (!m.texture && !ref) return _; // no texture to apply
+            _.material = applyTexture(Face.interior, _.material, ref, toggleTexture);
+            return _;
+        });
+    };
     private previousTexture = () => this.changeTexture(this.texLib.previous);
     private nextTexture = () => this.changeTexture(this.texLib.next);
     private changeTexture = (dir: (ITextureReference)=>ITextureReference) => {

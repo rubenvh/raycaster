@@ -27,6 +27,7 @@ function isEnabled(requires: SelectionType, sel: SelectionState): boolean {
     case 'polygon': return sel.kind === 'polygon' || sel.kind === 'polygons';
     case 'polygons': return sel.kind === 'polygons';
     case 'edge': return sel.kind === 'edge';
+    case 'edgeOrPolygon': return sel.kind === 'edge' || sel.kind === 'polygon' || sel.kind === 'polygons' || sel.kind === 'mixed';
     case 'vertex': return sel.kind === 'vertex' || sel.kind === 'vertices';
     case 'vertices': return sel.kind === 'vertices';
     default: return true;
@@ -88,25 +89,27 @@ function helpItem(sectionTitle: string, entries: HelpEntry[]): Electron.MenuItem
  * Called every time selection state changes to update enabled/disabled states.
  */
 export function buildMenu(sel: SelectionState = NO_SELECTION): Electron.Menu {
-  // Tooltip key groups for each submenu's Help item (with accelerators)
-  const polygonKeys: HelpEntry[] = [
+  // ---- Polygon help key groups ----
+  const createKeys: HelpEntry[] = [
     { key: 'createPolygon', accelerator: 'Ctrl+Space' },
     { key: 'clonePolygon', accelerator: 'Ctrl+D' },
-    { key: 'expandPolygon', accelerator: 'Ctrl+E' },
+    { key: 'generatePolygon', accelerator: 'Ctrl+Alt+Space' },
+    { key: 'insetPolygon', accelerator: 'Ctrl+Alt+I' },
+  ];
+  const modifyKeys: HelpEntry[] = [
     { key: 'splitPolygon', accelerator: 'Ctrl+Shift+P' },
-    { key: 'rotatePolygon', accelerator: 'Ctrl+Shift+R' },
+    { key: 'mergePolygons', accelerator: 'Ctrl+Alt+M' },
     { key: 'reversePolygon', accelerator: 'Ctrl+Alt+R' },
   ];
   const transformKeys: HelpEntry[] = [
     { key: 'flipH', accelerator: 'Ctrl+Alt+H' },
     { key: 'flipV', accelerator: 'Ctrl+Alt+V' },
+    { key: 'rotatePolygon', accelerator: 'Ctrl+Shift+R' },
     { key: 'scaleUp', accelerator: 'Ctrl+Alt+=' },
     { key: 'scaleDown', accelerator: 'Ctrl+Alt+-' },
+    { key: 'expandPolygon', accelerator: 'Ctrl+E' },
     { key: 'regularize', accelerator: 'Ctrl+Alt+G' },
     { key: 'convexHull', accelerator: 'Ctrl+Alt+C' },
-    { key: 'insetPolygon', accelerator: 'Ctrl+Alt+I' },
-    { key: 'mergePolygons', accelerator: 'Ctrl+Alt+M' },
-    { key: 'generatePolygon', accelerator: 'Ctrl+Alt+Space' },
   ];
   const alignKeys: HelpEntry[] = [
     { key: 'alignTop' },
@@ -116,18 +119,34 @@ export function buildMenu(sel: SelectionState = NO_SELECTION): Electron.Menu {
     { key: 'alignCenterH' },
     { key: 'alignCenterV' },
   ];
+
+  // ---- Edge help keys ----
   const edgeKeys: HelpEntry[] = [
     { key: 'splitEdge', accelerator: 'Ctrl+Shift+E' },
     { key: 'subdivideEdge', accelerator: 'Ctrl+Alt+S' },
     { key: 'insetEdge', accelerator: 'Ctrl+Alt+E' },
-    { key: 'immaterial', accelerator: 'Ctrl+I' },
-    { key: 'texture', accelerator: 'Ctrl+T' },
   ];
+
+  // ---- Vertex help keys ----
   const vertexKeys: HelpEntry[] = [
     { key: 'bevelVertex', accelerator: 'Ctrl+Alt+B' },
+    { key: 'weldVertices', accelerator: 'Ctrl+Alt+W' },
     { key: 'alignVerticesH' },
     { key: 'alignVerticesV' },
-    { key: 'weldVertices', accelerator: 'Ctrl+Alt+W' },
+  ];
+
+  // ---- Textures help keys ----
+  const textureKeys: HelpEntry[] = [
+    { key: 'immaterial', accelerator: 'Ctrl+I' },
+    { key: 'texture', accelerator: 'Ctrl+T' },
+    { key: 'translucency' },
+  ];
+
+  // ---- Tools help keys ----
+  const toolsKeys: HelpEntry[] = [
+    { key: 'bsp', accelerator: 'Ctrl+B' },
+    { key: 'remove', accelerator: 'Ctrl+X' },
+    { key: 'fadeStrategy', accelerator: 'Ctrl+Shift+F' },
   ];
 
   const template: (Electron.MenuItemConstructorOptions | Electron.MenuItem)[] = [
@@ -171,6 +190,16 @@ export function buildMenu(sel: SelectionState = NO_SELECTION): Electron.Menu {
           label: 'Library',
           enabled: false,
         },
+        { type: 'separator' },
+        geoItem('Toggle immaterial', 'geometry_edge_immaterial', 'immaterial', sel, { accelerator: 'Control+I' }),
+        geoItem('Toggle texture', 'geometry_edge_texture', 'texture', sel, { accelerator: 'Control+T' }),
+        geoItem('Next texture', 'geometry_edge_texture_scroll', 'texture', sel, { accelerator: 'Control+PageUp', data: -1, iconKey: 'texture' }),
+        geoItem('Previous texture', 'geometry_edge_texture_scroll', 'texture', sel, { accelerator: 'Control+PageDown', data: 1, iconKey: 'texture' }),
+        { type: 'separator' },
+        geoItem('Increase translucency', 'geometry_edge_translucency', 'translucency', sel, { accelerator: 'Control+]', data: -1, iconKey: 'translucency' }),
+        geoItem('Decrease translucency', 'geometry_edge_translucency', 'translucency', sel, { accelerator: 'Control+[', data: 1, iconKey: 'translucency' }),
+        { type: 'separator' },
+        helpItem('Texture Operations', textureKeys),
       ]
     },
 
@@ -178,18 +207,30 @@ export function buildMenu(sel: SelectionState = NO_SELECTION): Electron.Menu {
     {
       label: 'Geometry',
       submenu: [
-        // --- Polygon submenu ---
+        // ---- Polygons section ----
+
+        // --- Create submenu ---
         {
-          label: 'Polygon',
+          label: 'Create',
           submenu: [
-            geoItem('Create', 'geometry_polygon_create', 'createPolygon', sel, { accelerator: 'Control+Space' }),
-            geoItem('Clone', 'geometry_polygon_clone', 'clonePolygon', sel, { accelerator: 'Control+D' }),
-            geoItem('Expand', 'geometry_polygon_expand', 'expandPolygon', sel, { accelerator: 'Control+E' }),
-            geoItem('Split', 'geometry_polygon_split', 'splitPolygon', sel, { accelerator: 'Control+Shift+P' }),
-            geoItem('Rotate', 'geometry_polygon_rotate', 'rotatePolygon', sel, { accelerator: 'Control+Shift+R' }),
+            geoItem('Create polygon', 'geometry_polygon_create', 'createPolygon', sel, { accelerator: 'Control+Space' }),
+            geoItem('Clone polygon', 'geometry_polygon_clone', 'clonePolygon', sel, { accelerator: 'Control+D' }),
+            geoItem('Generate polygon', 'geometry_polygon_generate', 'generatePolygon', sel, { accelerator: 'Control+Alt+Space' }),
+            geoItem('Inset polygon', 'geometry_polygon_inset', 'insetPolygon', sel, { accelerator: 'Control+Alt+I' }),
+            { type: 'separator' },
+            helpItem('Create Operations', createKeys),
+          ]
+        },
+
+        // --- Modify submenu (polygons) ---
+        {
+          label: 'Modify',
+          submenu: [
+            geoItem('Split polygon', 'geometry_polygon_split', 'splitPolygon', sel, { accelerator: 'Control+Shift+P' }),
+            geoItem('Merge polygons', 'geometry_polygon_merge', 'mergePolygons', sel, { accelerator: 'Control+Alt+M' }),
             geoItem('Reverse winding', 'geometry_polygon_reverse', 'reversePolygon', sel, { accelerator: 'Control+Alt+R' }),
             { type: 'separator' },
-            helpItem('Polygon Operations', polygonKeys),
+            helpItem('Modify Operations', modifyKeys),
           ]
         },
 
@@ -199,16 +240,12 @@ export function buildMenu(sel: SelectionState = NO_SELECTION): Electron.Menu {
           submenu: [
             geoItem('Flip horizontal', 'geometry_polygon_flip_h', 'flipH', sel, { accelerator: 'Control+Alt+H' }),
             geoItem('Flip vertical', 'geometry_polygon_flip_v', 'flipV', sel, { accelerator: 'Control+Alt+V' }),
-            { type: 'separator' },
+            geoItem('Rotate', 'geometry_polygon_rotate', 'rotatePolygon', sel, { accelerator: 'Control+Shift+R' }),
             geoItem('Scale up (10%)', 'geometry_polygon_scale_up', 'scaleUp', sel, { accelerator: 'Control+Alt+=' }),
             geoItem('Scale down (10%)', 'geometry_polygon_scale_down', 'scaleDown', sel, { accelerator: 'Control+Alt+-' }),
-            { type: 'separator' },
+            geoItem('Expand', 'geometry_polygon_expand', 'expandPolygon', sel, { accelerator: 'Control+E' }),
             geoItem('Regularize', 'geometry_polygon_regularize', 'regularize', sel, { accelerator: 'Control+Alt+G' }),
             geoItem('Convex hull', 'geometry_polygon_convex_hull', 'convexHull', sel, { accelerator: 'Control+Alt+C' }),
-            geoItem('Inset', 'geometry_polygon_inset', 'insetPolygon', sel, { accelerator: 'Control+Alt+I' }),
-            geoItem('Merge', 'geometry_polygon_merge', 'mergePolygons', sel, { accelerator: 'Control+Alt+M' }),
-            { type: 'separator' },
-            geoItem('Generate regular polygon', 'geometry_polygon_generate', 'generatePolygon', sel, { accelerator: 'Control+Alt+Space' }),
             { type: 'separator' },
             helpItem('Transform Operations', transformKeys),
           ]
@@ -232,36 +269,29 @@ export function buildMenu(sel: SelectionState = NO_SELECTION): Electron.Menu {
 
         { type: 'separator' },
 
-        // --- Edge submenu ---
+        // ---- Edges section ----
         {
           label: 'Edge',
           submenu: [
-            geoItem('Split', 'geometry_edge_split', 'splitEdge', sel, { accelerator: 'Control+Shift+E' }),
-            geoItem('Subdivide', 'geometry_edge_subdivide', 'subdivideEdge', sel, { accelerator: 'Control+Alt+S' }),
+            geoItem('Split edge', 'geometry_edge_split', 'splitEdge', sel, { accelerator: 'Control+Shift+E' }),
+            geoItem('Subdivide edge', 'geometry_edge_subdivide', 'subdivideEdge', sel, { accelerator: 'Control+Alt+S' }),
             geoItem('Inset', 'geometry_edge_inset', 'insetEdge', sel, { accelerator: 'Control+Alt+E' }),
-            { type: 'separator' },
-            geoItem('Toggle immaterial', 'geometry_edge_immaterial', 'immaterial', sel, { accelerator: 'Control+I' }),
-            geoItem('Toggle texture', 'geometry_edge_texture', 'texture', sel, { accelerator: 'Control+T' }),
-            geoItem('Next texture', 'geometry_edge_texture_scroll', 'texture', sel, { accelerator: 'Control+PageUp', data: -1, iconKey: 'texture' }),
-            geoItem('Previous texture', 'geometry_edge_texture_scroll', 'texture', sel, { accelerator: 'Control+PageDown', data: 1, iconKey: 'texture' }),
-            { type: 'separator' },
-            geoItem('Increase translucency', 'geometry_edge_translucency', 'immaterial', sel, { accelerator: 'Control+]', data: -1, iconKey: 'translucency' }),
-            geoItem('Decrease translucency', 'geometry_edge_translucency', 'immaterial', sel, { accelerator: 'Control+[', data: 1, iconKey: 'translucency' }),
             { type: 'separator' },
             helpItem('Edge Operations', edgeKeys),
           ]
         },
 
-        // --- Vertex submenu ---
+        { type: 'separator' },
+
+        // ---- Vertex section ----
         {
           label: 'Vertex',
           submenu: [
             geoItem('Bevel', 'geometry_vertex_bevel', 'bevelVertex', sel, { accelerator: 'Control+Alt+B' }),
+            geoItem('Weld', 'geometry_vertex_weld', 'weldVertices', sel, { accelerator: 'Control+Alt+W' }),
             { type: 'separator' },
             geoItem('Align horizontally', 'geometry_vertex_align_h', 'alignVerticesH', sel),
             geoItem('Align vertically', 'geometry_vertex_align_v', 'alignVerticesV', sel),
-            { type: 'separator' },
-            geoItem('Weld', 'geometry_vertex_weld', 'weldVertices', sel, { accelerator: 'Control+Alt+W' }),
             { type: 'separator' },
             helpItem('Vertex Operations', vertexKeys),
           ]
@@ -269,13 +299,12 @@ export function buildMenu(sel: SelectionState = NO_SELECTION): Electron.Menu {
 
         { type: 'separator' },
 
-        // --- Misc ---
+        // ---- Tools section ----
+        geoItem('Recalculate BSP', 'bsp_generate', 'bsp', sel, { accelerator: 'Control+B' }),
         geoItem('Remove', 'geometry_remove', 'remove', sel, { accelerator: 'Control+X' }),
         geoItem('Adapt fading strategy', 'geometry_config_fadeOut', 'fadeStrategy', sel, { accelerator: 'Control+Shift+F' }),
-
         { type: 'separator' },
-
-        geoItem('Recalculate BSP', 'bsp_generate', 'bsp', sel, { accelerator: 'Control+B' }),
+        helpItem('Tools', toolsKeys),
       ]
     },
 
