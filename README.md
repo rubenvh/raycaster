@@ -105,7 +105,8 @@ Camera movement includes collision detection with solid (non-immaterial) edges. 
 - **Ctrl+Wheel** zooms in/out, centered on the cursor.
 
 **Contextual actions** (activated via menu, then use mouse in the editor):
-- **Right-click** cancels any active contextual action (polygon creation, edge splitting, etc.).
+- **Right-click** or **Escape** cancels any active contextual action (polygon creation, edge splitting, etc.).
+- **Scroll wheel** adjusts the side count (3--32) during polygon generation.
 
 ## Menu Reference
 
@@ -137,6 +138,7 @@ Map files are stored as JSON. Several sample maps are available in `assets/maps/
 | `Ctrl+Shift+P` | Split polygon | Two vertices selected in the same polygon. Splits the polygon along the line between them. |
 | `Ctrl+Shift+R` | Rotate polygon | Polygon(s) selected. Move the mouse to rotate, click to confirm. |
 | `Ctrl+Alt+R` | Reverse polygon | Polygon(s) selected. Reverses vertex winding order. |
+| `Ctrl+Alt+Space` | Generate regular polygon | Nothing selected. Click and drag to set center and radius. Scroll wheel adjusts side count (3--32). |
 
 ### Geometry -- Edge Operations
 
