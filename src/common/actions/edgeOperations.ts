@@ -28,9 +28,8 @@ export class EdgeOperations implements IActionHandler {
         return el && isEdge(el) ? el : null;
     }
 
-    private get selectedVertex(): SelectedVertex | null {
-        const el = this.selectedElements.length === 1 ? this.selectedElements[0] : null;
-        return el && isVertex(el) ? el : null;
+    private get selectedVertices(): SelectedVertex[] {
+        return this.selectedElements.filter(isVertex);
     }
 
     register(g: GlobalEventHandlers): IActionHandler {
@@ -65,9 +64,9 @@ export class EdgeOperations implements IActionHandler {
     };
 
     private bevelVertex = () => {
-        const sel = this.selectedVertex;
-        if (!sel) return;
+        const sel = this.selectedVertices;
+        if (sel.length === 0) return;
         dispatch(clearSelection());
-        dispatch(actions.bevelVertex({ vertex: sel.vertex, polygon: sel.polygon.id, distance: 10, segments: 1 }));
+        dispatch(actions.bevelVertex({ vertices: sel.map(s => ({vertex: s.vertex, polygon: s.polygon.id})), distance: 10, segments: 1 }));
     };
 }

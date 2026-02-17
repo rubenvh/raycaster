@@ -118,9 +118,10 @@ const slice = createSlice({
       const {edge, polygon, direction} = action.payload;
       undoableUpdate(state, doExtrudeEdge(edge, polygon, direction, state.geometry));
     },
-    bevelVertex: (state, action: PayloadAction<{vertex: IVertex, polygon: IEntityKey, distance: number, segments: number}>) => {
-      const {vertex, polygon, distance, segments} = action.payload;
-      undoableUpdate(state, doBevelVertex(vertex, polygon, distance, segments, state.geometry));
+    bevelVertex: (state, action: PayloadAction<{vertices: {vertex: IVertex, polygon: IEntityKey}[], distance: number, segments: number}>) => {
+      const {vertices, distance, segments} = action.payload;
+      const result = vertices.reduce((geo, {vertex, polygon}) => doBevelVertex(vertex, polygon, distance, segments, geo), state.geometry);
+      undoableUpdate(state, result);
     },
     insetEdge: (state, action: PayloadAction<{edge: IEdge, polygon: IEntityKey, depth: number, splitRatio: number}>) => {
       const {edge, polygon, depth, splitRatio} = action.payload;

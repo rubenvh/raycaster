@@ -341,7 +341,7 @@ describe('walls slice', () => {
             let state = wallsReducer(initialState, updateWalls(geom));
             const poly = state.geometry.polygons[0];
             const vertex = poly.vertices[1];
-            state = wallsReducer(state, bevelVertex({ vertex, polygon: poly.id!, distance: 20, segments: 1 }));
+            state = wallsReducer(state, bevelVertex({ vertices: [{vertex, polygon: poly.id!}], distance: 20, segments: 1 }));
             expect(state.geometry.polygons[0].edges.length).toBe(5);
         });
 
@@ -349,7 +349,7 @@ describe('walls slice', () => {
             const geom = createGeometry([[[0, 0], [100, 0], [100, 100]]]);
             let state = wallsReducer(initialState, updateWalls(geom));
             const poly = state.geometry.polygons[0];
-            state = wallsReducer(state, bevelVertex({ vertex: poly.vertices[0], polygon: poly.id!, distance: 0, segments: 1 }));
+            state = wallsReducer(state, bevelVertex({ vertices: [{vertex: poly.vertices[0], polygon: poly.id!}], distance: 0, segments: 1 }));
             expect(state.geometry.polygons[0].edges.length).toBe(3);
         });
     });
