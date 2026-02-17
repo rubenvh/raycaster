@@ -37,6 +37,7 @@ export class PolygonGenerator implements IActionHandler {
         g.addEventListener('mousedown', this.setCenter);
         g.addEventListener('mouseup', this.finalize);
         g.addEventListener('contextmenu', this.cancel, false);
+        window.addEventListener('wheel', this.adjustSides, true);
         window.addEventListener('keydown', this.handleKeyDown, false);
         return this;
     }
@@ -45,6 +46,7 @@ export class PolygonGenerator implements IActionHandler {
         this.unsubscribe();
         window.electronAPI.off('geometry_polygon_generate', this.startGeneration);
         window.electronAPI.off('geometry_polygon_generate_sides', this.setSides);
+        window.removeEventListener('wheel', this.adjustSides, true);
         window.removeEventListener('keydown', this.handleKeyDown, false);
         if (this.registeredElement) {
             this.registeredElement.removeEventListener('mousemove', this.trackMouse);
@@ -67,9 +69,13 @@ export class PolygonGenerator implements IActionHandler {
             }
             // Draw center point
             drawVector(this.context, this.center, 'rgba(255, 255, 100, 0.9)');
+            // Draw side count label near center
+            this.drawSideCountLabel(this.center);
         } else if (this.currentMouse) {
             // Just draw the cursor position before center is placed
             drawVector(this.context, this.currentMouse, 'rgba(100, 200, 255, 0.5)');
+            // Draw side count label near cursor
+            this.drawSideCountLabel(this.currentMouse);
         }
     }
 
@@ -91,6 +97,17 @@ export class PolygonGenerator implements IActionHandler {
     private setSides = (count: number) => {
         if (count >= 3 && count <= 32) {
             this.sides = count;
+        }
+    };
+
+    private adjustSides = (event: WheelEvent) => {
+        if (!this.isGenerating) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        const delta = event.deltaY < 0 ? 1 : -1;
+        const newSides = this.sides + delta;
+        if (newSides >= 3 && newSides <= 32) {
+            this.sides = newSides;
         }
     };
 
@@ -152,5 +169,20 @@ export class PolygonGenerator implements IActionHandler {
             ]);
         }
         return vertices;
+    }
+
+    private drawSideCountLabel(position: Vector): void {
+        const ctx = this.context;
+        const label = `${this.sides} sides`;
+        ctx.save();
+        ctx.font = '12px monospace';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.lineWidth = 3;
+        const x = position[0] + 8;
+        const y = position[1] - 8;
+        ctx.strokeText(label, x, y);
+        ctx.fillText(label, x, y);
+        ctx.restore();
     }
 }
