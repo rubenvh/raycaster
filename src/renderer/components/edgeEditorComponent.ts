@@ -66,8 +66,10 @@ export default class EdgeEditorComponent extends HTMLElement {
             this.distanceToCamera = (edge: IEdge): number => distanceToMidPoint(state.player.camera.position, edge.segment);
             if (isEdge(selectedElement)) {
                 let edge = queryEdge(selectedElement.edge.id, selectedElement.polygon.id, state.walls.geometry);                
-                this.updateEdge(edge, selectedElement.polygon.id);                
-            }            
+                if (edge) {
+                    this.updateEdge(edge, selectedElement.polygon.id);
+                }
+            }
         });
     } 
   
