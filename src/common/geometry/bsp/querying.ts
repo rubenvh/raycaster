@@ -2,7 +2,7 @@ import { createEmptyIntersection, intersectRayPlane, intersectRayPolygons, IRay,
 import { IBSPNode, isLeafNode, isSplitNode, PointToPlaneRelation, SplitBspNode } from './model';
 import { classifyPointToPlane } from './classification';
 import { Face } from '../properties';
-import { dot, Vector } from '../../math/vector';
+import { Vector } from '../../math/vector';
 import { BoundingBox, IPolygon } from '../polygon';
 import { Plane } from '../../math/plane';
 
@@ -18,8 +18,8 @@ export function isAABBBehindPlane(bounds: BoundingBox, plane: Plane): boolean {
     // For each axis, pick max if normal component is positive, min if negative.
     const px = plane.n[0] >= 0 ? bounds[1][0] : bounds[0][0];
     const py = plane.n[1] >= 0 ? bounds[1][1] : bounds[0][1];
-    // If even the p-vertex is behind the plane, the entire AABB is behind it
-    return dot(plane.n, [px, py]) < plane.d;
+    // Inline dot product to avoid allocating a temporary [px, py] array
+    return plane.n[0] * px + plane.n[1] * py < plane.d;
 }
 
 /**
@@ -32,8 +32,8 @@ export function isAABBInFrontOfPlane(bounds: BoundingBox, plane: Plane): boolean
     // This is the opposite of the p-vertex: for each axis, pick min if normal is positive, max if negative.
     const nx = plane.n[0] >= 0 ? bounds[0][0] : bounds[1][0];
     const ny = plane.n[1] >= 0 ? bounds[0][1] : bounds[1][1];
-    // If even the n-vertex is in front of the plane, the entire AABB is in front of it
-    return dot(plane.n, [nx, ny]) > plane.d;
+    // Inline dot product to avoid allocating a temporary [nx, ny] array
+    return plane.n[0] * nx + plane.n[1] * ny > plane.d;
 }
 
 /**
@@ -91,9 +91,12 @@ const addIntersections = (target: PolygonIntersections, source: PolygonIntersect
     if (source.hits.length > 0) {
         Array.prototype.push.apply(target.hits, source.hits);
     }
-    // Use for...of instead of forEach for better performance
-    for (const id of source.polygonIds) {
-        target.polygonIds.add(id);
+    // Lazily merge polygon IDs (both sides may be null)
+    if (source.polygonIds != null) {
+        if (target.polygonIds == null) target.polygonIds = new Set();
+        for (const id of source.polygonIds) {
+            target.polygonIds.add(id);
+        }
     }
     target.edgeCount += source.edgeCount;
     target.polygonCount += source.polygonCount;

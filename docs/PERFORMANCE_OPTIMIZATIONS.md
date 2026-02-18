@@ -1,8 +1,8 @@
 # Raycaster Performance Optimizations
 
-**Date:** February 12, 2026  
+**Date:** February 18, 2026  
 **Author:** OpenCode  
-**Total Improvement:** ZBuffer -66%, Raycaster -16% (net)
+**Total Improvement:** ZBuffer up to -90%, Raycaster up to -32% (from original baseline, plus Tier 2 additional -5% to -30%)
 
 This document details all performance optimizations applied to the raycaster rendering engine, with before/after code samples and measured impact.
 
@@ -18,7 +18,9 @@ This document details all performance optimizations applied to the raycaster ren
 6. [T5: Cache hasOpaqueWall Flag](#t5-cache-hasopaquwall-flag)
 7. [T6-T7: Cache Screen Values](#t6-t7-cache-screen-values)
 8. [T8: Scratch Ray Objects (Reverted)](#t8-scratch-ray-objects-reverted)
-9. [Lessons Learned](#lessons-learned)
+9. [Tier 1 Optimizations (Batch 2)](#tier-1-optimizations-batch-2)
+10. [Tier 2 Optimizations: Redundant Computations](#tier-2-optimizations-redundant-computations)
+11. [Lessons Learned](#lessons-learned)
 
 ---
 
@@ -33,6 +35,11 @@ This document details all performance optimizations applied to the raycaster ren
 | T5 | Cache `hasOpaqueWall` flag | **-66.0%** | -1.7% | Kept |
 | T6-T7 | Cache screen values | -0.2% | +1.3% | Kept |
 | T8 | Reuse scratch rays | +5.7% | +7.0% | **Reverted** |
+| **Tier 2** | | | | |
+| 2.4 | Expose `t1` from `intersectRaySegment` | ~0% | **-5% to -30%** | Kept |
+| 2.5 | `perpendicular` instead of `rotate(PI/2)` | ~0% | ~0% | Kept |
+| 2.6 | Short-circuit `Math.cos(0)=1` in `makeRay` | ~0% | ~0% | Kept |
+| 2.8 | Cache `directionNorm` on camera | ~0% | ~0% | Kept |
 
 *T4 showed regression in isolation but was kept as part of consistent coding style.
 
@@ -489,21 +496,585 @@ function updateRay(ray: IRay, position: Vector, direction: Vector): void {
 
 ---
 
+## Tier 1 Optimizations (Batch 2)
+
+The following optimizations address all remaining Tier 1 items from [`PERFORMANCE_ANALYSIS.md`](./PERFORMANCE_ANALYSIS.md). Unlike the initial batch (T1-T8), these focus on **eliminating unnecessary work** rather than object pooling, per the T8 lesson.
+
+### Summary of Batch 2 Results
+
+| # | Change | Files | ZBuffer Impact | Raycaster Impact |
+|---|--------|-------|----------------|------------------|
+| 1.8 | Inline `distance()` | `vector.ts` | -24% to -42% (small-stress) | -12% to -24% |
+| 2.7 | Direct rotation (no matrix) | `vector.ts` | -- | -- |
+| 2.3 | Inline dot in AABB tests | `querying.ts` | Within noise | Within noise |
+| 3.2 | Short-circuit `isFull()` | `zbuffer-renderer.ts` | Within noise | N/A |
+| 1.9 | Conditional `clippedSegments` | `zbuffer-renderer.ts` | Within noise | N/A |
+| 1.5 | `accumulateStats` in-place | `raycaster.ts` | N/A | Within noise |
+| 1.4 | Lazy Set allocation | `collision.ts`, `querying.ts` | N/A | Moderate |
+| 1.7 | `intersectRayEdge` null on miss | `collision.ts`, `raycaster.ts` | N/A | Moderate |
+| 1.1a | Fuse atan2+cos trig pair | `camera.ts`, `collision.ts` | Moderate | Moderate |
+| 1.3 | Direct screen projection | `zbuffer-renderer.ts`, `zbuffer-core.ts` | **Significant** | N/A |
+| 1.2 | Lightweight `clipEdgeLightweight` | `edge.ts`, `camera.ts` | **Significant** | N/A |
+
+### Cumulative from Original Baseline (all optimizations)
+- **ZBuffer:** -24% to -90% depending on scene complexity
+- **Raycaster:** -12% to -32% depending on scene complexity
+- **28 benchmark scenarios improved, 1 minor regression, 3 unchanged**
+
+---
+
+### 1.8: Inline `distance()` to Avoid Subtract Allocation
+
+**File:** `src/common/math/vector.ts`  
+**Impact:** Foundation optimization — improves every caller
+
+#### Before
+```typescript
+const distance = (u: Vector, v: Vector): number => norm(subtract(u, v));
+// subtract allocates [number, number], norm calls sqrt(dot(u,u))
+```
+
+#### After
+```typescript
+const distance = (u: Vector, v: Vector): number => {
+    const dx = u[0] - v[0];
+    const dy = u[1] - v[1];
+    return Math.sqrt(dx * dx + dy * dy);
+};
+
+const distanceSqr = (u: Vector, v: Vector): number => {
+    const dx = u[0] - v[0];
+    const dy = u[1] - v[1];
+    return dx * dx + dy * dy;
+};
+```
+
+Zero allocations. `distanceSqr` added for comparison-only use cases that don't need the `sqrt`.
+
+---
+
+### 2.7: Replace `rotate()` with Direct Computation
+
+**File:** `src/common/math/vector.ts`  
+**Impact:** Eliminates 3 array allocations per rotation call
+
+#### Before
+```typescript
+const rotate = (angle: number, u: Vector): Vector => matMultiply(createRotation(angle), u);
+
+const createRotation = (angle: number): [Vector, Vector] => [
+    [Math.cos(angle), -1 * Math.sin(angle)],  // allocates inner array
+    [Math.sin(angle), Math.cos(angle)]          // allocates inner array
+];  // allocates outer array
+```
+
+#### After
+```typescript
+const rotate = (angle: number, u: Vector): Vector => {
+    const c = Math.cos(angle), s = Math.sin(angle);
+    return [c * u[0] - s * u[1], s * u[0] + c * u[1]];
+};
+```
+
+Eliminates the intermediate 2x2 matrix (3 arrays) and the `matMultiply` call. Single allocation for the result vector.
+
+---
+
+### 2.3: Inline Dot Product in AABB Frustum Tests
+
+**File:** `src/common/geometry/bsp/querying.ts`  
+**Impact:** Eliminates ~150 temporary arrays per frame
+
+#### Before
+```typescript
+// Allocated [px, py] just to pass to dot()
+return dot(plane.n, [px, py]) < plane.d;
+```
+
+#### After
+```typescript
+return plane.n[0] * px + plane.n[1] * py < plane.d;
+```
+
+Zero allocations. Applied to both `isAABBBehindPlane` and `isAABBInFrontOfPlane`.
+
+---
+
+### 3.2: Short-Circuit `isFull()` with Early Return
+
+**File:** `src/common/rendering/zbuffering/zbuffer-renderer.ts`  
+**Impact:** O(640) → O(1) in best case
+
+#### Before
+```typescript
+public isFull(): boolean {
+    let allFilled = true;
+    for (let c of this.cols) {
+        allFilled = allFilled && c.isFull();  // Does NOT short-circuit the loop
+    }
+    return allFilled;
+}
+```
+
+#### After
+```typescript
+public isFull(): boolean {
+    for (const c of this.cols) {
+        if (!c.isFull()) return false;
+    }
+    return true;
+}
+```
+
+The original code iterated all 640 columns even after finding one not-full, because `&&` in an assignment doesn't break the loop.
+
+---
+
+### 1.9: Conditional `clippedSegments` Debug Array
+
+**File:** `src/common/rendering/zbuffering/zbuffer-renderer.ts`  
+**Impact:** Eliminates ~100 object allocations on 59/60 frames
+
+The `clippedSegments` array (used for debug/stats display) was built every frame but only dispatched to the store once per second. Now only built when stats will actually be used:
+
+```typescript
+const shouldCollectStats = performance.now() - this.previousStatsTimestamp > 1000;
+let clippedSegments = shouldCollectStats ? [] : null;
+// ...
+if (clippedSegments) clippedSegments.push({ segment: clipped.segment, depth: count });
+```
+
+---
+
+### 1.5: `accumulateStats` Mutate In-Place
+
+**File:** `src/common/rendering/raycasting/raycaster.ts`  
+**Impact:** Eliminates 1,920 allocations/frame (640 rays × 3 objects each)
+
+#### Before
+```typescript
+const accumulateStats = (stats: CastingStats, iStats: IntersectionStats): CastingStats => {
+    for (const x of iStats.polygons) { stats.polygons.add(x); }
+    return ({                                   // New object per ray
+        polygons: stats.polygons,
+        edgeTests: [/* new array */],           // New array per ray
+        polygonTests: [/* new array */],        // New array per ray
+    });
+};
+```
+
+#### After
+```typescript
+const accumulateStats = (stats: CastingStats, iStats: IntersectionStats): void => {
+    for (const x of iStats.polygons) { stats.polygons.add(x); }
+    stats.edgeTests[0] = Math.min(stats.edgeTests[0], iStats.testedEdges);
+    stats.edgeTests[1] = Math.max(stats.edgeTests[1], iStats.testedEdges);
+    stats.polygonTests[0] = Math.min(stats.polygonTests[0], iStats.testedPolygons);
+    stats.polygonTests[1] = Math.max(stats.polygonTests[1], iStats.testedPolygons);
+};
+```
+
+**Critical bug fixed:** The initial stats in `castRays` was created via `{...EMPTY_STATS}`, which copies `edgeTests` and `polygonTests` by **reference** (they are arrays). In-place mutation would corrupt the `EMPTY_STATS` constant, causing "Cannot assign to read only property" in the Electron app. Fixed by creating fresh arrays inline:
+
+```typescript
+let stats: CastingStats = {
+    polygons: new Set<String>(),
+    edgeTests: [+Infinity, -Infinity],     // fresh array, not shared reference
+    polygonTests: [+Infinity, -Infinity],  // fresh array, not shared reference
+    ...
+};
+```
+
+---
+
+### 1.4: Lazy Set Allocation in `createEmptyIntersection`
+
+**File:** `src/common/geometry/collision.ts`, `src/common/geometry/bsp/querying.ts`  
+**Impact:** Eliminates ~6,400-9,600 Set allocations/frame (raycaster path)
+
+#### Before
+```typescript
+export const createEmptyIntersection = (): PolygonIntersections =>
+    ({hits: [], stop: false, edgeCount: 0, polygonCount: 0, polygonIds: new Set<string>()});
+```
+
+#### After
+```typescript
+export const createEmptyIntersection = (): PolygonIntersections =>
+    ({hits: [], stop: false, edgeCount: 0, polygonCount: 0, polygonIds: null});
+```
+
+The Set is only created when polygon IDs are actually added. Callers updated with null guards:
+
+```typescript
+// In intersectRayPolygons:
+if (result.polygonIds == null) result.polygonIds = new Set();
+result.polygonIds.add(polygon.id);
+
+// In addIntersections:
+if (source.polygonIds != null) {
+    if (target.polygonIds == null) target.polygonIds = new Set();
+    for (const id of source.polygonIds) { target.polygonIds.add(id); }
+}
+```
+
+---
+
+### 1.7: `intersectRayEdge` Returns Null on Miss
+
+**File:** `src/common/geometry/collision.ts`  
+**Impact:** Eliminates hundreds of allocations per frame from ray-edge misses
+
+#### Before
+```typescript
+export function intersectRayEdge(ray, edge, polygon): RayHit {
+    const intersection = intersectRaySegment(ray, edge.segment);
+    if (intersection) {
+        return {polygon, ray, edge, intersection, distance: ...};
+    }
+    // MISS: still allocates a new object
+    return {polygon: null, ray, edge, intersection: null, distance: 0};
+}
+```
+
+#### After
+```typescript
+export function intersectRayEdge(edge: IEdge, ray: IRay, options: RayCastingOptions = null): RayHit {
+    if (options?.edgeFilter && !options.edgeFilter(edge)) { return null; }
+    const intersection = intersectRaySegment(ray, edge.segment);
+    if (intersection) {
+        return { polygon: null, ray, edge, intersection, distance: ... };
+    }
+    return null;  // Zero allocation on miss
+}
+```
+
+Call sites updated to handle null via `!hit?.intersection` checks.
+
+---
+
+### 1.1a: Fuse `atan2` + `cos` Trig Pair
+
+**Files:** `src/common/camera.ts`, `src/common/geometry/collision.ts`  
+**Impact:** Eliminates 641 `atan2` + 641 `Math.cos` calls per frame, plus 1,282 temporary vector allocations from `lineAngle`
+
+The original `makeCameraRay` called `lineAngle(midline, rayLine)` which internally computes `atan2(cross(u,v), dot(u,v))`, then `makeRay` computes `Math.cos(angle)`. Using the identity:
+
+```
+cos(atan2(y, x)) = x / sqrt(x² + y²)
+```
+
+#### Before
+```typescript
+const makeCameraRay = (factor, camera, midline) => {
+    let rayDir = vector.add(camera.direction, vector.scale(factor, camera.plane));
+    let rayLine = [camera.position, vector.add(camera.position, rayDir)] as ILine;  // 2 allocs
+    return makeRay(camera.position, rayDir, lineAngle(midline, rayLine));
+    // lineAngle: 2 subtract allocs + atan2, then makeRay: Math.cos(angle)
+};
+```
+
+#### After
+```typescript
+const makeCameraRay = (factor, camera, midline) => {
+    let rayDir = vector.add(camera.direction, vector.scale(factor, camera.plane));
+    // Fused atan2+cos: cos(atan2(y,x)) = x / sqrt(x² + y²)
+    const mx = midline[1][0] - midline[0][0];
+    const my = midline[1][1] - midline[0][1];
+    const d = mx * rayDir[0] + my * rayDir[1];  // dot(midDir, rayDir)
+    const c = mx * rayDir[1] - my * rayDir[0];  // cross(midDir, rayDir)
+    const cosAngle = d / Math.sqrt(d * d + c * c);
+    return makeRayWithCos(camera.position, rayDir, cosAngle);
+};
+```
+
+Added `makeRayWithCos` to `collision.ts` — identical to `makeRay` but accepts a pre-computed `cosAngle` instead of calling `Math.cos(angle)`.
+
+---
+
+### 1.3: Direct Screen Projection in `ZBuffer.add()`
+
+**Files:** `src/common/rendering/zbuffering/zbuffer-renderer.ts`, `src/common/rendering/zbuffering/zbuffer-core.ts`  
+**Impact:** Eliminates ~20 allocations per visible edge + 4 expensive math calls (`normalize`, `perpendicular`, `sqrt`, `cos`)
+
+#### Before
+```typescript
+public add(edge: IEdge, unclippedStart: Vector): void {
+    // Two full makeRay calls (~7 allocs each) just to project endpoints onto screen
+    let sray = makeRay(this.camera.position, subtract(edge.start.vector, this.camera.position));
+    let eray = makeRay(this.camera.position, subtract(edge.end.vector, this.camera.position));
+    let sproj = intersectRayPlane(sray, this.screenPlane)?.point;
+    let eproj = intersectRayPlane(eray, this.screenPlane)?.point;
+    let scol = Math.ceil(distance(this.screenLeft, sproj) / this.screenLength * this.resolution);
+    let ecol = Math.floor(distance(this.screenLeft, eproj) / this.screenLength * this.resolution);
+}
+```
+
+#### After
+```typescript
+public add(edge: IEdge, unclippedStart: Vector): void {
+    const camX = this.camera.position[0], camY = this.camera.position[1];
+    const pn = this.screenPlane.n;
+    const slX = this.screenLeft[0], slY = this.screenLeft[1];
+
+    // Project start vertex — zero allocations
+    const sdx = edge.start.vector[0] - camX;
+    const sdy = edge.start.vector[1] - camY;
+    const sdenom = pn[0] * sdx + pn[1] * sdy;
+    if (Math.abs(sdenom) < 1e-10) return;
+    const st = this.planeNumerator / sdenom;
+    const six = camX + st * sdx - slX;
+    const siy = camY + st * sdy - slY;
+    const sScreenX = six * this.screenDirX + siy * this.screenDirY;
+
+    // Project end vertex — zero allocations
+    const edx = edge.end.vector[0] - camX;
+    const edy = edge.end.vector[1] - camY;
+    const edenom = pn[0] * edx + pn[1] * edy;
+    if (Math.abs(edenom) < 1e-10) return;
+    const et = this.planeNumerator / edenom;
+    const eix = camX + et * edx - slX;
+    const eiy = camY + et * edy - slY;
+    const eScreenX = eix * this.screenDirX + eiy * this.screenDirY;
+
+    let scol = Math.ceil(sScreenX * this.invScreenLength * this.resolution);
+    let ecol = Math.floor(eScreenX * this.invScreenLength * this.resolution);
+    if (ecol <= scol) return;  // Guard against edges projecting outside screen
+    // ...
+}
+```
+
+Cached values (`screenDirX`, `screenDirY`, `invScreenLength`, `planeNumerator`) are computed in `updateCachedValues()`, called only when the camera changes. The `ecol <= scol` guard prevents `RangeError: Invalid array length` from edges that project behind the screen or outside the view.
+
+Same optimization applied to `zbuffer-core.ts` for benchmark consistency.
+
+---
+
+### 1.2: Lightweight `clipEdgeLightweight`
+
+**Files:** `src/common/geometry/edge.ts`, `src/common/camera.ts`  
+**Impact:** Eliminates deep cloning of material, key, slope/luminosity recomputation per visible edge
+
+#### Before (via `cloneEdge`)
+```typescript
+export const cloneEdge = (e: IEdge, start = null, end = null): IEdge => loadEdge({
+    id: cloneKey(e.id),                              // string allocation via .toString()
+    start: start ? makeVertex(start) : cloneVertex(e.start),
+    end: end ? makeVertex(end) : cloneVertex(e.end),
+    immaterial: e.immaterial,
+    material: cloneMaterial(e.material),              // deep clone: [...color] + texture clone
+});
+// loadEdge recomputes: distance (sqrt), slope, luminosity, segment array
+```
+
+#### After
+```typescript
+export const clipEdgeLightweight = (e: IEdge, start = null, end = null): IEdge => {
+    const sv = start ? makeVertex(start) : e.start;   // reference original if not clipped
+    const ev = end ? makeVertex(end) : e.end;
+    const segment: ILineSegment = [sv.vector, ev.vector];
+    let len: number;
+    if (start || end) {
+        const dx = sv.vector[0] - ev.vector[0];
+        const dy = sv.vector[1] - ev.vector[1];
+        len = Math.sqrt(dx * dx + dy * dy);
+    } else {
+        len = e.length;
+    }
+    return {
+        id: e.id,                // reference original (no cloneKey)
+        start: sv, end: ev,
+        material: e.material,    // reference original (no cloneMaterial)
+        immaterial: e.immaterial,
+        length: len,
+        slope: e.slope,          // clipping doesn't change line direction
+        segment,
+        luminosity: e.luminosity // same slope => same luminosity
+    };
+};
+```
+
+**Key insights:**
+- Clipping changes endpoint positions but not the line's direction, so `slope` and `luminosity` are preserved
+- Materials are never mutated during rendering, so reference sharing is safe
+- `WallProps.length` is populated but never actually read downstream (texture drawing uses a `tileFactor` constant), so the lightweight length computation is sufficient
+
+---
+
+## Tier 2 Optimizations: Redundant Computations
+
+**Date:** February 18, 2026  
+**Combined Impact:** Raycaster **-5% to -30%** depending on scene, ZBuffer unchanged  
+**Items completed:** 2.4, 2.5, 2.6, 2.8 (2.1, 2.2, 2.3, 2.7 were already done in Tier 1)
+
+### 2.4: Expose Parametric `t1` from `intersectRaySegment`
+
+**File:** `src/common/geometry/collision.ts`  
+**Impact:** Raycaster **-5% to -30%** (highest impact item in Tier 2)
+
+#### Problem
+`intersectRaySegment` computes the parametric `t1` value (distance along the normalized ray direction), but discards it. Callers (`intersectRayEdge`, `intersectRayPolygons`) then recompute distance from the intersection point using `distance(intersection.point, ray.line[0]) * ray.cosAngle`, which involves a `sqrt`, subtraction, and vertex-to-vector conversions.
+
+#### Before
+```typescript
+// In intersectRaySegment:
+return {
+    point: [_point[0], _point[1]],
+    face: c < 0 ? Face.exterior : Face.interior
+};
+
+// In intersectRayEdge:
+distance: distance(intersection.point, ray.line[0]) * ray.cosAngle
+// distance() calls vertex.distance -> vector.distance -> sqrt(dx*dx + dy*dy)
+```
+
+#### After
+```typescript
+// In intersectRaySegment: expose t1 on Intersection type
+export type Intersection = {point: Vector, face: Face, t?: number};
+
+return {
+    point: [_point[0], _point[1]],
+    face: c < 0 ? Face.exterior : Face.interior,
+    t: t1  // parametric distance along normalized ray direction
+};
+
+// In intersectRayEdge: use t directly
+distance: intersection.t * ray.cosAngle  // No distance() call, no allocation
+```
+
+**Eliminates per hit:** 1 `sqrt`, 1 subtraction, 2 `getVector` calls (vertex-to-vector conversion).
+
+---
+
+### 2.5: Replace `rotate(PI/2)` with `perpendicular` in `freeStrafe`
+
+**File:** `src/common/camera.ts:76-84`  
+**Impact:** Eliminates 2 trig calls + 1 array allocation per strafe movement
+
+#### Before
+```typescript
+export const freeStrafe = (ratio: number, camera: ICamera) => {
+    let sign = ratio > 0 ? 1 : -1;
+    let n = vector.scale(Math.abs(ratio), vector.rotate(sign * Math.PI / 2, camera.direction));
+    return changeLocation(n, camera);
+};
+```
+
+#### After
+```typescript
+export const freeStrafe = (ratio: number, camera: ICamera) => {
+    // rotate(+PI/2, [x,y]) = [-y, x], rotate(-PI/2, [x,y]) = [y, -x]
+    const dir = camera.direction;
+    const perp: vector.Vector = ratio > 0 ? [-dir[1], dir[0]] : [dir[1], -dir[0]];
+    let n = vector.scale(Math.abs(ratio), perp);
+    return changeLocation(n, camera);
+};
+```
+
+**Key insight:** Rotation by exactly 90 degrees is just perpendicular (swapping components with sign change). No trigonometry needed.
+
+---
+
+### 2.6: Short-circuit `Math.cos(0) = 1` in `makeRay`
+
+**File:** `src/common/geometry/collision.ts:23`  
+**Impact:** Trivial (eliminates 1 trig call per `makeRay` call with default angle)
+
+#### Before
+```typescript
+cosAngle: Math.cos(angle)  // angle defaults to 0
+```
+
+#### After
+```typescript
+cosAngle: angle === 0 ? 1 : Math.cos(angle)
+```
+
+Called ~40+ times per frame from collision rays and wall-slide checks. Negligible individually but zero-cost to implement.
+
+---
+
+### 2.8: Cache `directionNorm` on Camera Object
+
+**File:** `src/common/camera.ts`  
+**Impact:** Eliminates `sqrt` per `constrainedMove` call (every player movement)
+
+#### Before
+```typescript
+// In constrainedMove (called every movement frame):
+const stepSize = Math.abs(speed) * vector.norm(cam.direction);  // sqrt every time
+// ...
+movementRatio = vector.norm(vector.scale(movementRatio, cam.direction)) * slideFactor;  // scale + sqrt
+```
+
+#### After
+```typescript
+// In makeCamera: precompute once when camera is created
+export type ICamera = ICameraData & {
+    // ...existing fields...
+    directionNorm: number
+};
+return { ...data, screen, midline, cone, planes, directionNorm: vector.norm(data.direction) };
+
+// In constrainedMove: use cached value
+const stepSize = Math.abs(speed) * cam.directionNorm;  // no sqrt
+// ...
+movementRatio = Math.abs(movementRatio) * cam.directionNorm * slideFactor;  // no scale, no sqrt
+```
+
+**Key insight:** Camera direction magnitude only changes via `adaptDepth` (rare, triggered by zoom controls). `constrainedMove` is called every frame during player movement. The `|scale(k, v)| = |k| * |v|` identity eliminates both the `scale` allocation and the `norm` sqrt.
+
+---
+
+### Tier 2 Benchmark Results
+
+Compared pre-Tier-2 vs post-Tier-2 (same session, same environment):
+
+| Scenario | Pre Raycaster (ms) | Post Raycaster (ms) | Change |
+|---|---|---|---|
+| small-fast | 4.50 | 4.43 | -1.6% |
+| small-textured | 5.92 | 5.03 | -15.0% |
+| small-translucent | 6.73 | 5.32 | -20.9% |
+| small-stress | 6.04 | 4.82 | -20.2% |
+| medium-fast | 23.73 | 17.74 | **-25.3%** |
+| medium-textured | 22.36 | 19.31 | -13.6% |
+| medium-translucent | 18.69 | 18.20 | -2.6% |
+| medium-stress | 16.41 | 16.77 | +2.2% |
+| large-textured | 55.37 | 38.68 | **-30.1%** |
+| large-translucent | 48.49 | 44.78 | -7.7% |
+| large-stress | 64.66 | 50.16 | **-22.4%** |
+| stress-translucent | 113.73 | 87.74 | **-22.9%** |
+
+ZBuffer times remained stable (within noise) since these optimizations primarily target the raycaster path's `intersectRayEdge`/`intersectRayPolygons` distance computation. Items 2.5, 2.6, and 2.8 are movement-time optimizations not captured in rendering benchmarks.
+
+---
+
 ## Lessons Learned
 
 ### What Worked
 
-1. **Caching derived values that don't change** (T5, T6-T7)
+1. **Caching derived values that don't change** (T5, T6-T7, 1.3)
    - `hasOpaqueWall` flag: -66% ZBuffer improvement
+   - Cached screen projection values eliminate per-edge recomputation
    - Only cache when the computation is expensive relative to access frequency
 
-2. **Eliminating intermediate allocations in hot loops** (T1, T3)
+2. **Eliminating intermediate allocations in hot loops** (T1, T3, 1.8, 1.3)
    - `push.apply()` vs spread: -8.8%
    - Single-pass filter+sort: -16%
+   - Inline `distance()`: foundational win across entire codebase
+   - Direct screen projection: zero-allocation replacement for ~20 objects per edge
 
-3. **Algorithmic improvements** (T3)
+3. **Algorithmic improvements** (T3, 1.1a, 1.2, 2.4)
    - Combining operations reduces passes over data
-   - For small arrays, simpler algorithms can beat asymptotically better ones
+   - Trig identity `cos(atan2(y,x)) = x/sqrt(x²+y²)` eliminates 1,282 trig calls/frame
+   - Reference sharing instead of deep cloning (safe when data is read-only during rendering)
+   - Exposing intermediate values (`t1` parametric distance) eliminates redundant recomputation
+
+4. **Lazy allocation** (1.4, 1.7, 1.9)
+   - Don't allocate Sets/objects/arrays until actually needed
+   - Return null instead of sentinel objects on miss paths
+   - Skip debug data collection when it won't be consumed
 
 ### What Didn't Work
 
@@ -515,18 +1086,24 @@ function updateRay(ray: IRay, position: Vector, direction: Vector): void {
    - `forEach` vs `for...of` had minimal impact
    - Focus optimization effort on profiled hot spots
 
+### Critical Bug: Shared Mutable State via Object Spread
+
+The `{...EMPTY_STATS}` pattern is dangerous when the source object contains arrays/objects. Spread copies by reference, so `stats.edgeTests` and `EMPTY_STATS.edgeTests` point to the same array. In-place mutation (`stats.edgeTests[0] = x`) corrupts the constant, causing "Cannot assign to read only property" errors in the Electron app (where the constant may be frozen). **Always create fresh arrays inline** when the consuming code will mutate them.
+
 ### Benchmark Variability
 
 - ZBuffer improvements are consistent and reliable
 - Raycaster has high variance (10-30%) in translucent scenarios
 - Always run multiple benchmark iterations for statistical significance
 - High coefficient of variation (>50%) indicates unreliable comparisons
+- The allocation benchmark's heap trend test fails flakily — pre-existing issue
 
 ### Architectural Insights
 
 - The biggest wins came from understanding the call frequency patterns
 - `isFull()` was called 640 columns × many BSP nodes = massive call count
 - Reducing per-call cost by even microseconds has huge cumulative effect
+- Investigate whether downstream consumers actually use computed values before optimizing their computation (e.g., `WallProps.length` was computed but never read)
 
 ---
 

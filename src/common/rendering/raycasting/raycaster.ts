@@ -34,7 +34,7 @@ export const castCollisionRays = (rays: IRay[], geometry: IGeometry): CastedRays
 
 const castRays = (rays: IRay[], geometry: IGeometry,
     options: RayCastingOptions): CastedRays => {
-    let stats = { ...EMPTY_STATS, polygons: new Set<String>() };
+    let stats: CastingStats = { polygons: new Set<String>(), edgeTests: [+Infinity, -Infinity], polygonTests: [+Infinity, -Infinity], polygonCount: 0, edgeCount: 0, edgePercentage: 0 };
     let castedRays: CastedRay[] = [];
     for (let i = 0, n = rays.length; i < n; i++) {
         const _ = rays[i];
@@ -44,7 +44,7 @@ const castRays = (rays: IRay[], geometry: IGeometry,
         // This avoids creating an intermediate filtered array and then sorting
         const result = filterAndSortHits(collisions.hits);
 
-        stats = accumulateStats(stats, collisions.stats);
+        accumulateStats(stats, collisions.stats);
 
         castedRays.push((!result || result.length < 1)
             ? makeInfinity(_, collisions.stats)
@@ -106,19 +106,19 @@ export const castRaysOnEdgeRange = (rays: IRay[], start: number, end: number, ed
     return hits;
 };
 
-const accumulateStats = (stats: CastingStats, iStats: IntersectionStats): CastingStats => {
+const accumulateStats = (stats: CastingStats, iStats: IntersectionStats): void => {
     // Use for...of instead of forEach for better performance
     for (const x of iStats.polygons) {
         stats.polygons.add(x);
     }
-    return ({
-        polygons: stats.polygons,
-        edgeTests: [Math.min(stats.edgeTests[0], iStats.testedEdges), Math.max(stats.edgeTests[1], iStats.testedEdges)],
-        polygonTests: [Math.min(stats.polygonTests[0], iStats.testedPolygons), Math.max(stats.polygonTests[1], iStats.testedPolygons)],
-        edgeCount: Math.max(stats.edgeCount, iStats.totalEdges),
-        polygonCount: Math.max(stats.polygonCount, iStats.totalPolygons),
-        edgePercentage: iStats.totalEdges !== 0 ? Math.max(stats.edgePercentage, iStats.testedEdges / iStats.totalEdges) : stats.edgePercentage
-    });
+    // Mutate in-place to avoid allocating new objects and arrays per ray
+    stats.edgeTests[0] = Math.min(stats.edgeTests[0], iStats.testedEdges);
+    stats.edgeTests[1] = Math.max(stats.edgeTests[1], iStats.testedEdges);
+    stats.polygonTests[0] = Math.min(stats.polygonTests[0], iStats.testedPolygons);
+    stats.polygonTests[1] = Math.max(stats.polygonTests[1], iStats.testedPolygons);
+    stats.edgeCount = Math.max(stats.edgeCount, iStats.totalEdges);
+    stats.polygonCount = Math.max(stats.polygonCount, iStats.totalPolygons);
+    stats.edgePercentage = iStats.totalEdges !== 0 ? Math.max(stats.edgePercentage, iStats.testedEdges / iStats.totalEdges) : stats.edgePercentage;
 }
 
 const detectCollisions = (ray: IRay, geometry: IGeometry, options: RayCastingOptions): RayCollisions => {
@@ -131,7 +131,7 @@ const detectCollisions = (ray: IRay, geometry: IGeometry, options: RayCastingOpt
     result.hits = polygonIntersections.hits;
     result.stats.testedEdges = polygonIntersections.edgeCount;
     result.stats.testedPolygons = polygonIntersections.polygonCount;
-    result.stats.polygons = polygonIntersections.polygonIds;
+    result.stats.polygons = polygonIntersections.polygonIds || new Set<string>();
     return result;
 };
 

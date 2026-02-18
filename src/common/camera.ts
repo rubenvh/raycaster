@@ -2,9 +2,9 @@ import * as vector from './math/vector';
 import { ILine, ILineSegment, lineAngle } from "./math/lineSegment";
 import { castCameraRay } from './rendering/raycasting/raycaster';
 import { IGeometry } from './geometry/geometry';
-import { intersectRaySegment, IRay, makeRay } from './geometry/collision';
+import { intersectRaySegment, IRay, makeRay, makeRayWithCos } from './geometry/collision';
 import { createPlane, Plane } from './math/plane';
-import { cloneEdge, IEdge, NULL_EDGE } from './geometry/edge';
+import { cloneEdge, clipEdgeLightweight, IEdge, NULL_EDGE } from './geometry/edge';
 import { classifyPointToPlane } from './geometry/bsp/classification';
 import { PointToPlaneRelation } from './geometry/bsp/model';
 
@@ -13,7 +13,8 @@ export type ICamera = ICameraData & {
     screen: ILineSegment,
     midline: ILineSegment,
     cone: { left: IRay, right: IRay },
-    planes: { camera: Plane, left: Plane, right: Plane }
+    planes: { camera: Plane, left: Plane, right: Plane },
+    directionNorm: number
 };
 
 const makeScreen = (data: ICameraData): ILineSegment => {
@@ -23,8 +24,15 @@ const makeScreen = (data: ICameraData): ILineSegment => {
 };
 const makeCameraRay = (factor: number, camera: ICameraData, midline: ILineSegment) => {
     let rayDir = vector.add(camera.direction, vector.scale(factor, camera.plane));
-    let rayLine = [camera.position, vector.add(camera.position, rayDir)] as ILine;
-    return makeRay(camera.position, rayDir, lineAngle(midline, rayLine));
+    // Fused atan2+cos: instead of cos(atan2(cross(u,v), dot(u,v))),
+    // use identity cos(atan2(y,x)) = x / sqrt(x^2 + y^2)
+    // where u = midline direction, v = ray direction
+    const mx = midline[1][0] - midline[0][0];
+    const my = midline[1][1] - midline[0][1];
+    const d = mx * rayDir[0] + my * rayDir[1];  // dot(midDir, rayDir)
+    const c = mx * rayDir[1] - my * rayDir[0];  // cross(midDir, rayDir)
+    const cosAngle = d / Math.sqrt(d * d + c * c);
+    return makeRayWithCos(camera.position, rayDir, cosAngle);
 };
 export const makeCamera = (data: ICameraData): ICamera => {
     const midline: ILineSegment = [data.position, vector.add(data.position, data.direction)]
@@ -37,7 +45,8 @@ export const makeCamera = (data: ICameraData): ICamera => {
         screen: makeScreen(data),
         midline,
         cone: { left: cone[0], right: cone[1] },
-        planes: { camera: cameraPlane, left: p1, right: p2 }
+        planes: { camera: cameraPlane, left: p1, right: p2 },
+        directionNorm: vector.norm(data.direction)
     });
 }
 
@@ -67,8 +76,11 @@ export const rotate = (angle: number, camera: ICamera) => {
     });
 };
 export const freeStrafe = (ratio: number, camera: ICamera) => {
-    let sign = ratio > 0 ? 1 : -1;
-    let n = vector.scale(Math.abs(ratio), vector.rotate(sign * Math.PI / 2, camera.direction));
+    // Use perpendicular instead of rotate(±PI/2) to avoid trig calls
+    // rotate(+PI/2, [x,y]) = [-y, x], rotate(-PI/2, [x,y]) = [y, -x]
+    const dir = camera.direction;
+    const perp: vector.Vector = ratio > 0 ? [-dir[1], dir[0]] : [dir[1], -dir[0]];
+    let n = vector.scale(Math.abs(ratio), perp);
     return changeLocation(n, camera);
 };
 export const strafe = (direction: 1 | -1, camera: ICamera, geometry: IGeometry, speed: number = 0.15): ICamera =>
@@ -93,7 +105,7 @@ const constrainedMove = (direction: 1 | -1, cam: ICamera,
     for (let iteration = 0; iteration < MAX_WALL_SLIDE_ITERATIONS; iteration++) {
         let movementRatio = direction * speed;
         const hit = castCameraRay(currentRaymaker(direction, cam), geometry);
-        const stepSize = Math.abs(speed) * vector.norm(cam.direction);
+        const stepSize = Math.abs(speed) * cam.directionNorm;
         const safeDistance = stepSize * SAFE_DISTANCE_FACTOR;
         if (hit.distance >= safeDistance) {
             // distance large enough: safe to move
@@ -111,7 +123,7 @@ const constrainedMove = (direction: 1 | -1, cam: ICamera,
         // scale slide speed by sin(collisionAngle): collisionAngle is measured from the wall normal,
         // so sin gives the parallel component — full speed at glancing angles, slow near the stop threshold
         const slideFactor = Math.abs(Math.sin(collisionAngle));
-        movementRatio = vector.norm(vector.scale(movementRatio, cam.direction)) * slideFactor;
+        movementRatio = Math.abs(movementRatio) * cam.directionNorm * slideFactor;
         const edgeDirection = collisionAngle < 0 ? vector.subtract(s[1], s[0]) : vector.subtract(s[0], s[1]);
         const target = vector.scale(movementRatio, vector.normalize(edgeDirection));
 
@@ -152,7 +164,7 @@ export const clip = (e: IEdge, camera: ICamera): IEdge => {
         let clipStart = sh !== PointToPlaneRelation.InFront || clipBoth || sl === sr && el !== er;
         let clipEnd = eh !== PointToPlaneRelation.InFront || clipBoth || sl !== sr && el === er;
 
-        return cloneEdge(e,
+        return clipEdgeLightweight(e,
             clipStart ? intersectRaySegment(camera.cone.left, e.segment)?.point ?? intersectRaySegment(camera.cone.right, e.segment)?.point : null,
             clipEnd ? intersectRaySegment(camera.cone.right, e.segment)?.point ?? intersectRaySegment(camera.cone.left, e.segment)?.point : null);
     }

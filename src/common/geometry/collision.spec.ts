@@ -254,11 +254,11 @@ describe('collision tests', () => {
             expect(result.intersection.point[0]).toBeCloseTo(10);
         });
 
-        it('returns null intersection when ray misses edge', () => {
+        it('returns null when ray misses edge', () => {
             const ray = makeRay([0, 15], [1, 0]);
             const edge = makeEdge([10, 0], [10, 10]);
             const result = intersectRayEdge(edge, ray);
-            expect(result.intersection).toBeNull();
+            expect(result).toBeNull();
         });
 
         it('calculates distance correctly', () => {
@@ -325,7 +325,7 @@ describe('collision tests', () => {
             const poly = polygons.convex(6, 500, 500, 50);
             const ray = makeRay([0, 0], [1, 0]); // Will miss the hexagon
             const result = intersectRayPolygons([poly], ray, {});
-            expect(result.polygonIds.size).toBe(0); // Should skip due to bounding box check
+            expect(result.polygonIds ?? new Set()).toEqual(new Set()); // Should skip due to bounding box check
         });
 
         it('uses earlyExitPredicate to set stop flag', () => {
@@ -396,8 +396,7 @@ describe('collision tests', () => {
             expect(result.stop).toBe(false);
             expect(result.edgeCount).toBe(0);
             expect(result.polygonCount).toBe(0);
-            expect(result.polygonIds).toBeInstanceOf(Set);
-            expect(result.polygonIds.size).toBe(0);
+            expect(result.polygonIds).toBeNull();
         });
     });
 });

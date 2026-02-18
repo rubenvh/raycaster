@@ -1,4 +1,4 @@
-import { ILineSegment, slope } from "../math/lineSegment";
+import { ILineSegment, slope } from '../math/lineSegment';
 import { Vector, ZERO } from "../math/vector";
 import { cloneKey, giveIdentity, IEntity } from "./entity";
 import { cloneMaterial, Color, IDirectedMaterial } from "./properties";
@@ -64,6 +64,43 @@ export const cloneEdge = (e: IEdge, start: Vector = null, end: Vector = null): I
     immaterial: e.immaterial,
     material: cloneMaterial(e.material),
 });
+
+/**
+ * Lightweight edge clipping: creates a clipped IEdge that references the original's
+ * material and id (no deep clone), and copies luminosity/slope from the original
+ * (clipping doesn't change the line's direction). Only creates new vertex objects
+ * when clipping actually changes the endpoint.
+ * 
+ * This avoids: cloneMaterial (deep clone of color arrays + texture), cloneKey,
+ * and loadEdge overhead (recomputing slope, determineLuminosity, distance).
+ */
+export const clipEdgeLightweight = (e: IEdge, start: Vector = null, end: Vector = null): IEdge => {
+    const sv = start ? makeVertex(start) : e.start;
+    const ev = end ? makeVertex(end) : e.end;
+    const segment: ILineSegment = [sv.vector, ev.vector];
+    // Length recomputation: only needed if a vertex changed, but since WallProps.length is
+    // currently unused downstream (texture uses tileFactor constant), we use a cheap approximation
+    // via dx/dy when clipped, or copy original length when not clipped.
+    let len: number;
+    if (start || end) {
+        const dx = sv.vector[0] - ev.vector[0];
+        const dy = sv.vector[1] - ev.vector[1];
+        len = Math.sqrt(dx * dx + dy * dy);
+    } else {
+        len = e.length;
+    }
+    return {
+        id: e.id,                // reference original id (no cloneKey)
+        start: sv,
+        end: ev,
+        material: e.material,    // reference original material (no cloneMaterial)
+        immaterial: e.immaterial,
+        length: len,
+        slope: e.slope,          // same line direction after clipping
+        segment,
+        luminosity: e.luminosity // same slope => same luminosity
+    };
+};
 
 
 export const clipEdge = (e: IEdge,): IEdge => loadEdge({

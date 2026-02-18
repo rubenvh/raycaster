@@ -319,21 +319,21 @@ describe('camera tests', () => {
             expect(rays.length).toBe(1);
         });
 
-        test('rays have correct angle property', () => {
+        test('rays have correct cosAngle property', () => {
             const cam = makeCamera({ position: [0, 0], direction: [0, 10], plane: [5, 0] });
             const rays = makeRays(10, cam);
-            // Middle ray should have angle close to 0
-            expect(rays[5].angle).toBeCloseTo(0, 5);
-            // Outer rays should have non-zero angle
-            expect(rays[0].angle).not.toBeCloseTo(0, 2);
-            expect(rays[10].angle).not.toBeCloseTo(0, 2);
+            // Middle ray should have cosAngle close to 1 (angle ~0)
+            expect(rays[5].cosAngle).toBeCloseTo(1, 5);
+            // Outer rays should have cosAngle less than 1 (non-zero angle)
+            expect(rays[0].cosAngle).toBeLessThan(0.99);
+            expect(rays[10].cosAngle).toBeLessThan(0.99);
         });
 
-        test('ray angles are symmetric', () => {
+        test('ray cosAngles are symmetric', () => {
             const cam = makeCamera({ position: [0, 0], direction: [0, 10], plane: [5, 0] });
             const rays = makeRays(10, cam);
-            // Left and right should have symmetric angles
-            expect(Math.abs(rays[0].angle)).toBeCloseTo(Math.abs(rays[10].angle), 5);
+            // Left and right should have symmetric cosAngles
+            expect(rays[0].cosAngle).toBeCloseTo(rays[10].cosAngle, 5);
         });
     });
 

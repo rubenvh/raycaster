@@ -68,7 +68,8 @@ export class ZBufferRenderer implements IRenderer {
         let edgesTested: number = 0;
         let count = 0;
         let depth = 40;
-        let clippedSegments: {segment: ILineSegment, depth: number}[] = [];
+        const shouldCollectStats = !this.lastUpdated || performance.now() - this.lastUpdated > 1000;
+        let clippedSegments: {segment: ILineSegment, depth: number}[] = shouldCollectStats ? [] : null;
         walkWithFrustum(this.wallGeometry.bsp, this.camera.position, this.camera.planes, (ps => {
             let increment = 0;
             for (let p of ps) {
@@ -77,7 +78,7 @@ export class ZBufferRenderer implements IRenderer {
                     const clipped = clip(e, this.camera);
                     if (clipped === NULL_EDGE) continue;
 
-                    clippedSegments.push({ segment: clipped.segment, depth: count });
+                    if (clippedSegments) clippedSegments.push({ segment: clipped.segment, depth: count });
                     increment = increment || 1;
 
                     edgesTested++;
@@ -118,7 +119,7 @@ export class ZBufferRenderer implements IRenderer {
                     edgeCount: 0, 
                     polygonCount: 0, 
                     edgePercentage: 0 } },
-                detectedEdges: clippedSegments
+                detectedEdges: clippedSegments || []
             }));
         }
 
@@ -147,6 +148,11 @@ export class ZBuffer {
     private screenLength: number;
     private screenPlane: ReturnType<typeof createPlane>;
     private screenLeft: Vector;
+    // Additional cached values for direct screen projection (optimization 1.3)
+    private screenDirX: number;
+    private screenDirY: number;
+    private invScreenLength: number;
+    private planeNumerator: number; // plane.d - dot(plane.n, cameraPos), constant per frame
     
     constructor(private resolution: number, private camera: ICamera, private wallPainter: WallPainter, private context: CanvasRenderingContext2D) {
         this.cols = Array.from({ length: resolution }, () => new ZBufferColumn());
@@ -158,6 +164,16 @@ export class ZBuffer {
         this.screenLength = segmentLength(this.camera.screen);
         this.screenPlane = createPlane(this.camera.screen);
         this.screenLeft = this.camera.screen[0];
+        // Cache screen direction (normalized) and inverse length for direct projection
+        const sl = this.screenLength;
+        const sx = this.camera.screen[1][0] - this.camera.screen[0][0];
+        const sy = this.camera.screen[1][1] - this.camera.screen[0][1];
+        this.screenDirX = sx / sl;
+        this.screenDirY = sy / sl;
+        this.invScreenLength = 1 / sl;
+        // Pre-compute the plane numerator: plane.d - dot(plane.n, cameraPos)
+        const p = this.screenPlane;
+        this.planeNumerator = p.d - (p.n[0] * this.camera.position[0] + p.n[1] * this.camera.position[1]);
     }
 
     public render(): void {
@@ -187,17 +203,39 @@ export class ZBuffer {
     }
 
     public add(edge: IEdge, unclippedStart: Vector): void {        
+        // Direct screen projection: project edge endpoints onto screen without constructing IRay objects
+        // For each endpoint, compute ray-plane intersection parameter t, then project along screen line
+        const camX = this.camera.position[0];
+        const camY = this.camera.position[1];
+        const pn = this.screenPlane.n;
+        const slX = this.screenLeft[0];
+        const slY = this.screenLeft[1];
         
-        let sray = makeRay(this.camera.position, subtract(edge.start.vector, this.camera.position));        
-        let eray = makeRay(this.camera.position, subtract(edge.end.vector, this.camera.position));        
-        let sproj = intersectRayPlane(sray, this.screenPlane)?.point;        
-        let eproj = intersectRayPlane(eray, this.screenPlane)?.point;        
-        if (!sproj || !eproj) { return; }
-                
-        let scol = Math.ceil(distance(this.screenLeft, sproj)/this.screenLength * this.resolution);
-        let ecol = Math.floor(distance(this.screenLeft, eproj)/this.screenLength * this.resolution);
+        // Project start vertex
+        const sdx = edge.start.vector[0] - camX;
+        const sdy = edge.start.vector[1] - camY;
+        const sdenom = pn[0] * sdx + pn[1] * sdy;
+        if (Math.abs(sdenom) < 1e-10) return;
+        const st = this.planeNumerator / sdenom;
+        const six = camX + st * sdx - slX;
+        const siy = camY + st * sdy - slY;
+        const sScreenX = six * this.screenDirX + siy * this.screenDirY;
+        
+        // Project end vertex
+        const edx = edge.end.vector[0] - camX;
+        const edy = edge.end.vector[1] - camY;
+        const edenom = pn[0] * edx + pn[1] * edy;
+        if (Math.abs(edenom) < 1e-10) return;
+        const et = this.planeNumerator / edenom;
+        const eix = camX + et * edx - slX;
+        const eiy = camY + et * edy - slY;
+        const eScreenX = eix * this.screenDirX + eiy * this.screenDirY;
+        
+        let scol = Math.ceil(sScreenX * this.invScreenLength * this.resolution);
+        let ecol = Math.floor(eScreenX * this.invScreenLength * this.resolution);
         
         [scol, ecol] = [Math.max(0, Math.min(scol,ecol)-1), Math.min(this.resolution, Math.max(scol, ecol)+1)];
+        if (ecol <= scol) return;
         let hits = castRaysOnEdgeRange(this.rays, scol, ecol, edge);
         for (let i = 0; i < hits.length; i++) {
             if (hits[i].intersection === null) continue;
@@ -210,12 +248,11 @@ export class ZBuffer {
     }
 
     public isFull(): boolean {
-        let allFilled = true;
-        for (let c of this.cols) {             
-            allFilled = allFilled && c.isFull();
+        for (const c of this.cols) {
+            if (!c.isFull()) return false;
         }
-        return allFilled;
-    }    
+        return true;
+    }
 
      public clear(): void {
         for (let i = 0; i < this.cols.length; i++) {

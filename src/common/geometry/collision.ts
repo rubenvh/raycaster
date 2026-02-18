@@ -11,12 +11,12 @@ export type Collision = VertexCollision | EdgeCollision;
 type BaseCollision = {polygon: IPolygon, distance: number, kind: string};
 export type VertexCollision = BaseCollision & { vertex: IVertex, kind: "vertex"};
 export type EdgeCollision = BaseCollision & {edge: IEdge, kind: "edge" };
-export type Intersection = {point: Vector, face: Face};
+export type Intersection = {point: Vector, face: Face, t?: number};
 export type RayHit = {polygon: IPolygon, edge: IEdge, intersection: Intersection, ray: IRay, distance: number};
 export type IntersectionStats = {totalEdges: number, testedEdges: number, totalPolygons: number, testedPolygons: number, polygons: Set<string> };
 export type RayCollisions = {hits: RayHit[], stats: IntersectionStats, ray: IRay};
 export type PolygonIntersections = {hits: RayHit[], stop: boolean, edgeCount: number, polygonCount: number, polygonIds: Set<string>};
-export const createEmptyIntersection = (): PolygonIntersections => ({hits: [], stop: false, edgeCount: 0, polygonCount: 0, polygonIds: new Set<string>()});
+export const createEmptyIntersection = (): PolygonIntersections => ({hits: [], stop: false, edgeCount: 0, polygonCount: 0, polygonIds: null});
 export type IRay = {position: Vector, direction: Vector, dn: Vector, dperp: Vector, line: ILine, ood: Vector, angle: number, cosAngle: number}; 
 export type RayCastingOptions = {earlyExitPredicate?: (hit: RayHit) => boolean, edgeFilter?: (e: IEdge) => boolean};
 
@@ -29,7 +29,24 @@ export const makeRay = (p: Vector, d: Vector, angle: number = 0): IRay => {
         ood: [1/d[0], 1/d[1]],
         line, 
         angle,
-        cosAngle: Math.cos(angle)});
+        cosAngle: angle === 0 ? 1 : Math.cos(angle)});
+}
+
+/**
+ * Create a ray with a pre-computed cosAngle value.
+ * Used by makeCameraRay to avoid the atan2+cos trig pair by using the identity:
+ *   cos(atan2(y, x)) = x / sqrt(x^2 + y^2)
+ */
+export const makeRayWithCos = (p: Vector, d: Vector, cosAngle: number): IRay => {
+    const line: ILine = [p, add(p, d)];
+    const dn = normalize(d);    
+    return ({ position: p, direction: d, 
+        dn, 
+        dperp: perpendicular(dn),     
+        ood: [1/d[0], 1/d[1]],
+        line, 
+        angle: 0,  // angle not needed when cosAngle is provided directly
+        cosAngle});
 }
 
 export const hasIntersect = (ray: IRay, box: BoundingBox): boolean => {
@@ -105,7 +122,8 @@ export const intersectRaySegment = (ray: IRay, s: ILineSegment): Intersection =>
         addInto(_point, ray.position, _point);
         return {
             point: [_point[0], _point[1]], // Copy to new array for safe return
-            face: c < 0 ? Face.exterior : Face.interior
+            face: c < 0 ? Face.exterior : Face.interior,
+            t: t1  // parametric distance along normalized ray direction
         };
     }
     return null;
@@ -129,10 +147,11 @@ export const intersectRayPlane = (ray: IRay, plane: Plane): Intersection => {
 }
 
 export function intersectRayPolygons(polygons: IPolygon[], ray: IRay, options: RayCastingOptions): PolygonIntersections {    
-    const result: PolygonIntersections = {hits: [], stop: false, edgeCount: 0, polygonCount: polygons.length, polygonIds: new Set<string>()};
+    const result: PolygonIntersections = {hits: [], stop: false, edgeCount: 0, polygonCount: polygons.length, polygonIds: null};
     for (let i=0, n=polygons.length; i<n; i++){
         const polygon = polygons[i];
         if (polygon.edgeCount > 5 && !hasIntersect(ray, polygon.boundingBox)) continue;
+        if (result.polygonIds == null) result.polygonIds = new Set();
         result.polygonIds.add(polygon.id);
 
         for (let j=0, m=polygon.edges.length; j<m; j++) {
@@ -143,7 +162,7 @@ export function intersectRayPolygons(polygons: IPolygon[], ray: IRay, options: R
             if (hit.intersection != null) {                
                 result.stop = result.stop || (options.earlyExitPredicate && options.earlyExitPredicate(hit));
                 result.hits.push({polygon, ray, edge, intersection: hit.intersection,
-                    distance: distance(hit.intersection.point, ray.line[0]) * ray.cosAngle
+                    distance: hit.intersection.t * ray.cosAngle
                 });
             }
         }
@@ -158,11 +177,12 @@ export function intersectRayEdge(edge: IEdge, ray: IRay, options: RayCastingOpti
     if (intersection) {
         return {
             polygon: null, ray, edge, intersection,
-            distance: distance(intersection.point, ray.line[0]) * ray.cosAngle
+            distance: intersection.t * ray.cosAngle
         };    
     }    
     
-    return {polygon: null, ray, edge, intersection: null, distance: 0};
+    // Return null on miss to avoid allocating an object for every miss
+    return null;
 }
   
 export const lookupMaterialFor = (intersection: Intersection, edge: IEdge): IMaterial => intersection && getMaterial(intersection.face, edge?.material);

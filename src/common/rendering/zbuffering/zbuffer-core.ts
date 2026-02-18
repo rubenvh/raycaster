@@ -9,12 +9,11 @@ import { IGeometry } from '../../geometry/geometry';
 import { ICamera, clip, makeRays } from '../../camera';
 import { walk, walkWithFrustum } from '../../geometry/bsp/querying';
 import { IEdge, NULL_EDGE } from '../../geometry/edge';
-import { IRay, makeRay, intersectRayPlane } from '../../geometry/collision';
-import { subtract, Vector } from '../../math/vector';
-import { createPlane } from '../../math/plane';
-import { distance } from '../../geometry/vertex';
+import { IRay } from '../../geometry/collision';
+import { Vector } from '../../math/vector';
+import { createPlane, Plane } from '../../math/plane';
 import { segmentLength } from '../../math/lineSegment';
-import { castRaysOnEdge } from '../raycasting/raycaster';
+import { castRaysOnEdgeRange } from '../raycasting/raycaster';
 import { getMaterial } from '../../geometry/properties';
 import { RenderMetrics } from '../benchmark-types';
 import { ColumnHit, IRendererCore, RenderResult } from '../renderer-core';
@@ -94,6 +93,15 @@ export class ZBufferCore implements IRendererCore {
   private rays: IRay[] | null = null;
   private lastResolution: number = 0;
   
+  // Cached projection values for direct screen projection (optimization 1.3)
+  private screenDirX: number = 0;
+  private screenDirY: number = 0;
+  private invScreenLength: number = 0;
+  private planeNumerator: number = 0;
+  private screenPlane: Plane | null = null;
+  private screenLeftX: number = 0;
+  private screenLeftY: number = 0;
+  
   /**
    * @param reuseBuffers - If true, reuses internal buffers between renders (Task 4 optimization)
    * @param captureHits - If true, includes per-column hit data in the result for comparison testing
@@ -105,11 +113,28 @@ export class ZBufferCore implements IRendererCore {
     private useFrustumCulling: boolean = true,
   ) {}
 
+  private updateCachedProjection(camera: ICamera): void {
+    const screenLength = segmentLength(camera.screen);
+    this.screenPlane = createPlane(camera.screen);
+    this.screenLeftX = camera.screen[0][0];
+    this.screenLeftY = camera.screen[0][1];
+    const sx = camera.screen[1][0] - camera.screen[0][0];
+    const sy = camera.screen[1][1] - camera.screen[0][1];
+    this.screenDirX = sx / screenLength;
+    this.screenDirY = sy / screenLength;
+    this.invScreenLength = 1 / screenLength;
+    const p = this.screenPlane;
+    this.planeNumerator = p.d - (p.n[0] * camera.position[0] + p.n[1] * camera.position[1]);
+  }
+
   render(geometry: IGeometry, camera: ICamera, resolution: number): RenderResult {
     const startTime = performance.now();
     
     let edgesTested = 0;
     let edgesVisible = 0;
+    
+    // Update cached projection values for this camera
+    this.updateCachedProjection(camera);
     
     // Get or create rays
     let rays: IRay[];
@@ -226,7 +251,7 @@ export class ZBufferCore implements IRendererCore {
   }
   
   /**
-   * Add an edge to the zbuffer columns.
+   * Add an edge to the zbuffer columns using direct screen projection (optimization 1.3).
    * Returns the number of columns the edge was added to.
    */
   private addEdgeToBuffer(
@@ -237,28 +262,43 @@ export class ZBufferCore implements IRendererCore {
     cols: BenchmarkZBufferColumn[],
     resolution: number
   ): number {
-    // Project edge endpoints to screen
-    const sray = makeRay(camera.position, subtract(edge.start.vector, camera.position));
-    const eray = makeRay(camera.position, subtract(edge.end.vector, camera.position));
-    const sproj = intersectRayPlane(sray, createPlane(camera.screen))?.point;
-    const eproj = intersectRayPlane(eray, createPlane(camera.screen))?.point;
+    // Direct screen projection: project edge endpoints onto screen without constructing IRay objects
+    const camX = camera.position[0];
+    const camY = camera.position[1];
+    const pn = this.screenPlane!.n;
     
-    if (!sproj || !eproj) return 0;
+    // Project start vertex
+    const sdx = edge.start.vector[0] - camX;
+    const sdy = edge.start.vector[1] - camY;
+    const sdenom = pn[0] * sdx + pn[1] * sdy;
+    if (Math.abs(sdenom) < 1e-10) return 0;
+    const st = this.planeNumerator / sdenom;
+    const six = camX + st * sdx - this.screenLeftX;
+    const siy = camY + st * sdy - this.screenLeftY;
+    const sScreenX = six * this.screenDirX + siy * this.screenDirY;
     
-    // Calculate screen columns
-    const [pl] = camera.screen;
-    const screenLength = segmentLength(camera.screen);
-    let scol = Math.ceil(distance(pl, sproj) / screenLength * resolution);
-    let ecol = Math.floor(distance(pl, eproj) / screenLength * resolution);
+    // Project end vertex
+    const edx = edge.end.vector[0] - camX;
+    const edy = edge.end.vector[1] - camY;
+    const edenom = pn[0] * edx + pn[1] * edy;
+    if (Math.abs(edenom) < 1e-10) return 0;
+    const et = this.planeNumerator / edenom;
+    const eix = camX + et * edx - this.screenLeftX;
+    const eiy = camY + et * edy - this.screenLeftY;
+    const eScreenX = eix * this.screenDirX + eiy * this.screenDirY;
+    
+    let scol = Math.ceil(sScreenX * this.invScreenLength * resolution);
+    let ecol = Math.floor(eScreenX * this.invScreenLength * resolution);
     
     [scol, ecol] = [
       Math.max(0, Math.min(scol, ecol) - 1), 
       Math.min(resolution, Math.max(scol, ecol) + 1)
     ];
     
-    // Cast rays on edge
-    const raySlice = rays.slice(scol, ecol);
-    const hits = castRaysOnEdge(raySlice, edge);
+    if (ecol <= scol) return 0;
+    
+    // Cast rays on edge range (avoids array slice allocation)
+    const hits = castRaysOnEdgeRange(rays, scol, ecol, edge);
     
     let addedCount = 0;
     for (let i = 0; i < hits.length; i++) {

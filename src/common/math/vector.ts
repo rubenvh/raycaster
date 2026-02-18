@@ -10,7 +10,11 @@ const scale = (k: number, u: Vector): Vector => [k * u[0], k * u[1]];
 const subtract = (u: Vector, v: Vector): Vector => [u[0] - v[0], u[1] - v[1]];
 const add = (u: Vector, v: Vector): Vector => [u[0] + v[0], u[1] + v[1]];
 const areOrthogonal = (u: Vector, v: Vector): boolean => dot(u, v) === 0;
-const distance = (u: Vector, v: Vector): number => norm(subtract(u, v));
+const distance = (u: Vector, v: Vector): number => {
+    const dx = u[0] - v[0];
+    const dy = u[1] - v[1];
+    return Math.sqrt(dx * dx + dy * dy);
+};
 const angleBetween = (u: Vector, v: Vector): number => Math.atan2(cross(u, v), dot(u, v));
 /**
  * Project a vector onto another vector (u projected on v)
@@ -18,7 +22,10 @@ const angleBetween = (u: Vector, v: Vector): number => Math.atan2(cross(u, v), d
  * @param v vector to project onto
  */
 const proj = (u: Vector, v: Vector): Vector => scale(dot(u, v) / dot(v, v), v);
-const rotate = (angle: number, u: Vector): Vector => matMultiply(createRotation(angle), u);
+const rotate = (angle: number, u: Vector): Vector => {
+    const c = Math.cos(angle), s = Math.sin(angle);
+    return [c * u[0] - s * u[1], s * u[0] + c * u[1]];
+};
 const cross = (u: Vector, v: Vector): number => u[0] * v[1] - u[1] * v[0];
 const perpendicular = (u: Vector): Vector => [-u[1], u[0]];
 const copyIn = (u: Vector, v: Vector): Vector => {
@@ -51,7 +58,13 @@ const scaleInto = (out: Vector, k: number, u: Vector): Vector => {
     return out;
 };
 
-export { ZERO, areEqual, dot, norm, normSqr, normalize, scale, subtract, add, areOrthogonal, distance, angleBetween, proj, rotate, cross, perpendicular, copyIn, snap, minimumComponents, maximumComponents, round, subtractInto, addInto, scaleInto };
+const distanceSqr = (u: Vector, v: Vector): number => {
+    const dx = u[0] - v[0];
+    const dy = u[1] - v[1];
+    return dx * dx + dy * dy;
+};
+
+export { ZERO, areEqual, dot, norm, normSqr, normalize, scale, subtract, add, areOrthogonal, distance, distanceSqr, angleBetween, proj, rotate, cross, perpendicular, copyIn, snap, minimumComponents, maximumComponents, round, subtractInto, addInto, scaleInto };
 
 const createRotation = (angle: number): [Vector, Vector] => [
     [Math.cos(angle), -1 * Math.sin(angle)],
