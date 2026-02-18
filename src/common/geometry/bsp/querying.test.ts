@@ -1,10 +1,11 @@
-import { findClosest, walk } from './querying';
+import { findClosest, isAABBBehindPlane, isAABBInFrontOfPlane, isAABBOutsideFrustum, walk, walkWithFrustum, FrustumPlanes } from './querying';
 import { createLeaf, createNode, NULL_NODE, IBSPNode, LeafBspNode, SplitBspNode } from './model';
-import { createPolygon, IPolygon } from '../polygon';
+import { createPolygon, IPolygon, BoundingBox } from '../polygon';
 import { buildBspTree } from './creation';
 import { createGeometry } from '../geometry';
 import { Plane } from '../../math/plane';
 import { resetTestRandom } from '../../testing/factories';
+import { makeCamera } from '../../camera';
 
 beforeEach(() => resetTestRandom());
 
@@ -130,5 +131,224 @@ describe('walk', () => {
             return true;
         });
         expect(visited.length).toBeGreaterThan(0);
+    });
+});
+
+// ============================================================================
+// AABB Frustum Culling Tests
+// ============================================================================
+
+describe('isAABBBehindPlane', () => {
+    // Plane with normal [0, 1] at d=10 — points with y > 10 are "in front"
+    const plane: Plane = { n: [0, 1], d: 10 };
+
+    test('returns true when AABB is entirely behind the plane', () => {
+        const bounds: BoundingBox = [[0, 0], [5, 8]]; // max y=8 < 10
+        expect(isAABBBehindPlane(bounds, plane)).toBe(true);
+    });
+
+    test('returns false when AABB is entirely in front of the plane', () => {
+        const bounds: BoundingBox = [[0, 12], [5, 20]]; // min y=12 > 10
+        expect(isAABBBehindPlane(bounds, plane)).toBe(false);
+    });
+
+    test('returns false when AABB straddles the plane', () => {
+        const bounds: BoundingBox = [[0, 5], [5, 15]]; // min y=5 < 10 < max y=15
+        expect(isAABBBehindPlane(bounds, plane)).toBe(false);
+    });
+
+    test('returns false when AABB p-vertex is exactly on the plane', () => {
+        // p-vertex for normal [0,1] is max-y = 10, so dot = 10 = d, not < d
+        const bounds: BoundingBox = [[0, 5], [5, 10]];
+        expect(isAABBBehindPlane(bounds, plane)).toBe(false);
+    });
+
+    test('works with diagonal plane normal', () => {
+        // Plane with normal [1, 1] (not normalized) at d=20
+        // dot(n, p) < 20 means x + y < 20 for the p-vertex
+        const diag: Plane = { n: [1, 1], d: 20 };
+        // AABB [0,0]-[5,5]: p-vertex is [5,5], dot = 10 < 20 → behind
+        expect(isAABBBehindPlane([[0, 0], [5, 5]], diag)).toBe(true);
+        // AABB [15,15]-[20,20]: p-vertex is [20,20], dot = 40 > 20 → not behind
+        expect(isAABBBehindPlane([[15, 15], [20, 20]], diag)).toBe(false);
+    });
+
+    test('works with negative normal components', () => {
+        // Plane with normal [-1, 0] at d=-10 → points with x < 10 are "in front"
+        const negPlane: Plane = { n: [-1, 0], d: -10 };
+        // AABB [12, 0]-[20, 5]: p-vertex for [-1,0] is [min-x=12], dot = -12 < -10 → behind
+        expect(isAABBBehindPlane([[12, 0], [20, 5]], negPlane)).toBe(true);
+        // AABB [0, 0]-[5, 5]: p-vertex for [-1,0] is [min-x=0], dot = 0 > -10 → not behind
+        expect(isAABBBehindPlane([[0, 0], [5, 5]], negPlane)).toBe(false);
+    });
+});
+
+describe('isAABBInFrontOfPlane', () => {
+    const plane: Plane = { n: [0, 1], d: 10 };
+
+    test('returns true when AABB is entirely in front of the plane', () => {
+        const bounds: BoundingBox = [[0, 12], [5, 20]]; // min y=12 > 10
+        expect(isAABBInFrontOfPlane(bounds, plane)).toBe(true);
+    });
+
+    test('returns false when AABB is entirely behind the plane', () => {
+        const bounds: BoundingBox = [[0, 0], [5, 8]]; // max y=8 < 10
+        expect(isAABBInFrontOfPlane(bounds, plane)).toBe(false);
+    });
+
+    test('returns false when AABB straddles the plane', () => {
+        const bounds: BoundingBox = [[0, 5], [5, 15]];
+        expect(isAABBInFrontOfPlane(bounds, plane)).toBe(false);
+    });
+
+    test('returns false when AABB n-vertex is exactly on the plane', () => {
+        // n-vertex for normal [0,1] is min-y = 10, so dot = 10 = d, not > d
+        const bounds: BoundingBox = [[0, 10], [5, 20]];
+        expect(isAABBInFrontOfPlane(bounds, plane)).toBe(false);
+    });
+
+    test('works with diagonal plane normal', () => {
+        const diag: Plane = { n: [1, 1], d: 20 };
+        // AABB [15,15]-[20,20]: n-vertex is [15,15], dot = 30 > 20 → in front
+        expect(isAABBInFrontOfPlane([[15, 15], [20, 20]], diag)).toBe(true);
+        // AABB [0,0]-[5,5]: n-vertex is [0,0], dot = 0 < 20 → not in front
+        expect(isAABBInFrontOfPlane([[0, 0], [5, 5]], diag)).toBe(false);
+    });
+});
+
+describe('isAABBOutsideFrustum', () => {
+    // Use the default camera to get realistic frustum planes
+    // Default camera: position [50,50], direction [0,10], plane [15,0]
+    const camera = makeCamera({ position: [50, 50], direction: [0, 10], plane: [15, 0] });
+    const frustum: FrustumPlanes = camera.planes;
+
+    test('returns false for AABB directly in front of camera', () => {
+        // AABB in front of camera, within FOV
+        const bounds: BoundingBox = [[45, 55], [55, 65]];
+        expect(isAABBOutsideFrustum(bounds, frustum)).toBe(false);
+    });
+
+    test('returns true for AABB behind camera', () => {
+        // AABB fully behind the camera (y < 50 for a camera pointing +y)
+        const bounds: BoundingBox = [[40, 10], [60, 40]];
+        expect(isAABBOutsideFrustum(bounds, frustum)).toBe(true);
+    });
+
+    test('returns true for AABB far to the left of frustum', () => {
+        // Camera is at [50,50] pointing +y with plane [15,0]
+        // Left edge of view goes from [50,50] toward [35,60]
+        // An AABB far to the left should be outside
+        const bounds: BoundingBox = [[0, 55], [10, 65]];
+        expect(isAABBOutsideFrustum(bounds, frustum)).toBe(true);
+    });
+
+    test('returns true for AABB far to the right of frustum', () => {
+        // Right edge of view goes from [50,50] toward [65,60]
+        // An AABB far to the right should be outside
+        const bounds: BoundingBox = [[90, 55], [100, 65]];
+        expect(isAABBOutsideFrustum(bounds, frustum)).toBe(true);
+    });
+
+    test('returns false for AABB that straddles the left edge', () => {
+        // AABB that is partially inside and partially outside left boundary
+        const bounds: BoundingBox = [[30, 55], [50, 70]];
+        expect(isAABBOutsideFrustum(bounds, frustum)).toBe(false);
+    });
+
+    test('returns false for AABB that straddles the right edge', () => {
+        const bounds: BoundingBox = [[50, 55], [70, 70]];
+        expect(isAABBOutsideFrustum(bounds, frustum)).toBe(false);
+    });
+
+    test('returns false for large AABB that encompasses the entire frustum', () => {
+        // A very large AABB that surrounds the camera and frustum
+        const bounds: BoundingBox = [[0, 0], [100, 100]];
+        expect(isAABBOutsideFrustum(bounds, frustum)).toBe(false);
+    });
+});
+
+describe('walkWithFrustum', () => {
+    const camera = makeCamera({ position: [50, 50], direction: [0, 10], plane: [15, 0] });
+    const frustum: FrustumPlanes = camera.planes;
+
+    test('visits leaf polygons within frustum', () => {
+        const poly = makePolygon([[45, 55], [55, 55], [55, 65], [45, 65]]);
+        const leaf = createLeaf([poly]);
+        const visited: IPolygon[][] = [];
+        walkWithFrustum(leaf, [50, 50], frustum, (polygons) => {
+            visited.push(polygons);
+            return true;
+        });
+        expect(visited.length).toBe(1);
+        expect(visited[0]).toEqual([poly]);
+    });
+
+    test('skips leaf node outside frustum', () => {
+        // Polygon entirely behind camera
+        const poly = makePolygon([[40, 10], [60, 10], [60, 20], [40, 20]]);
+        const leaf = createLeaf([poly]);
+        const visited: IPolygon[][] = [];
+        walkWithFrustum(leaf, [50, 50], frustum, (polygons) => {
+            visited.push(polygons);
+            return true;
+        });
+        expect(visited.length).toBe(0);
+    });
+
+    test('returns true for null node', () => {
+        const result = walkWithFrustum(NULL_NODE, [50, 50], frustum, () => false);
+        expect(result).toBe(true);
+    });
+
+    test('culls subtrees outside frustum in split tree', () => {
+        // Front poly: in front of camera, within FOV
+        const frontPoly = makePolygon([[45, 55], [55, 55], [55, 65], [45, 65]]);
+        // Back poly: behind camera, outside frustum
+        const backPoly = makePolygon([[40, 10], [60, 10], [60, 20], [40, 20]]);
+        const frontLeaf = createLeaf([frontPoly]);
+        const backLeaf = createLeaf([backPoly]);
+        const plane: Plane = { n: [0, 1], d: 50 };
+        const tree = createNode(plane, frontLeaf, backLeaf, []);
+
+        // Verify bounds are correct
+        expect(isAABBOutsideFrustum((backLeaf as LeafBspNode).bounds, frustum)).toBe(true);
+
+        const visited: IPolygon[][] = [];
+        walkWithFrustum(tree as IBSPNode, [50, 55], frustum, (polygons) => {
+            visited.push(polygons);
+            return true;
+        });
+        // Only the front leaf should be visited; back is culled.
+        // Note: the empty coplanar list also triggers a map() call.
+        expect(visited.length).toBe(2); // front leaf + empty coplanar
+        expect(visited[0]).toEqual([frontPoly]);
+        expect(visited[1]).toEqual([]); // empty coplanar
+    });
+
+    test('produces same results as walk for geometry within frustum', () => {
+        // Create a geometry that is entirely within the frustum
+        const geom = createGeometry([
+            [[45, 55], [48, 55], [48, 58], [45, 58]],
+            [[52, 55], [55, 55], [55, 58], [52, 58]],
+        ]);
+        const bsp = buildBspTree(geom.polygons);
+
+        const walkVisited: IPolygon[][] = [];
+        walk(bsp, [50, 50], (polygons) => {
+            walkVisited.push(polygons);
+            return true;
+        });
+
+        const frustumVisited: IPolygon[][] = [];
+        walkWithFrustum(bsp, [50, 50], frustum, (polygons) => {
+            frustumVisited.push(polygons);
+            return true;
+        });
+
+        // Both should visit the same polygons in the same order
+        expect(frustumVisited.length).toBe(walkVisited.length);
+        for (let i = 0; i < walkVisited.length; i++) {
+            expect(frustumVisited[i]).toEqual(walkVisited[i]);
+        }
     });
 });
