@@ -2,17 +2,13 @@
 - GEOMETRY: allow batch edit multiple edges (via tree view checkboxes)
 - IMPROVE: bsp representation should only be removed when physically changing the geometry (moving, adding, deleting elements)
 - GENERAL: style edit edge component
-- RENDERING: slower fps slows down movement => normalize this
 - BUG: completely translucent (invisible) edge is being drawn as fading shadow
 - BUG: when selecting multiple adjacent polygons, the highlighted edge (green) might be overdrawn by 1 of the polygon's edges
-- BUG: when loading files, texture library receives new textures that are already loaded
 - BSP: allow adding hinting split planes drawn by the user
 - RENDERING: implement sprites: represent as directed (short) line segments
 - RENDERING: implement doors
 - RENDERING: luminosity on edge as a function of time to implement flickering 
 - RENDERING: implement mirror walls
-- GEOMETRY: expand polygon: AS IS: push out walls from center => TO BE would be nice to stay parallel to existing edges
-
 
 
  WOULD BE NICE

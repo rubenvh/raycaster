@@ -78,37 +78,50 @@ const changeLocation = (delta: vector.Vector, camera: ICamera): ICamera => {
     return makeCamera({ ...camera, position: vector.add(camera.position, delta) });
 }
 
+const MAX_WALL_SLIDE_ITERATIONS = 3;
+const SAFE_DISTANCE_FACTOR = 1.5;
+
 const constrainedMove = (direction: 1 | -1, cam: ICamera,
     mover: (ratio: number, cam: ICamera) => ICamera,
     raymaker: (direction: 1 | -1, cam: ICamera) => IRay,
     geometry: IGeometry,
     speed: number): ICamera => {
 
-    let movementRatio = direction * speed;
-    const hit = castCameraRay(raymaker(direction, cam), geometry);
-    if (hit.distance >= 2) { // magic number 2 should actually depend on size of direction/plane vector and 0.15 scale increment above (prevent overshooting the wall)        
-        // distance large enough: safe to move
-        return mover(movementRatio, cam);
+    let currentMover = mover;
+    let currentRaymaker = raymaker;
+
+    for (let iteration = 0; iteration < MAX_WALL_SLIDE_ITERATIONS; iteration++) {
+        let movementRatio = direction * speed;
+        const hit = castCameraRay(currentRaymaker(direction, cam), geometry);
+        const stepSize = Math.abs(speed) * vector.norm(cam.direction);
+        const safeDistance = stepSize * SAFE_DISTANCE_FACTOR;
+        if (hit.distance >= safeDistance) {
+            // distance large enough: safe to move
+            return currentMover(movementRatio, cam);
+        }
+
+        // calculate angle with collided edge
+        const s = hit.edge.segment;
+        const collisionAngle = Math.abs(lineAngle(s, hit.ray.line)) - Math.PI / 2;
+
+        // if angle is small enough, stop movement by returning original camera
+        if (Math.abs(collisionAngle) <= Math.PI / 8) return cam;
+
+        // angle is large enough, move parallel to collided edge
+        // scale slide speed by sin(collisionAngle): collisionAngle is measured from the wall normal,
+        // so sin gives the parallel component — full speed at glancing angles, slow near the stop threshold
+        const slideFactor = Math.abs(Math.sin(collisionAngle));
+        movementRatio = vector.norm(vector.scale(movementRatio, cam.direction)) * slideFactor;
+        const edgeDirection = collisionAngle < 0 ? vector.subtract(s[1], s[0]) : vector.subtract(s[0], s[1]);
+        const target = vector.scale(movementRatio, vector.normalize(edgeDirection));
+
+        // set up next iteration to check wall-slide direction for further collisions (e.g. corners)
+        currentMover = (_r, c) => changeLocation(target, c);
+        currentRaymaker = (_d, c) => makeRay(c.position, target);
     }
 
-    // calculate angle with collided edge
-    const s = hit.edge.segment;
-    const collisionAngle = Math.abs(lineAngle(s, hit.ray.line)) - Math.PI / 2;
-
-    // if angle is small enough, stop movement by returning original camera
-    if (Math.abs(collisionAngle) <= Math.PI / 8) return cam;
-
-    // angle is large enough, move parallel to collided edge
-    // TODO: size of target could depend on angle => faster when angle is further from PI/2
-    movementRatio = vector.norm(vector.scale(movementRatio, cam.direction))
-    const target = vector.scale(movementRatio, vector.normalize(collisionAngle < 0 ? vector.subtract(s[1], s[0]) : vector.subtract(s[0], s[1])));
-
-    // TODO: recursion => prevent call stack errors
-    return constrainedMove(direction, cam,
-        (_r, c) => changeLocation(target, c), // move function: change location to calculated target
-        (_d, c) => makeRay(c.position, target),// ray creation function: cast ray from camera position to new target
-        geometry,
-        speed);
+    // exceeded max iterations (e.g. stuck in a tight corner): stay in place
+    return cam;
 }
 
 
