@@ -1,4 +1,4 @@
-import { IBSPNode } from './bsp/model';
+import { IBSPNode, recomputeBspBounds } from './bsp/model';
 import { selectPolygon } from './../selection/selectable';
 
 import * as vector from '../math/vector';
@@ -17,7 +17,8 @@ export const EMPTY_GEOMETRY: IGeometry = {polygons: [], edgeCount: 0, bounds: [0
 export const storeGeometry = (g: IGeometry): IStoredGeometry => ({id: g.id, polygons: g.polygons.map(storePolygon), bsp: g.bsp});
 export const loadGeometry = (g : IStoredGeometry): IGeometry => {
     const polygons = g.polygons.map(loadPolygon);
-    return ({id: g.id, polygons, edgeCount: countEdges(polygons), bounds: findBounds(polygons), bsp: g.bsp});
+    const bsp = g.bsp ? recomputeBspBounds(g.bsp) : undefined;
+    return ({id: g.id, polygons, edgeCount: countEdges(polygons), bounds: findBounds(polygons), bsp});
 };
 export const createGeometry = (polygonCollection: vector.Vector[][]): IGeometry => {
     const polygons = polygonCollection.map(createPolygon);

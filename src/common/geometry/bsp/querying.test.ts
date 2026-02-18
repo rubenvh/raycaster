@@ -1,5 +1,5 @@
 import { findClosest, isAABBBehindPlane, isAABBInFrontOfPlane, isAABBOutsideFrustum, walk, walkWithFrustum, FrustumPlanes } from './querying';
-import { createLeaf, createNode, NULL_NODE, IBSPNode, LeafBspNode, SplitBspNode } from './model';
+import { createLeaf, createNode, NULL_NODE, IBSPNode, LeafBspNode, SplitBspNode, recomputeBspBounds } from './model';
 import { createPolygon, IPolygon, BoundingBox } from '../polygon';
 import { buildBspTree } from './creation';
 import { createGeometry } from '../geometry';
@@ -350,5 +350,161 @@ describe('walkWithFrustum', () => {
         for (let i = 0; i < walkVisited.length; i++) {
             expect(frustumVisited[i]).toEqual(walkVisited[i]);
         }
+    });
+});
+
+describe('BSP bounds JSON serialization', () => {
+    /** Helper: check that all bounds in a BSP tree contain only finite numbers */
+    function assertFiniteBounds(node: IBSPNode, path = 'root'): void {
+        if (node.type === 'null') return;
+        expect(node.bounds).not.toBeNull();
+        if (node.bounds) {
+            const [[minX, minY], [maxX, maxY]] = node.bounds;
+            expect(Number.isFinite(minX)).toBe(true);
+            expect(Number.isFinite(minY)).toBe(true);
+            expect(Number.isFinite(maxX)).toBe(true);
+            expect(Number.isFinite(maxY)).toBe(true);
+        }
+        if (node.type === 'split') {
+            assertFiniteBounds(node.front, path + '.front');
+            assertFiniteBounds(node.back, path + '.back');
+        }
+    }
+
+    test('buildBspTree produces only finite bounds (no Infinity)', () => {
+        const geom = createGeometry([
+            [[0, 0], [50, 0], [50, 50], [0, 50]],
+            [[60, 0], [110, 0], [110, 50], [60, 50]],
+            [[0, 60], [50, 60], [50, 110], [0, 110]],
+        ]);
+        const bsp = buildBspTree(geom.polygons);
+        assertFiniteBounds(bsp);
+    });
+
+    test('BSP bounds survive JSON roundtrip after fix', () => {
+        const geom = createGeometry([
+            [[0, 0], [50, 0], [50, 50], [0, 50]],
+            [[60, 0], [110, 0], [110, 50], [60, 50]],
+        ]);
+        const bsp = buildBspTree(geom.polygons);
+        assertFiniteBounds(bsp);
+
+        // Simulate save/load cycle
+        const serialized = JSON.stringify(bsp);
+        const deserialized = JSON.parse(serialized);
+
+        // Bounds should still be finite (no Infinity → null corruption)
+        assertFiniteBounds(deserialized);
+    });
+
+    test('recomputeBspBounds fixes corrupted null bounds from old saves', () => {
+        const geom = createGeometry([
+            [[0, 0], [50, 0], [50, 50], [0, 50]],
+            [[60, 0], [110, 0], [110, 50], [60, 50]],
+            [[0, 60], [50, 60], [50, 110], [0, 110]],
+        ]);
+        const bsp = buildBspTree(geom.polygons);
+
+        // Manually corrupt bounds to simulate old saved file with Infinity→null
+        function corruptBounds(node: any): void {
+            if (!node || node.type === 'null') return;
+            if (node.bounds) {
+                node.bounds = [[null, null], [null, null]];
+            }
+            if (node.type === 'split') {
+                corruptBounds(node.front);
+                corruptBounds(node.back);
+            }
+        }
+        const corrupted = JSON.parse(JSON.stringify(bsp));
+        corruptBounds(corrupted);
+
+        // Verify it's actually corrupted
+        if (corrupted.type !== 'null') {
+            expect(corrupted.bounds).toEqual([[null, null], [null, null]]);
+        }
+
+        // Recompute should fix it
+        const fixed = recomputeBspBounds(corrupted);
+        assertFiniteBounds(fixed);
+    });
+
+    test('walkWithFrustum works correctly after JSON roundtrip', () => {
+        const geom = createGeometry([
+            [[0, 0], [100, 0], [100, 100], [0, 100]],
+            [[200, 0], [300, 0], [300, 100], [200, 100]],
+        ]);
+        const bsp = buildBspTree(geom.polygons);
+
+        // Camera looking up from (50, -20), should see both polygons
+        const camera = makeCamera({ position: [150, -20], direction: [0, 10], plane: [200, 0] });
+        const frustum = camera.planes;
+
+        // Collect polygons from original BSP
+        const originalVisited: IPolygon[][] = [];
+        walkWithFrustum(bsp, camera.position, frustum, (polygons) => {
+            originalVisited.push(polygons);
+            return true;
+        });
+
+        // Simulate save/load cycle with recomputeBspBounds
+        const deserialized = JSON.parse(JSON.stringify(bsp));
+        const restored = recomputeBspBounds(deserialized);
+
+        // Collect polygons from restored BSP
+        const restoredVisited: IPolygon[][] = [];
+        walkWithFrustum(restored, camera.position, frustum, (polygons) => {
+            restoredVisited.push(polygons);
+            return true;
+        });
+
+        // Should visit the same polygons
+        expect(restoredVisited.length).toBe(originalVisited.length);
+        // Both should find some polygons (not all culled)
+        expect(originalVisited.length).toBeGreaterThan(0);
+    });
+
+    test('walkWithFrustum with corrupted null bounds culls everything (demonstrating the bug)', () => {
+        // Manually construct a split tree to guarantee the structure
+        const polyA = makePolygon([[0, 0], [50, 0], [50, 50], [0, 50]]);
+        const polyB = makePolygon([[60, 60], [110, 60], [110, 110], [60, 110]]);
+        const frontLeaf = createLeaf([polyA]);
+        const backLeaf = createLeaf([polyB]);
+        const plane = { n: [0, 1] as [number, number], d: 55 };
+        const testBsp = createNode(plane, frontLeaf, backLeaf, []);
+        expect(testBsp.type).toBe('split');
+
+        // Camera at y=20 looking forward (positive y). Both polygons are in front.
+        // Key insight: camera plane d = 20 (positive), so null bounds (dot=0)
+        // satisfy 0 < 20 = true → classified as "behind camera" → culled.
+        // But real polygon bounds have p-vertex dots of 50 and 110, both > 20 → visible.
+        const camera = makeCamera({ position: [55, 20], direction: [0, 10], plane: [100, 0] });
+        const frustum = camera.planes;
+
+        // Verify null bounds are classified as outside this frustum
+        const nullBounds: BoundingBox = [[null, null] as any, [null, null] as any];
+        expect(isAABBOutsideFrustum(nullBounds, frustum)).toBe(true);
+
+        // With correct bounds, both polygons are visible from this camera
+        const originalVisited: IPolygon[][] = [];
+        walkWithFrustum(testBsp, camera.position, frustum, (polygons) => {
+            originalVisited.push(polygons);
+            return true;
+        });
+        expect(originalVisited.length).toBeGreaterThan(0);
+
+        // Corrupt split node bounds to [[null,null],[null,null]] (simulates Infinity→null from JSON)
+        const corrupted = JSON.parse(JSON.stringify(testBsp));
+        corrupted.bounds = [[null, null], [null, null]];
+
+        // With corrupted split node bounds, root is culled — nothing visited
+        const corruptedVisited: IPolygon[][] = [];
+        walkWithFrustum(corrupted, camera.position, frustum, (polygons) => {
+            corruptedVisited.push(polygons);
+            return true;
+        });
+
+        // The corrupted tree visits nothing because the root split node is culled
+        expect(corruptedVisited.length).toBe(0);
     });
 });
