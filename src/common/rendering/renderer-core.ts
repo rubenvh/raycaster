@@ -10,11 +10,26 @@ import { ICamera } from '../camera';
 import { RenderMetrics } from './benchmark-types';
 
 /**
+ * Per-column hit data for renderer output comparison.
+ * Each entry represents a visible wall segment at a specific screen column.
+ */
+export interface ColumnHit {
+  /** Edge entity ID */
+  edgeId: string;
+  /** Distance from camera to intersection point (corrected for fisheye) */
+  distance: number;
+  /** Alpha transparency of the material at this hit */
+  alpha: number;
+}
+
+/**
  * Result returned by a renderer core after processing a frame.
  */
 export interface RenderResult {
   /** Performance metrics for this frame */
   metrics: RenderMetrics;
+  /** Optional per-column hit data, sorted closest-first. Present when captureHits is enabled. */
+  columnHits?: ColumnHit[][];
 }
 
 /**

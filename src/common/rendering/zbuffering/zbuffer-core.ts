@@ -7,7 +7,7 @@
 
 import { IGeometry } from '../../geometry/geometry';
 import { ICamera, clip, makeRays } from '../../camera';
-import { walk } from '../../geometry/bsp/querying';
+import { walk, walkWithFrustum } from '../../geometry/bsp/querying';
 import { IEdge, NULL_EDGE } from '../../geometry/edge';
 import { IRay, makeRay, intersectRayPlane } from '../../geometry/collision';
 import { subtract, Vector } from '../../math/vector';
@@ -17,7 +17,7 @@ import { segmentLength } from '../../math/lineSegment';
 import { castRaysOnEdge } from '../raycasting/raycaster';
 import { getMaterial } from '../../geometry/properties';
 import { RenderMetrics } from '../benchmark-types';
-import { IRendererCore, RenderResult } from '../renderer-core';
+import { ColumnHit, IRendererCore, RenderResult } from '../renderer-core';
 import { PriorityDeque } from 'priority-deque';
 
 /**
@@ -61,6 +61,17 @@ class BenchmarkZBufferColumn {
   shift(): BenchmarkWallEntry | undefined {
     return this.queue.shift();
   }
+
+  /**
+   * Drain all entries from the column in distance-sorted order (closest first).
+   */
+  drain(): BenchmarkWallEntry[] {
+    const entries: BenchmarkWallEntry[] = [];
+    while (this.queue.length > 0) {
+      entries.push(this.queue.shift()!);
+    }
+    return entries;
+  }
   
   clear(): void {
     this.queue.clear();
@@ -85,8 +96,14 @@ export class ZBufferCore implements IRendererCore {
   
   /**
    * @param reuseBuffers - If true, reuses internal buffers between renders (Task 4 optimization)
+   * @param captureHits - If true, includes per-column hit data in the result for comparison testing
+   * @param useFrustumCulling - If true, uses walkWithFrustum for BSP traversal; if false, uses walk (default: true)
    */
-  constructor(private reuseBuffers: boolean = false) {}
+  constructor(
+    private reuseBuffers: boolean = false, 
+    private captureHits: boolean = false,
+    private useFrustumCulling: boolean = true,
+  ) {}
 
   render(geometry: IGeometry, camera: ICamera, resolution: number): RenderResult {
     const startTime = performance.now();
@@ -133,7 +150,7 @@ export class ZBufferCore implements IRendererCore {
     
     // Walk BSP tree and collect visible edges
     if (geometry.bsp) {
-      walk(geometry.bsp, camera.position, (polygons) => {
+      const processPolygons = (polygons: import('../../geometry/polygon').IPolygon[]) => {
         for (const p of polygons) {
           for (const e of p.edges) {
             // Skip edges with no material
@@ -163,7 +180,13 @@ export class ZBufferCore implements IRendererCore {
         
         // Check if buffer is full (all columns have opaque front wall)
         return !this.isBufferFull(cols);
-      });
+      };
+
+      if (this.useFrustumCulling) {
+        walkWithFrustum(geometry.bsp, camera.position, camera.planes, processPolygons);
+      } else {
+        walk(geometry.bsp, camera.position, processPolygons);
+      }
     }
     
     // Count total columns that have content
@@ -176,7 +199,7 @@ export class ZBufferCore implements IRendererCore {
     
     const endTime = performance.now();
     
-    return {
+    const result: RenderResult = {
       metrics: {
         renderTimeMs: endTime - startTime,
         edgesTested,
@@ -184,6 +207,22 @@ export class ZBufferCore implements IRendererCore {
         columnsProcessed: columnsWithContent,
       },
     };
+    
+    // Capture per-column hit data if requested
+    if (this.captureHits) {
+      const columnHits: ColumnHit[][] = [];
+      for (const col of cols) {
+        const entries = col.drain();
+        columnHits.push(entries.map(e => ({
+          edgeId: e.edgeId,
+          distance: e.distance,
+          alpha: e.alpha,
+        })));
+      }
+      result.columnHits = columnHits;
+    }
+    
+    return result;
   }
   
   /**

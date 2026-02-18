@@ -6,7 +6,7 @@ import { useAppDispatch } from '../../store';
 import { connect } from '../../store/store-connector';
 import { IRenderer } from '../renderer';
 import { IEdge, NULL_EDGE } from '../../geometry/edge';
-import { walk } from '../../geometry/bsp/querying';
+import { walkWithFrustum } from '../../geometry/bsp/querying';
 import { distance } from '../../geometry/vertex';
 import { ILineSegment, segmentLength } from '../../math/lineSegment';
 import { castRaysOnEdgeRange } from '../raycasting/raycaster';
@@ -69,8 +69,7 @@ export class ZBufferRenderer implements IRenderer {
         let count = 0;
         let depth = 40;
         let clippedSegments: {segment: ILineSegment, depth: number}[] = [];
-        // TODO: can't we pass direction of camera to discard entire branches of the tree?
-        walk(this.wallGeometry.bsp, this.camera.position, (ps => {
+        walkWithFrustum(this.wallGeometry.bsp, this.camera.position, this.camera.planes, (ps => {
             let increment = 0;
             for (let p of ps) {
                 for (let e of p.edges) {

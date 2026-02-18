@@ -8,8 +8,9 @@
 import { IGeometry } from '../../geometry/geometry';
 import { ICamera, makeRays } from '../../camera';
 import { RenderMetrics } from '../benchmark-types';
-import { IRendererCore, RenderResult } from '../renderer-core';
+import { ColumnHit, IRendererCore, RenderResult } from '../renderer-core';
 import { castCollisionRays, CastedRays } from './raycaster';
+import { getMaterial } from '../../geometry/properties';
 
 /**
  * Pure raycasting renderer core implementing IRendererCore.
@@ -20,6 +21,11 @@ import { castCollisionRays, CastedRays } from './raycaster';
 export class RaycastCore implements IRendererCore {
   readonly name = 'Raycaster';
   readonly requiresBsp = false;
+
+  /**
+   * @param captureHits - If true, includes per-column hit data in the result for comparison testing
+   */
+  constructor(private captureHits: boolean = false) {}
 
   render(geometry: IGeometry, camera: ICamera, resolution: number): RenderResult {
     const startTime = performance.now();
@@ -35,12 +41,35 @@ export class RaycastCore implements IRendererCore {
     let edgesVisible = 0;
     let columnsWithHits = 0;
     
+    // Optionally capture per-column hit data
+    let columnHits: ColumnHit[][] | undefined;
+    if (this.captureHits) {
+      columnHits = [];
+    }
+    
     for (const ray of castedRays.castedRays) {
       // Count hits that aren't at infinity
       const validHits = ray.hits.filter(h => h.distance !== Number.POSITIVE_INFINITY);
       if (validHits.length > 0) {
         columnsWithHits++;
         edgesVisible += validHits.length;
+      }
+      
+      // Capture column hit data if requested
+      if (this.captureHits) {
+        const hits: ColumnHit[] = [];
+        for (const hit of ray.hits) {
+          if (hit.distance === Number.POSITIVE_INFINITY || hit.intersection == null || hit.edge == null) continue;
+          const material = getMaterial(hit.intersection.face, hit.edge.material);
+          const alpha = material?.color[3] ?? 0;
+          if (alpha === 0) continue;
+          hits.push({
+            edgeId: hit.edge.id?.toString() ?? '',
+            distance: hit.distance,
+            alpha,
+          });
+        }
+        columnHits.push(hits);
       }
     }
     
@@ -52,7 +81,7 @@ export class RaycastCore implements IRendererCore {
     
     const endTime = performance.now();
     
-    return {
+    const result: RenderResult = {
       metrics: {
         renderTimeMs: endTime - startTime,
         edgesTested,
@@ -60,5 +89,11 @@ export class RaycastCore implements IRendererCore {
         columnsProcessed: columnsWithHits,
       },
     };
+    
+    if (this.captureHits) {
+      result.columnHits = columnHits;
+    }
+    
+    return result;
   }
 }
