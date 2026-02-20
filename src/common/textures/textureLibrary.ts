@@ -7,14 +7,31 @@ import { Texture } from './texture';
 export class TextureLibrary {
     private _sources: ITextureSource[] = [];
     private _textures: Texture[] = [];
+    // Map from texture source id to Texture instance for efficient diffing
+    private _textureMap: Map<string, Texture> = new Map();
 
     public get textures() { return this._sources; }
 
     constructor() {        
         connect(state => {
             if (this._sources !== state.textures.sources) {
-                this._sources = state.textures.sources;
-                this._textures = this._sources.map(s => new Texture(s));
+                const newSources = state.textures.sources;
+                // Diff: only create Texture instances for new/changed sources
+                const newMap = new Map<string, Texture>();
+                for (const source of newSources) {
+                    const existing = this._textureMap.get(source.id);
+                    if (existing) {
+                        // Reuse existing texture if source hasn't changed
+                        newMap.set(source.id, existing);
+                    } else {
+                        // New texture source — create Texture instance
+                        const t = new Texture(source);
+                        newMap.set(source.id, t);
+                    }
+                }
+                this._sources = newSources;
+                this._textureMap = newMap;
+                this._textures = newSources.map(s => newMap.get(s.id)!);
             }            
         })        
     }

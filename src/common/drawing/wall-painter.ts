@@ -22,6 +22,36 @@ export type WallProps = {
     distance: number,
 };
 
+// Pre-computed fade alpha CSS strings: 101 entries for alpha 0.00 to 1.00.
+// Built lazily per shade value since shade comes from world config and rarely changes.
+let _fadeCacheShade: number | null = null;
+let _fadeAlphaStrings: string[] = [];
+
+function getFadeString(shade: number, alpha: number): string {
+    if (_fadeCacheShade !== shade) {
+        _fadeCacheShade = shade;
+        _fadeAlphaStrings = new Array(101);
+        for (let i = 0; i <= 100; i++) {
+            _fadeAlphaStrings[i] = `rgba(${shade},${shade},${shade},${(i / 100).toFixed(2)})`;
+        }
+    }
+    // Quantize alpha to nearest 0.01
+    const index = Math.min(100, Math.max(0, Math.round(alpha * 100)));
+    return _fadeAlphaStrings[index];
+}
+
+// Pre-computed luminosity overlay strings for texture darkening: "rgba(0,0,0,{alpha})"
+// 101 entries for alpha 0.00 to 1.00
+const _luminosityOverlayStrings: string[] = new Array(101);
+for (let i = 0; i <= 100; i++) {
+    _luminosityOverlayStrings[i] = `rgba(0,0,0,${(i / 100).toFixed(2)})`;
+}
+
+function getLuminosityOverlay(alpha: number): string {
+    const index = Math.min(100, Math.max(0, Math.round(alpha * 100)));
+    return _luminosityOverlayStrings[index];
+}
+
 export class WallPainter {
     private textureLibrary: TextureLibrary = textureLib;
     private worldConfig: IWorldConfigState = {};
@@ -87,8 +117,8 @@ export class WallPainter {
 
         // draw texture
         texture.drawTexture(context, wallProps);
-        // apply luminosity to texture
-        drawTrapezoid(context, this.getTrapezoid(start, end), `rgba(0,0,0,${1 - this.getLumen(start)}`);
+        // apply luminosity to texture (uses pre-computed string to avoid template literal per wall)
+        drawTrapezoid(context, this.getTrapezoid(start, end), getLuminosityOverlay(1 - this.getLumen(start)));
 
         // Restore globalAlpha to default
         context.globalAlpha = 1;
@@ -102,15 +132,14 @@ export class WallPainter {
         let color: string | CanvasGradient;
 
         if (start.material.luminosity != null) {
-            // luminosity is overidden on the wall's material definition:            
-            color = `rgba(${shade},${shade},${shade},${(1 - start.material.luminosity).toFixed(2)})`;
+            // luminosity is overridden on the wall's material definition (uses pre-computed string)
+            color = getFadeString(shade, 1 - start.material.luminosity);
         } else {
             // automatically decide fading amount based on the wall's distance to the camera
             const horizonDistance = this.worldConfig.horizonDistance ?? 300;
             const addGradient = (step: number, w: WallProps, gradient: CanvasGradient): CanvasGradient => {
                 const fadeFactor = Math.min(horizonDistance, w.distance) / (horizonDistance + 10);
-                const fadeColor = `rgba(${shade},${shade},${shade},${fadeFactor.toFixed(2)})`;
-                gradient.addColorStop(step, fadeColor);
+                gradient.addColorStop(step, getFadeString(shade, fadeFactor));
                 return gradient;
             }
             color = addGradient(1, end,
@@ -121,11 +150,17 @@ export class WallPainter {
     }
 
 
-    private getTrapezoid = (start: WallProps, end: WallProps): [Vector, Vector, Vector, Vector] => ([
-        [start.colRange[1], start.rowRange[0] - 0.5],
-        [start.colRange[1], start.rowRange[1] + 0.5],
-        [end.colRange[0], end.rowRange[1] + 0.5],
-        [end.colRange[0], end.rowRange[0] - 0.5]]);
+    // Pre-allocated scratch trapezoid to avoid 5 array allocations per call.
+    // Safe because caller consumes the trapezoid immediately before next getTrapezoid call.
+    private _trapezoid: [Vector, Vector, Vector, Vector] = [[0,0],[0,0],[0,0],[0,0]];
+
+    private getTrapezoid = (start: WallProps, end: WallProps): [Vector, Vector, Vector, Vector] => {
+        this._trapezoid[0][0] = start.colRange[1]; this._trapezoid[0][1] = start.rowRange[0] - 0.5;
+        this._trapezoid[1][0] = start.colRange[1]; this._trapezoid[1][1] = start.rowRange[1] + 0.5;
+        this._trapezoid[2][0] = end.colRange[0];   this._trapezoid[2][1] = end.rowRange[1] + 0.5;
+        this._trapezoid[3][0] = end.colRange[0];   this._trapezoid[3][1] = end.rowRange[0] - 0.5;
+        return this._trapezoid;
+    };
     
     private getColor = (material: IMaterial, lumen: number): string => {
         if (material?.color) {

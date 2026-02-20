@@ -1,8 +1,8 @@
 # Raycaster Performance Optimizations
 
-**Date:** February 18, 2026  
+**Date:** February 20, 2026  
 **Author:** OpenCode  
-**Total Improvement:** ZBuffer up to -90%, Raycaster up to -32% (from original baseline, plus Tier 2 additional -5% to -30%)
+**Total Improvement:** ZBuffer up to -90%, Raycaster up to -32% (core rendering); Canvas pipeline: allocation elimination + O(n²)→O(n) fixes (Tiers 1-4 complete)
 
 This document details all performance optimizations applied to the raycaster rendering engine, with before/after code samples and measured impact.
 
@@ -20,7 +20,9 @@ This document details all performance optimizations applied to the raycaster ren
 8. [T8: Scratch Ray Objects (Reverted)](#t8-scratch-ray-objects-reverted)
 9. [Tier 1 Optimizations (Batch 2)](#tier-1-optimizations-batch-2)
 10. [Tier 2 Optimizations: Redundant Computations](#tier-2-optimizations-redundant-computations)
-11. [Lessons Learned](#lessons-learned)
+11. [Tier 3 Optimizations: Data Structures and Algorithms](#tier-3-optimizations-data-structures-and-algorithms)
+12. [Tier 4 Optimizations: Canvas Rendering Pipeline](#tier-4-optimizations-canvas-rendering-pipeline)
+13. [Lessons Learned](#lessons-learned)
 
 ---
 
@@ -40,6 +42,17 @@ This document details all performance optimizations applied to the raycaster ren
 | 2.5 | `perpendicular` instead of `rotate(PI/2)` | ~0% | ~0% | Kept |
 | 2.6 | Short-circuit `Math.cos(0)=1` in `makeRay` | ~0% | ~0% | Kept |
 | 2.8 | Cache `directionNorm` on camera | ~0% | ~0% | Kept |
+| **Tier 3** | | | | |
+| 3.1 | Fix O(n²) spread in `constructZBuffer` | ~0% | ~0% | Kept |
+| 3.6 | Replace `.filter()` count with loop | ~0% | ~0% | Kept |
+| 3.7 | Single-pass `Math.max` replacement | ~0% | ~0% | Kept |
+| 3.8 | Sorted array replaces PriorityDeque | **-15% to -28%** | ~0% | Kept |
+| **Tier 4** | *(Canvas pipeline — not measured by core benchmark)* | | | |
+| 4.4 | Pre-allocate scratch trapezoid | N/A | N/A | Kept |
+| 4.5 | Pre-computed fade CSS strings | N/A | N/A | Kept |
+| 4.6 | Cache `getTextureAsImage` | N/A | N/A | Kept |
+| 4.7 | Diff texture sources | N/A | N/A | Kept |
+| 4.8 | Chunked base64 encoding | N/A | N/A | Kept |
 
 *T4 showed regression in isolation but was kept as part of consistent coding style.
 
@@ -1310,6 +1323,190 @@ The `{...EMPTY_STATS}` pattern is dangerous when the source object contains arra
 - `isFull()` was called 640 columns × many BSP nodes = massive call count
 - Reducing per-call cost by even microseconds has huge cumulative effect
 - Investigate whether downstream consumers actually use computed values before optimizing their computation (e.g., `WallProps.length` was computed but never read)
+
+---
+
+## Tier 4 Optimizations: Canvas Rendering Pipeline
+
+**Date:** February 20, 2026
+
+Tier 4 targets the canvas drawing pipeline — `WallPainter`, `Texture`, `TextureLibrary`, and texture loading. These optimizations reduce allocations, eliminate redundant string building, fix algorithmic issues, and add caching to expensive operations.
+
+**Note:** Tier 4 optimizations operate in the canvas drawing layer which runs *after* the core rendering pipeline (raycaster/zbuffer). The existing rendering benchmarks measure only the core pipeline, so these changes show no impact in those benchmarks. The improvements are in:
+- Per-frame drawing overhead (trapezoid allocations, CSS string building)
+- Texture loading time (O(n²) → O(n) base64 encoding)
+- Texture management (incremental updates vs full rebuild)
+- UI responsiveness (cached `toDataURL()` results)
+
+### 4.4: Pre-allocate Scratch Trapezoid
+
+**File:** `src/common/drawing/wall-painter.ts`
+
+`getTrapezoid()` was creating 5 array allocations per call (4 inner vectors + 1 outer tuple), called 2-3 times per wall draw (once for the wall shape, once for luminosity overlay, once for fading).
+
+**Before:**
+```typescript
+private getTrapezoid = (start: WallProps, end: WallProps): [Vector, Vector, Vector, Vector] => ([
+    [start.colRange[1], start.rowRange[0] - 0.5],
+    [start.colRange[1], start.rowRange[1] + 0.5],
+    [end.colRange[0], end.rowRange[1] + 0.5],
+    [end.colRange[0], end.rowRange[0] - 0.5]]);
+```
+
+**After:**
+```typescript
+private _trapezoid: [Vector, Vector, Vector, Vector] = [[0,0],[0,0],[0,0],[0,0]];
+
+private getTrapezoid = (start: WallProps, end: WallProps): [Vector, Vector, Vector, Vector] => {
+    this._trapezoid[0][0] = start.colRange[1]; this._trapezoid[0][1] = start.rowRange[0] - 0.5;
+    this._trapezoid[1][0] = start.colRange[1]; this._trapezoid[1][1] = start.rowRange[1] + 0.5;
+    this._trapezoid[2][0] = end.colRange[0];   this._trapezoid[2][1] = end.rowRange[1] + 0.5;
+    this._trapezoid[3][0] = end.colRange[0];   this._trapezoid[3][1] = end.rowRange[0] - 0.5;
+    return this._trapezoid;
+};
+```
+
+**Impact:** Eliminates 10-15 array allocations per wall draw (5 per `getTrapezoid` call × 2-3 calls per wall). Safe because the caller (`drawTrapezoid`) consumes the trapezoid coordinates immediately via `moveTo`/`lineTo` before the next `getTrapezoid` call.
+
+### 4.5: Pre-computed Fade Alpha CSS Strings
+
+**File:** `src/common/drawing/wall-painter.ts`
+
+`applyFading()` was building CSS color strings with `toFixed(2)` per wall. For fading with gradients, this meant 2 string constructions per wall; for static luminosity override, 1 per wall. `toFixed()` is relatively expensive for a hot path.
+
+Also, the texture luminosity darkening overlay (`rgba(0,0,0,${1-lumen})`) was built via template literal per textured wall draw.
+
+**Before:**
+```typescript
+color = `rgba(${shade},${shade},${shade},${(1 - start.material.luminosity).toFixed(2)})`;
+// ...
+const fadeColor = `rgba(${shade},${shade},${shade},${fadeFactor.toFixed(2)})`;
+// ...
+drawTrapezoid(context, ..., `rgba(0,0,0,${1 - this.getLumen(start)}`);
+```
+
+**After:**
+```typescript
+// Module-level pre-computed lookup tables
+const _luminosityOverlayStrings: string[] = new Array(101); // "rgba(0,0,0,0.00)" to "rgba(0,0,0,1.00)"
+// Lazily-built per shade value (shade rarely changes)
+function getFadeString(shade: number, alpha: number): string { ... } // quantized to 101 levels
+function getLuminosityOverlay(alpha: number): string { ... }         // direct index lookup
+```
+
+**Impact:** Eliminates `toFixed(2)` calls and template literal string construction per wall. Lookup is O(1) via array index. The fade string cache rebuilds lazily only when the shade value changes (which is a config change, not a per-frame event).
+
+### 4.6: Cache `getTextureAsImage` Data URL
+
+**File:** `src/common/textures/texture.ts`
+
+`getTextureAsImage()` was creating a new Canvas element and calling `toDataURL()` (which involves PNG encoding + base64 conversion) on every call. Since textures are immutable after loading, this is pure waste on repeated calls.
+
+**Before:**
+```typescript
+public getTextureAsImage = (tref: ITextureReference): string => {
+    const canvas = document.createElement('canvas');
+    // ... draw texture sub-region onto canvas ...
+    return canvas.toDataURL();  // expensive PNG encode + base64
+}
+```
+
+**After:**
+```typescript
+private _cachedDataUrls: Map<number, string> = new Map();
+
+public getTextureAsImage = (tref: ITextureReference): string => {
+    const index = tref != null ? tref.index : 0;
+    const cached = this._cachedDataUrls.get(index);
+    if (cached) return cached;
+    // ... compute as before, then cache ...
+    this._cachedDataUrls.set(index, dataUrl);
+    return dataUrl;
+}
+```
+
+**Impact:** First call per texture index is unchanged; subsequent calls are O(1) Map lookup instead of Canvas creation + PNG encoding. This is called from UI components that may re-render on state changes.
+
+### 4.7: Diff Texture Sources Instead of Full Rebuild
+
+**File:** `src/common/textures/textureLibrary.ts`
+
+When the texture sources array changed in the store (e.g., when a new texture was loaded), the library was recreating ALL `Texture` instances from scratch — each involving Canvas creation, Image loading, and drawing.
+
+**Before:**
+```typescript
+if (this._sources !== state.textures.sources) {
+    this._sources = state.textures.sources;
+    this._textures = this._sources.map(s => new Texture(s));
+}
+```
+
+**After:**
+```typescript
+if (this._sources !== state.textures.sources) {
+    const newSources = state.textures.sources;
+    const newMap = new Map<string, Texture>();
+    for (const source of newSources) {
+        const existing = this._textureMap.get(source.id);
+        if (existing) {
+            newMap.set(source.id, existing); // reuse
+        } else {
+            newMap.set(source.id, new Texture(source)); // create only new
+        }
+    }
+    // ... update references
+}
+```
+
+**Impact:** Loading a new texture no longer forces recreation of all existing textures. For a library with N textures, adding one texture goes from O(N) Texture constructions to O(1).
+
+### 4.8: Fix O(n²) String Concatenation for Base64 Encoding
+
+**File:** `src/common/store/textures.ts`
+
+The `loadTexture` reducer was building a binary string via byte-by-byte concatenation:
+
+**Before:**
+```typescript
+let binary = '';
+for (let i = 0; i < uint8Array.length; i++) {
+    binary += String.fromCharCode(uint8Array[i]);
+}
+const base64 = btoa(binary);
+```
+
+This creates O(n) intermediate strings, each a copy of the growing result. For a 64×64 RGBA texture (16,384 bytes), that's 16,384 string allocations with O(n²) total bytes copied.
+
+**After:**
+```typescript
+const CHUNK_SIZE = 8192;
+const chunks: string[] = [];
+for (let i = 0; i < uint8Array.length; i += CHUNK_SIZE) {
+    const chunk = uint8Array.subarray(i, Math.min(i + CHUNK_SIZE, uint8Array.length));
+    chunks.push(String.fromCharCode.apply(null, chunk as any));
+}
+const base64 = btoa(chunks.join(''));
+```
+
+**Impact:** O(n) instead of O(n²). For a 256×256 texture (262,144 bytes), the old approach copied ~34 billion bytes total; the new approach copies ~524K total. Uses `String.fromCharCode.apply` with chunks to avoid call stack limits.
+
+### Skipped Items
+
+| Item | Reason |
+|------|--------|
+| **4.1: Combine canvas fill operations** | Would change visual output. The luminosity darkening overlay (black trapezoid at `1-lumen`) is not equivalent to dimming via `globalAlpha`. Correctness risk outweighs benefit. |
+| **4.2: Cache getColor CSS strings** | `getColor` is called once per solid-color wall group (not per-column). The lumen value is continuous, so cache hit rates would be poor. Low impact. |
+| **4.3: Batch adjacent drawImage calls** | Complex implementation with edge cases around texture sampling. The Canvas 2D API overhead per `drawImage` call is small relative to the pixel work. Diminishing returns. |
+
+### Tier 4 Summary
+
+| Item | Description | Type | Impact |
+|------|-------------|------|--------|
+| 4.4 | Scratch trapezoid | Allocation elimination | -10 to -15 arrays per wall draw |
+| 4.5 | Pre-computed CSS strings | String building elimination | -1 to -3 `toFixed()` + template literals per wall |
+| 4.6 | Cached `toDataURL()` | Caching | O(1) vs PNG-encode per call |
+| 4.7 | Diff texture sources | Algorithmic | O(1) vs O(N) texture creation on add |
+| 4.8 | Chunked base64 encoding | Algorithmic | O(n) vs O(n²) string building |
 
 ---
 

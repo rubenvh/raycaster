@@ -72,8 +72,16 @@ export class Texture {
         }
     };
 
+    // Cache for getTextureAsImage data URLs, keyed by texture index.
+    // Textures are immutable after loading, so cache never needs invalidation.
+    private _cachedDataUrls: Map<number, string> = new Map();
+
     public getTextureAsImage = (tref: ITextureReference): string => {
-        const [col, row] = this.getPosition(tref != null ? tref.index : 0);
+        const index = tref != null ? tref.index : 0;
+        const cached = this._cachedDataUrls.get(index);
+        if (cached) return cached;
+
+        const [col, row] = this.getPosition(index);
         const canvas = document.createElement('canvas') as HTMLCanvasElement;
         const twidth = this._source.textureWidth;
         const theight = this._source.textureHeight;
@@ -81,7 +89,8 @@ export class Texture {
         canvas.height = theight;
         const context = canvas.getContext('2d');
         context.drawImage(this.canvas, col * twidth, row * theight, twidth, theight, 0, 0, twidth, theight);
-        return canvas.toDataURL()
-
+        const dataUrl = canvas.toDataURL();
+        this._cachedDataUrls.set(index, dataUrl);
+        return dataUrl;
     }
 }

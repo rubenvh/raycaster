@@ -17,13 +17,16 @@ const slice = createSlice({
       height: number
     }>) => {
       const {buffer, fileName, width, height} = action.payload;
-      // Convert buffer to base64 - buffer from IPC is Uint8Array in renderer
+      // Convert buffer to base64 - use chunk approach to avoid O(n^2) string concatenation
       const uint8Array = buffer instanceof Uint8Array ? buffer : new Uint8Array(buffer);
-      let binary = '';
-      for (let i = 0; i < uint8Array.length; i++) {
-        binary += String.fromCharCode(uint8Array[i]);
+      // Process in chunks to avoid call stack limits with String.fromCharCode.apply
+      const CHUNK_SIZE = 8192;
+      const chunks: string[] = [];
+      for (let i = 0; i < uint8Array.length; i += CHUNK_SIZE) {
+        const chunk = uint8Array.subarray(i, Math.min(i + CHUNK_SIZE, uint8Array.length));
+        chunks.push(String.fromCharCode.apply(null, chunk as any));
       }
-      const base64 = btoa(binary);
+      const base64 = btoa(chunks.join(''));
       // Determine MIME type from file extension
       const extension = fileName.split('.').pop()?.toLowerCase();
       const mimeType = extension === 'jpg' || extension === 'jpeg' 
