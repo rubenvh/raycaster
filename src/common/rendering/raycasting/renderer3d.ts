@@ -145,19 +145,29 @@ export class Renderer3d implements IRenderer {
      */
     private constructZBuffer = (rays: raycaster.CastedRay[]): ZBuffer => {
         const zbuffer: ZBuffer = [];
-        const indexes = rays.map(r => r.hits.length);
-        const max = Math.max(...indexes);
+        // T3.7: Single-pass max instead of Math.max(...640-element-array)
+        let max = 0;
+        for (let r = 0; r < rays.length; r++) {
+            const len = rays[r].hits.length;
+            if (len > max) max = len;
+        }
         for (let i = 0; i < max; i++) {
             let previousEdge: IEntityKey = null;
             let currentWallGroup = createEntityKey();
-            const groupedByEdge = rays.reduce(
-                (acc, r, rayIndex) => {
-                    if (i > indexes[rayIndex] - 1) { return acc; }
-                    const wall = this.createWall(r.hits[i], rayIndex);
-                    if (wall.edgeId !== (previousEdge || wall.edgeId)) { currentWallGroup = createEntityKey(); };
-                    previousEdge = wall.edgeId;
-                    return acc.set(currentWallGroup, [...acc.get(currentWallGroup) || [], wall]);
-                }, new Map<IEntityKey, WallProps[]>());
+            const groupedByEdge = new Map<IEntityKey, WallProps[]>();
+            for (let rayIndex = 0; rayIndex < rays.length; rayIndex++) {
+                if (i > rays[rayIndex].hits.length - 1) { continue; }
+                const wall = this.createWall(rays[rayIndex].hits[i], rayIndex);
+                if (wall.edgeId !== (previousEdge || wall.edgeId)) { currentWallGroup = createEntityKey(); };
+                previousEdge = wall.edgeId;
+                // T3.1: push() instead of [...spread, wall] to avoid O(n²) array copy
+                const existing = groupedByEdge.get(currentWallGroup);
+                if (existing) {
+                    existing.push(wall);
+                } else {
+                    groupedByEdge.set(currentWallGroup, [wall]);
+                }
+            }
 
             zbuffer.push(groupedByEdge);
         }

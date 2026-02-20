@@ -17,7 +17,7 @@ import { createPlane } from '../../math/plane';
 import { getMaterial, isTranslucent } from '../../geometry/properties';
 import { IWorldConfigState } from '../../store/world-config';
 import { statisticsUpdated } from '../../store/stats';
-import { PriorityDeque } from 'priority-deque';
+// T3.8: Removed PriorityDeque import — replaced with sorted array for small collections
 
 const dispatch = useAppDispatch();
 
@@ -266,17 +266,16 @@ export class ZBuffer {
     }
 }
 export class ZBufferColumn {
-    // private heap: Heap<WallProps>;
-    private queue: PriorityDeque<WallProps>;
+    // T3.8: Sorted array replaces PriorityDeque — columns typically have 1-3 walls,
+    // so linear insertion sort beats heap overhead. Array is sorted ascending by distance.
+    private walls: WallProps[] = [];
+    private count: number = 0;
     private hasOpaqueWall: boolean = false;  // Track if any wall has alpha === 1
     
-    constructor() {        
-        // this.heap = new Heap<WallProps>([], (a, b) => a.distance - b.distance);                     
-        this.queue = new PriorityDeque<WallProps>({ compare: (a, b) => a.distance - b.distance });
-    }
+    constructor() {}
 
     public clear(): void {
-        this.queue.clear();
+        this.count = 0;
         this.hasOpaqueWall = false;
     }
 
@@ -285,8 +284,24 @@ export class ZBufferColumn {
     }
     
     public add(el: WallProps): ZBufferColumn {        
-        // this.heap.insert(el);
-        this.queue.push(el);
+        // Insert into sorted position (ascending by distance).
+        // For typical 1-3 walls, linear scan from end is optimal.
+        const d = el.distance;
+        let i = this.count;
+        // Ensure array has room (reuse slots from previous frame)
+        if (i >= this.walls.length) {
+            this.walls.push(el);
+        } else {
+            this.walls[i] = el;
+        }
+        // Insertion sort: shift elements right to maintain ascending order
+        while (i > 0 && this.walls[i - 1].distance > d) {
+            this.walls[i] = this.walls[i - 1];
+            i--;
+        }
+        this.walls[i] = el;
+        this.count++;
+        
         // Track if we have any opaque wall (alpha === 1)
         if (!this.hasOpaqueWall && (el.material?.color[3] || 0) === 1) {
             this.hasOpaqueWall = true;
@@ -295,16 +310,15 @@ export class ZBufferColumn {
     }
 
     public shift(): WallProps {
-        return this.queue.shift();
+        // Pop from end = largest distance = farthest wall (back-to-front rendering)
+        if (this.count === 0) return undefined;
+        return this.walls[--this.count];
     }
 
     public render(painter: WallPainter): void {
-        while (this.queue.length > 0) {
-            painter.drawWall([this.queue.shift()]);
+        // Render back-to-front (farthest first = pop from end)
+        while (this.count > 0) {
+            painter.drawWall([this.walls[--this.count]]);
         }
-        // let sorted = this.heap.sort();     
-        // for (let i = sorted.length-1; i >= 0; i--) {
-        //     painter.drawWall([sorted[i]]);
-        // }           
     }
 }

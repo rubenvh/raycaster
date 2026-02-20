@@ -48,11 +48,14 @@ export class RaycastCore implements IRendererCore {
     }
     
     for (const ray of castedRays.castedRays) {
-      // Count hits that aren't at infinity
-      const validHits = ray.hits.filter(h => h.distance !== Number.POSITIVE_INFINITY);
-      if (validHits.length > 0) {
+      // T3.6: Count hits without allocating a filtered array
+      let validCount = 0;
+      for (let hi = 0; hi < ray.hits.length; hi++) {
+        if (ray.hits[hi].distance !== Number.POSITIVE_INFINITY) validCount++;
+      }
+      if (validCount > 0) {
         columnsWithHits++;
-        edgesVisible += validHits.length;
+        edgesVisible += validCount;
       }
       
       // Capture column hit data if requested

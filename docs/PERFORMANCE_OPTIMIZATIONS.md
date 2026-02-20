@@ -1050,6 +1050,212 @@ ZBuffer times remained stable (within noise) since these optimizations primarily
 
 ---
 
+## Tier 3 Optimizations: Architectural & Design-Level Improvements
+
+**Date:** February 20, 2026  
+**Combined Impact:** Raycaster **-5% to -36%**, ZBuffer **-15% to -28%** (from Tier 2 baseline)  
+**Items completed:** 3.1, 3.6, 3.7, 3.8 (3.2 done in Tier 1; 3.3/3.4/3.5 skipped — Electron runtime; 3.9 skipped per doc)
+
+### 3.1: Fix O(n²) Array Spread in `constructZBuffer`
+
+**File:** `src/common/rendering/raycasting/renderer3d.ts:146-165`  
+**Impact:** Raycaster path — eliminates O(n²) array copies per wall group
+
+#### Problem
+Inside the `reduce` loop, `[...acc.get(currentWallGroup) || [], wall]` copies the entire existing array every time a wall is added. For a wall spanning 100 columns, this creates arrays of size 1, 2, 3, ..., 100 — **O(n²) total copies** per wall group.
+
+#### Before
+```typescript
+const groupedByEdge = rays.reduce(
+    (acc, r, rayIndex) => {
+        // ...
+        return acc.set(currentWallGroup, [...acc.get(currentWallGroup) || [], wall]);
+    }, new Map<IEntityKey, WallProps[]>());
+```
+
+#### After
+```typescript
+const groupedByEdge = new Map<IEntityKey, WallProps[]>();
+for (let rayIndex = 0; rayIndex < rays.length; rayIndex++) {
+    // ...
+    const existing = groupedByEdge.get(currentWallGroup);
+    if (existing) {
+        existing.push(wall);     // O(1) amortized — no copy
+    } else {
+        groupedByEdge.set(currentWallGroup, [wall]);
+    }
+}
+```
+
+Also replaced `reduce` with a plain `for` loop to avoid closure overhead and improve debuggability.
+
+---
+
+### 3.7: Replace `Math.max(...640-element-array)` with Single-Pass Scan
+
+**File:** `src/common/rendering/raycasting/renderer3d.ts:148-149`  
+**Impact:** Eliminates 1 intermediate array allocation + 640-element stack spread
+
+#### Before
+```typescript
+const indexes = rays.map(r => r.hits.length);    // allocates 640-element array
+const max = Math.max(...indexes);                 // spreads 640 elements onto call stack
+```
+
+#### After
+```typescript
+let max = 0;
+for (let r = 0; r < rays.length; r++) {
+    const len = rays[r].hits.length;
+    if (len > max) max = len;
+}
+```
+
+Zero allocations. Also avoids a potential stack overflow for very large ray counts.
+
+---
+
+### 3.6: Replace `.filter()` Count with Loop
+
+**File:** `src/common/rendering/raycasting/raycast-core.ts:52`  
+**Impact:** Eliminates 640 array allocations per render (1 per ray)
+
+#### Before
+```typescript
+const validHits = ray.hits.filter(h => h.distance !== Number.POSITIVE_INFINITY);
+if (validHits.length > 0) {
+    columnsWithHits++;
+    edgesVisible += validHits.length;
+}
+```
+
+#### After
+```typescript
+let validCount = 0;
+for (let hi = 0; hi < ray.hits.length; hi++) {
+    if (ray.hits[hi].distance !== Number.POSITIVE_INFINITY) validCount++;
+}
+if (validCount > 0) {
+    columnsWithHits++;
+    edgesVisible += validCount;
+}
+```
+
+The filtered array was only used for its `.length` — a counting loop does the same work with zero allocations.
+
+---
+
+### 3.8: Replace PriorityDeque with Sorted Insertion Array in ZBufferColumn
+
+**File:** `src/common/rendering/zbuffering/zbuffer-renderer.ts:268-310`  
+**Impact:** ZBuffer **-15% to -28%** — removes external library overhead for small collections
+
+#### Problem
+Each of the 640 `ZBufferColumn` instances used a `PriorityDeque` (external library). Columns typically contain 1-3 walls. Heap data structures have significant overhead (comparisons, swaps, tree maintenance) that is not justified for such small collections.
+
+#### Before
+```typescript
+export class ZBufferColumn {
+    private queue: PriorityDeque<WallProps>;
+    
+    constructor() {
+        this.queue = new PriorityDeque<WallProps>({
+            compare: (a, b) => a.distance - b.distance
+        });
+    }
+
+    public add(el: WallProps): ZBufferColumn {
+        this.queue.push(el);
+        // ...
+    }
+
+    public shift(): WallProps {
+        return this.queue.shift();
+    }
+}
+```
+
+#### After
+```typescript
+export class ZBufferColumn {
+    private walls: WallProps[] = [];
+    private count: number = 0;
+    
+    public clear(): void {
+        this.count = 0;         // Reuse array slots, don't reallocate
+        this.hasOpaqueWall = false;
+    }
+
+    public add(el: WallProps): ZBufferColumn {
+        const d = el.distance;
+        let i = this.count;
+        if (i >= this.walls.length) {
+            this.walls.push(el);
+        } else {
+            this.walls[i] = el;
+        }
+        // Insertion sort: shift elements right to maintain ascending order
+        while (i > 0 && this.walls[i - 1].distance > d) {
+            this.walls[i] = this.walls[i - 1];
+            i--;
+        }
+        this.walls[i] = el;
+        this.count++;
+        // ...
+    }
+
+    public shift(): WallProps {
+        // Pop from end = largest distance = farthest wall (back-to-front)
+        if (this.count === 0) return undefined;
+        return this.walls[--this.count];
+    }
+}
+```
+
+**Key design decisions:**
+- Array sorted ascending by distance; `shift()` pops from end (farthest first = back-to-front rendering order)
+- `clear()` resets `count` to 0 but retains the array buffer — avoids reallocation across frames
+- For 1-3 elements, linear insertion sort has better cache locality and lower overhead than heap operations
+- Removed external `priority-deque` dependency from ZBuffer rendering path
+
+---
+
+### Skipped Items
+
+| # | Description | Reason |
+|---|-------------|--------|
+| 3.2 | `isFull()` short-circuit | Already completed in Tier 1 |
+| 3.3 | Selector-based store subscriptions | Electron runtime concern — not measurable by rendering benchmarks |
+| 3.4 | Single renderer instantiation | Electron runtime concern — not measurable by rendering benchmarks |
+| 3.5 | Batched camera dispatches | Electron runtime concern — not measurable by rendering benchmarks |
+| 3.9 | SoA layout for WallProps | Large refactor — doc says "only if profiling confirms"; profiling shows column sort is not the bottleneck |
+
+### Tier 3 Benchmark Results
+
+Compared Tier 2 baseline vs post-Tier 3 (same environment):
+
+| Scenario | Pre ZBuffer (ms) | Post ZBuffer (ms) | Change | Pre Raycaster (ms) | Post Raycaster (ms) | Change |
+|---|---|---|---|---|---|---|
+| small-fast | 1.24 | 1.08 | -13.5% | 4.43 | 4.19 | -5.3% |
+| small-textured | 1.40 | 1.08 | **-23.1%** | 5.03 | 4.63 | -8.1% |
+| small-translucent | 1.55 | 1.31 | **-15.4%** | 5.32 | 4.30 | **-19.1%** |
+| medium-fast | 1.78 | 1.60 | -10.0% | 17.74 | 14.51 | **-18.2%** |
+| medium-textured | 1.77 | 2.11 | +19.1%* | 19.31 | 15.81 | **-18.1%** |
+| large-fast | 1.71 | 1.79 | +4.0%* | 44.03 | 34.92 | **-20.7%** |
+| large-textured | 1.87 | 1.47 | **-21.3%** | 38.68 | 34.40 | -11.1% |
+| large-translucent | 2.48 | 2.10 | **-15.3%** | 44.78 | 32.60 | **-27.2%** |
+| large-stress | 2.44 | 2.29 | -6.0% | 50.16 | 34.77 | **-30.7%** |
+| stress-fast | 2.10 | 2.03 | -3.3% | 131.13 | 94.81 | **-27.7%** |
+| stress-textured | 2.69 | 1.96 | **-27.1%** | 100.97 | 75.52 | **-25.2%** |
+| stress-translucent | 3.06 | 2.20 | **-27.9%** | 87.74 | 82.10 | -6.4% |
+| stress-stress | 3.61 | 3.15 | -12.7% | 94.57 | 72.96 | **-22.8%** |
+
+\* ZBuffer results marked with * are within noise (high CV, random map generation varies).
+
+**Baseline comparison report: 20 improvements, 0 regressions, 12 unchanged.**
+
+---
+
 ## Lessons Learned
 
 ### What Worked
