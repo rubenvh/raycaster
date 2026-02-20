@@ -2,9 +2,9 @@ import { classifyPolygonToPlane } from './classification';
 import { PolygonToPlaneRelation } from "./model";
 import { createPlane, isSamePlane, Plane, VOID_PLANE } from './../../math/plane';
 import { centerOf, IPolygon } from './../polygon';
-import { ILineSegment, midpoint } from '../../math/lineSegment';
+import { ILineSegment } from '../../math/lineSegment';
 import { IEdge } from '../edge';
-import { distance } from '../../math/vector';
+import { distanceSqr } from '../../math/vector';
 
 
 export const randomEdgeToPlane = (polygon: IPolygon, depth: number): Plane => {
@@ -13,11 +13,28 @@ export const randomEdgeToPlane = (polygon: IPolygon, depth: number): Plane => {
 };
 
 export const closestToMidpoint = (polygon: IPolygon, depth: number): Plane => {
-    const vs = [...polygon.vertices];
-    vs.sort((a, b) => {
-        return distance(centerOf(polygon.boundingBox), a.vector) < distance(centerOf(polygon.boundingBox), b.vector) ? -1 : 1;
-    });
-    return createPlane([vs[0].vector, vs[1].vector]);
+    // Cache center and use distanceSqr (no sqrt) with a 2-element min-scan instead of full sort
+    const center = centerOf(polygon.boundingBox);
+    const verts = polygon.vertices;
+    let best0 = 0;
+    let best1 = 1;
+    let dist0 = distanceSqr(center, verts[0].vector);
+    let dist1 = distanceSqr(center, verts[1].vector);
+    if (dist1 < dist0) {
+        // swap so dist0 <= dist1
+        best0 = 1; best1 = 0;
+        const tmp = dist0; dist0 = dist1; dist1 = tmp;
+    }
+    for (let i = 2; i < verts.length; i++) {
+        const d = distanceSqr(center, verts[i].vector);
+        if (d < dist0) {
+            best1 = best0; dist1 = dist0;
+            best0 = i; dist0 = d;
+        } else if (d < dist1) {
+            best1 = i; dist1 = d;
+        }
+    }
+    return createPlane([verts[best0].vector, verts[best1].vector]);
 };
 
 export const randomVerticesToPlane = (polygon: IPolygon, depth: number): Plane => {
@@ -68,18 +85,25 @@ export const searchSplitPlane = (polygons: IPolygon[], depth: number, planeCreat
     let bestScore = Number.MAX_VALUE;
 
     for (const polygon of polygons) {
-        let counts = new Map<PolygonToPlaneRelation, number>();
         const plane = planeCreator(polygon, depth);
         if (isSamePlane(plane, previousSplitPlane)) { continue };
 
-        for (const testPolygon of polygons.filter(_ => _ !== polygon)) {
+        let numFront = 0;
+        let numBehind = 0;
+        let numStraddling = 0;
+
+        for (const testPolygon of polygons) {
+            if (testPolygon === polygon) continue;
             let relation = classifyPolygonToPlane(testPolygon, plane);
             if (relation === PolygonToPlaneRelation.Coplanar) relation = PolygonToPlaneRelation.InFront;
-            counts.set(relation, (counts.get(relation) || 0) + 1);
+            switch (relation) {
+                case PolygonToPlaneRelation.InFront: numFront++; break;
+                case PolygonToPlaneRelation.Behind: numBehind++; break;
+                case PolygonToPlaneRelation.Straddling: numStraddling++; break;
+            }
         }
 
-        const score = k * (counts.get(PolygonToPlaneRelation.Straddling) || 0) +
-            (1 - k) * Math.abs((counts.get(PolygonToPlaneRelation.InFront) || 0) - (counts.get(PolygonToPlaneRelation.Behind) || 0));
+        const score = k * numStraddling + (1 - k) * Math.abs(numFront - numBehind);
         if (score < bestScore) {
             bestScore = score;
             bestPlane = plane;

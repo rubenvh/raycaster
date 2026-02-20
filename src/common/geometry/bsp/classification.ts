@@ -20,9 +20,11 @@ export function classifyPolygonToPlane(polygon: IPolygon, plane: Plane): Polygon
         switch (classifyPointToPlane(vertex.vector, plane)) {
             case PointToPlaneRelation.InFront:
                 numInFront++;
+                if (numBehind > 0) return PolygonToPlaneRelation.Straddling;
                 break;
             case PointToPlaneRelation.Behind:
                 numBehind++;
+                if (numInFront > 0) return PolygonToPlaneRelation.Straddling;
                 break;
         }        
     }

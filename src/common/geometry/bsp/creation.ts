@@ -37,9 +37,11 @@ export function buildBspTree(polygons: IPolygon[], depth: number = 0, maxDepth =
             case PolygonToPlaneRelation.Straddling:
                 const [front, back] = splitPolygon(polygon, splitPlane);
 
-                // check if polygons are split correctly:
-                if (!front.vertices.map(v => classifyPointToPlane(v.vector, splitPlane)).every(c => c === PointToPlaneRelation.InFront || c === PointToPlaneRelation.On)) { console.log('FRONT: not all vertex in front of plane'); }
-                if (!back.vertices.map(v => classifyPointToPlane(v.vector, splitPlane)).every(c => c === PointToPlaneRelation.Behind || c === PointToPlaneRelation.On)) { console.log('BACK: not all vertex in back of plane'); }
+                // Debug validation: only run in development
+                if (process.env.NODE_ENV !== 'production') {
+                    if (!front.vertices.map(v => classifyPointToPlane(v.vector, splitPlane)).every(c => c === PointToPlaneRelation.InFront || c === PointToPlaneRelation.On)) { console.log('FRONT: not all vertex in front of plane'); }
+                    if (!back.vertices.map(v => classifyPointToPlane(v.vector, splitPlane)).every(c => c === PointToPlaneRelation.Behind || c === PointToPlaneRelation.On)) { console.log('BACK: not all vertex in back of plane'); }
+                }
 
                 frontList.push(front);
                 backList.push(back);
@@ -47,7 +49,7 @@ export function buildBspTree(polygons: IPolygon[], depth: number = 0, maxDepth =
         }
     }
 
-    const frontTree = buildBspTree(frontList, depth + 1, maxDepth);
-    const backTree = buildBspTree(backList, depth + 1, maxDepth);
+    const frontTree = buildBspTree(frontList, depth + 1, maxDepth, splitPlane);
+    const backTree = buildBspTree(backList, depth + 1, maxDepth, splitPlane);
     return createNode(splitPlane, frontTree, backTree, coplanarList);
 }

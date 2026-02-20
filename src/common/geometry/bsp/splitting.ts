@@ -24,6 +24,7 @@ export const pickSplittingPlane = (polygons: IPolygon[], depth: number, previous
             && score <= bestScore) {
             plane = p;
             bestScore = score;
+            if (bestScore === 0) break; // Perfect split found, no need to try remaining strategies
         }
     }
     return plane;

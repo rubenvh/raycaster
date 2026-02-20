@@ -2,7 +2,7 @@
 
 **Date:** February 20, 2026  
 **Author:** OpenCode  
-**Total Improvement:** ZBuffer up to -90%, Raycaster up to -32% (core rendering); Canvas pipeline: allocation elimination + O(n²)→O(n) fixes (Tiers 1-4 complete)
+**Total Improvement:** ZBuffer up to -90%, Raycaster up to -32% (core rendering); Canvas pipeline: allocation elimination + O(n²)→O(n) fixes; BSP build-time: O(n²)→O(n) + early exits (Tiers 1-5 complete)
 
 This document details all performance optimizations applied to the raycaster rendering engine, with before/after code samples and measured impact.
 
@@ -22,7 +22,8 @@ This document details all performance optimizations applied to the raycaster ren
 10. [Tier 2 Optimizations: Redundant Computations](#tier-2-optimizations-redundant-computations)
 11. [Tier 3 Optimizations: Data Structures and Algorithms](#tier-3-optimizations-data-structures-and-algorithms)
 12. [Tier 4 Optimizations: Canvas Rendering Pipeline](#tier-4-optimizations-canvas-rendering-pipeline)
-13. [Lessons Learned](#lessons-learned)
+13. [Tier 5 Optimizations: BSP Build-Time Improvements](#tier-5-optimizations-bsp-build-time-improvements)
+14. [Lessons Learned](#lessons-learned)
 
 ---
 
@@ -1507,6 +1508,247 @@ const base64 = btoa(chunks.join(''));
 | 4.6 | Cached `toDataURL()` | Caching | O(1) vs PNG-encode per call |
 | 4.7 | Diff texture sources | Algorithmic | O(1) vs O(N) texture creation on add |
 | 4.8 | Chunked base64 encoding | Algorithmic | O(n) vs O(n²) string building |
+
+---
+
+## Tier 5 Optimizations: BSP Build-Time Improvements
+
+**Date:** February 20, 2026  
+**Impact:** Map loading time improvements (not per-frame rendering)  
+**Items completed:** 5.1, 5.2, 5.3, 5.4, 5.5, 5.6 (all 6)
+
+These optimizations target BSP tree construction, which happens during map loading. They reduce build time through algorithmic improvements, early exits, and allocation elimination. Per-frame rendering benchmarks are unaffected since BSP construction only runs once per map load.
+
+### 5.1: Eliminate O(n²) Filter + Map Allocation in `searchSplitPlane`
+
+**File:** `src/common/geometry/bsp/splitting-strategies.ts:62-115`
+
+#### Problem
+`searchSplitPlane` had two issues:
+1. `polygons.filter(_ => _ !== polygon)` creates a new array on every outer iteration — O(n) allocations of O(n) arrays = O(n²) total
+2. `new Map<PolygonToPlaneRelation, number>()` created a Map per polygon just to count 3 values
+
+#### Before
+```typescript
+for (const polygon of polygons) {
+    let counts = new Map<PolygonToPlaneRelation, number>();
+    const plane = planeCreator(polygon, depth);
+    // ...
+    for (const testPolygon of polygons.filter(_ => _ !== polygon)) {
+        let relation = classifyPolygonToPlane(testPolygon, plane);
+        if (relation === PolygonToPlaneRelation.Coplanar) relation = PolygonToPlaneRelation.InFront;
+        counts.set(relation, (counts.get(relation) || 0) + 1);
+    }
+    const score = k * (counts.get(PolygonToPlaneRelation.Straddling) || 0) + ...;
+}
+```
+
+#### After
+```typescript
+for (const polygon of polygons) {
+    const plane = planeCreator(polygon, depth);
+    // ...
+    let numFront = 0, numBehind = 0, numStraddling = 0;
+
+    for (const testPolygon of polygons) {
+        if (testPolygon === polygon) continue;  // skip self, no filter allocation
+        let relation = classifyPolygonToPlane(testPolygon, plane);
+        if (relation === PolygonToPlaneRelation.Coplanar) relation = PolygonToPlaneRelation.InFront;
+        switch (relation) {
+            case PolygonToPlaneRelation.InFront: numFront++; break;
+            case PolygonToPlaneRelation.Behind: numBehind++; break;
+            case PolygonToPlaneRelation.Straddling: numStraddling++; break;
+        }
+    }
+    const score = k * numStraddling + (1 - k) * Math.abs(numFront - numBehind);
+}
+```
+
+**Impact:** Eliminates N array allocations of size N-1 per strategy per BSP node. For a 200-polygon map with ~5 strategies, that's ~1,000 array allocations of ~200 elements each. Also eliminates N Map allocations per strategy.
+
+---
+
+### 5.2: Guard Debug Validation Behind `NODE_ENV` Check
+
+**File:** `src/common/geometry/bsp/creation.ts:40-44`
+
+#### Problem
+Two `.map().every()` chains run on every straddling polygon during BSP construction, even in production. Each allocates a temporary array and calls `classifyPointToPlane` for every vertex — purely for debug logging.
+
+#### Before
+```typescript
+case PolygonToPlaneRelation.Straddling:
+    const [front, back] = splitPolygon(polygon, splitPlane);
+    if (!front.vertices.map(v => classifyPointToPlane(v.vector, splitPlane)).every(...)) { console.log(...); }
+    if (!back.vertices.map(v => classifyPointToPlane(v.vector, splitPlane)).every(...)) { console.log(...); }
+```
+
+#### After
+```typescript
+case PolygonToPlaneRelation.Straddling:
+    const [front, back] = splitPolygon(polygon, splitPlane);
+    if (process.env.NODE_ENV !== 'production') {
+        if (!front.vertices.map(v => classifyPointToPlane(v.vector, splitPlane)).every(...)) { console.log(...); }
+        if (!back.vertices.map(v => classifyPointToPlane(v.vector, splitPlane)).every(...)) { console.log(...); }
+    }
+```
+
+**Impact:** In production builds, eliminates 2 `.map()` array allocations + 2N `classifyPointToPlane` calls per straddling polygon. Still runs in test/development for catching BSP splitting bugs.
+
+---
+
+### 5.3: Early-Exit `classifyPolygonToPlane` on Straddling
+
+**File:** `src/common/geometry/bsp/classification.ts:19-30`
+
+#### Problem
+The function iterates through ALL vertices before checking if the polygon straddles the plane. For a polygon with 20 vertices where the first two are on opposite sides, it wastes 18 iterations.
+
+#### Before
+```typescript
+for (const vertex of polygon.vertices) {
+    switch (classifyPointToPlane(vertex.vector, plane)) {
+        case PointToPlaneRelation.InFront: numInFront++; break;
+        case PointToPlaneRelation.Behind: numBehind++; break;
+    }
+}
+// Check AFTER full iteration:
+if (numBehind != 0 && numInFront != 0) { return PolygonToPlaneRelation.Straddling; }
+```
+
+#### After
+```typescript
+for (const vertex of polygon.vertices) {
+    switch (classifyPointToPlane(vertex.vector, plane)) {
+        case PointToPlaneRelation.InFront:
+            numInFront++;
+            if (numBehind > 0) return PolygonToPlaneRelation.Straddling;
+            break;
+        case PointToPlaneRelation.Behind:
+            numBehind++;
+            if (numInFront > 0) return PolygonToPlaneRelation.Straddling;
+            break;
+    }
+}
+```
+
+**Impact:** For straddling polygons, exits as soon as vertices are found on both sides (typically after 2-4 iterations instead of all N). This function is called O(n²) times during BSP construction (every polygon tested against every candidate split plane), so early exits compound significantly.
+
+---
+
+### 5.4: Cache Center + Use `distanceSqr` in `closestToMidpoint`
+
+**File:** `src/common/geometry/bsp/splitting-strategies.ts:15-38`
+
+#### Problem
+Three issues in the original:
+1. `centerOf(polygon.boundingBox)` recomputed in every sort comparison — O(n log n) calls for what should be 1
+2. `distance()` (with `sqrt`) used when only relative ordering matters — `distanceSqr` is sufficient
+3. Full array sort to find just the 2 closest vertices — O(n log n) when O(n) suffices
+
+#### Before
+```typescript
+export const closestToMidpoint = (polygon: IPolygon, depth: number): Plane => {
+    const vs = [...polygon.vertices];  // Array copy
+    vs.sort((a, b) => {
+        return distance(centerOf(polygon.boundingBox), a.vector)  // center recomputed per comparison
+             < distance(centerOf(polygon.boundingBox), b.vector) ? -1 : 1;  // sqrt per comparison
+    });
+    return createPlane([vs[0].vector, vs[1].vector]);
+};
+```
+
+#### After
+```typescript
+export const closestToMidpoint = (polygon: IPolygon, depth: number): Plane => {
+    const center = centerOf(polygon.boundingBox);  // Compute once
+    const verts = polygon.vertices;                 // No array copy
+    let best0 = 0, best1 = 1;
+    let dist0 = distanceSqr(center, verts[0].vector);  // No sqrt
+    let dist1 = distanceSqr(center, verts[1].vector);
+    if (dist1 < dist0) { /* swap */ }
+    for (let i = 2; i < verts.length; i++) {
+        const d = distanceSqr(center, verts[i].vector);
+        if (d < dist0) { best1 = best0; dist1 = dist0; best0 = i; dist0 = d; }
+        else if (d < dist1) { best1 = i; dist1 = d; }
+    }
+    return createPlane([verts[best0].vector, verts[best1].vector]);
+};
+```
+
+**Impact:**
+- Center computation: O(n log n) → O(1)
+- Distance: Eliminates O(n log n) `sqrt` calls → O(n) `distanceSqr` (no sqrt)
+- Sort: O(n log n) → O(n) min-scan
+- Eliminates 1 array allocation (no `[...spread]` copy)
+
+---
+
+### 5.5: Forward `previousSplitPlane` to Recursive Calls
+
+**File:** `src/common/geometry/bsp/creation.ts:52-53`
+
+#### Problem
+Recursive `buildBspTree` calls defaulted `previousSplitPlane` to `VOID_PLANE` instead of forwarding the parent's split plane. This meant child nodes could re-select the same splitting plane as their parent, leading to wasted work and potentially degenerate splits.
+
+#### Before
+```typescript
+const frontTree = buildBspTree(frontList, depth + 1, maxDepth);  // defaults to VOID_PLANE
+const backTree = buildBspTree(backList, depth + 1, maxDepth);    // defaults to VOID_PLANE
+```
+
+#### After
+```typescript
+const frontTree = buildBspTree(frontList, depth + 1, maxDepth, splitPlane);
+const backTree = buildBspTree(backList, depth + 1, maxDepth, splitPlane);
+```
+
+**Impact:** Prevents redundant split plane selection in child nodes. The `searchSplitPlane` function already has `isSamePlane(plane, previousSplitPlane)` checks that skip duplicate planes — but those checks were useless when `previousSplitPlane` was always `VOID_PLANE`. This improves both BSP build time and tree quality.
+
+---
+
+### 5.6: Early-Out in `pickSplittingPlane` on Perfect Score
+
+**File:** `src/common/geometry/bsp/splitting.ts:18-28`
+
+#### Problem
+All 5 splitting strategies run for every polygon set, even if an earlier strategy found a perfect split (score = 0, meaning zero straddling polygons and perfect balance).
+
+#### Before
+```typescript
+for (let s of SPLITTING_STRATEGIES) {
+    let [p, score] = searchSplitPlane(...);
+    if (score <= bestScore) { plane = p; bestScore = score; }
+}
+```
+
+#### After
+```typescript
+for (let s of SPLITTING_STRATEGIES) {
+    let [p, score] = searchSplitPlane(...);
+    if (score <= bestScore) {
+        plane = p; bestScore = score;
+        if (bestScore === 0) break;  // Perfect split, skip remaining strategies
+    }
+}
+```
+
+**Impact:** When the first or second strategy finds a perfect split, the remaining 3-4 strategies (each O(n²)) are skipped entirely. The benefit depends on the geometry — maps with many axis-aligned walls will hit perfect splits more often.
+
+---
+
+### Tier 5 Summary
+
+| Item | Description | Type | Impact |
+|------|-------------|------|--------|
+| 5.1 | O(n²) filter → `continue`; Map → counters | Algorithmic + allocation | O(n) arrays + N Maps eliminated per strategy |
+| 5.2 | Debug validation behind `NODE_ENV` | Dead code elimination | 2 `.map()` + 2N calls per straddling polygon |
+| 5.3 | Early-exit on straddling detection | Early termination | Saves N-2 iterations per straddling polygon |
+| 5.4 | Cache center + distanceSqr + min-scan | Algorithmic | O(n log n) → O(n), eliminates sqrt |
+| 5.5 | Forward `previousSplitPlane` | Correctness + efficiency | Prevents duplicate split plane selection |
+| 5.6 | Early-out on perfect score | Early termination | Skips remaining O(n²) strategies |
+
+**Verification:** All 1083 unit tests pass, all 81 BSP tests pass, all 12 renderer-comparison tests pass. Per-frame rendering benchmarks show no regressions (Tier 5 targets BSP build-time, not rendering).
 
 ---
 
