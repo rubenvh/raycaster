@@ -1,7 +1,7 @@
-import { createLeaf, createNode, IBSPNode, NULL_NODE, PointToPlaneRelation, PolygonToPlaneRelation } from './model';
+import { createLeaf, createNode, IBSPNode, NULL_NODE, PolygonToPlaneRelation } from './model';
 import { IPolygon, isConvex } from './../polygon';
 import { pickSplittingPlane, splitPolygon } from './splitting';
-import { classifyPointToPlane, classifyPolygonToPlane } from './classification';
+import { classifyPolygonToPlane } from './classification';
 import { isSamePlane, Plane, VOID_PLANE } from '../../math/plane';
 
 const MAX_DEPTH = 40;
@@ -36,12 +36,6 @@ export function buildBspTree(polygons: IPolygon[], depth: number = 0, maxDepth =
                 break;
             case PolygonToPlaneRelation.Straddling:
                 const [front, back] = splitPolygon(polygon, splitPlane);
-
-                // Debug validation: only run in development
-                if (process.env.NODE_ENV !== 'production') {
-                    if (!front.vertices.map(v => classifyPointToPlane(v.vector, splitPlane)).every(c => c === PointToPlaneRelation.InFront || c === PointToPlaneRelation.On)) { console.log('FRONT: not all vertex in front of plane'); }
-                    if (!back.vertices.map(v => classifyPointToPlane(v.vector, splitPlane)).every(c => c === PointToPlaneRelation.Behind || c === PointToPlaneRelation.On)) { console.log('BACK: not all vertex in back of plane'); }
-                }
 
                 frontList.push(front);
                 backList.push(back);

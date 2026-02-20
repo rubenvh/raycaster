@@ -1515,7 +1515,7 @@ const base64 = btoa(chunks.join(''));
 
 **Date:** February 20, 2026  
 **Impact:** Map loading time improvements (not per-frame rendering)  
-**Items completed:** 5.1, 5.2, 5.3, 5.4, 5.5, 5.6 (all 6)
+**Items completed:** 5.1, 5.3, 5.4, 5.5, 5.6 (5 items)
 
 These optimizations target BSP tree construction, which happens during map loading. They reduce build time through algorithmic improvements, early exits, and allocation elimination. Per-frame rendering benchmarks are unaffected since BSP construction only runs once per map load.
 
@@ -1565,35 +1565,6 @@ for (const polygon of polygons) {
 ```
 
 **Impact:** Eliminates N array allocations of size N-1 per strategy per BSP node. For a 200-polygon map with ~5 strategies, that's ~1,000 array allocations of ~200 elements each. Also eliminates N Map allocations per strategy.
-
----
-
-### 5.2: Guard Debug Validation Behind `NODE_ENV` Check
-
-**File:** `src/common/geometry/bsp/creation.ts:40-44`
-
-#### Problem
-Two `.map().every()` chains run on every straddling polygon during BSP construction, even in production. Each allocates a temporary array and calls `classifyPointToPlane` for every vertex — purely for debug logging.
-
-#### Before
-```typescript
-case PolygonToPlaneRelation.Straddling:
-    const [front, back] = splitPolygon(polygon, splitPlane);
-    if (!front.vertices.map(v => classifyPointToPlane(v.vector, splitPlane)).every(...)) { console.log(...); }
-    if (!back.vertices.map(v => classifyPointToPlane(v.vector, splitPlane)).every(...)) { console.log(...); }
-```
-
-#### After
-```typescript
-case PolygonToPlaneRelation.Straddling:
-    const [front, back] = splitPolygon(polygon, splitPlane);
-    if (process.env.NODE_ENV !== 'production') {
-        if (!front.vertices.map(v => classifyPointToPlane(v.vector, splitPlane)).every(...)) { console.log(...); }
-        if (!back.vertices.map(v => classifyPointToPlane(v.vector, splitPlane)).every(...)) { console.log(...); }
-    }
-```
-
-**Impact:** In production builds, eliminates 2 `.map()` array allocations + 2N `classifyPointToPlane` calls per straddling polygon. Still runs in test/development for catching BSP splitting bugs.
 
 ---
 
@@ -1742,7 +1713,6 @@ for (let s of SPLITTING_STRATEGIES) {
 | Item | Description | Type | Impact |
 |------|-------------|------|--------|
 | 5.1 | O(n²) filter → `continue`; Map → counters | Algorithmic + allocation | O(n) arrays + N Maps eliminated per strategy |
-| 5.2 | Debug validation behind `NODE_ENV` | Dead code elimination | 2 `.map()` + 2N calls per straddling polygon |
 | 5.3 | Early-exit on straddling detection | Early termination | Saves N-2 iterations per straddling polygon |
 | 5.4 | Cache center + distanceSqr + min-scan | Algorithmic | O(n log n) → O(n), eliminates sqrt |
 | 5.5 | Forward `previousSplitPlane` | Correctness + efficiency | Prevents duplicate split plane selection |
