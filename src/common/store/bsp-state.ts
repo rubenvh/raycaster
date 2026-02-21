@@ -32,6 +32,16 @@ const emptyMutableDiff = (): IMutableEdgeDiff => ({
     modifiedEdgeIds: new Set(),
 });
 
+/**
+ * Bundles a BSP tree with its associated dirty edge state.
+ * Passed as a single parameter through rendering and collision call chains
+ * to reduce the number of parameters that must be threaded through intermediate functions.
+ */
+export interface IBspContext {
+    readonly tree: IBSPNode | null;
+    readonly dirtyEdges: IMutableEdgeDiff;
+}
+
 export interface IBspState {
     /** The current BSP tree (may be stale). null means no tree. */
     tree: IBSPNode | null;

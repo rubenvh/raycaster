@@ -17,6 +17,7 @@ import { loadGeometry, IGeometry } from '../geometry/geometry';
 import { buildBspTree } from '../geometry/bsp/creation';
 import { IBSPNode } from '../geometry/bsp/model';
 import { ZBufferCore } from './zbuffering/zbuffer-core';
+import { IBspContext } from '../store/bsp-state';
 import { 
   generateComplexMap, 
   DEFAULT_MAP_CONFIG,
@@ -119,7 +120,7 @@ function measureAllocation(
   geometry: IGeometry,
   cameraPath: CameraPath,
   frameCount: number,
-  bsp?: IBSPNode | null
+  bspContext?: IBspContext
 ): AllocationMetrics {
   const frameTimes: number[] = [];
   const heapSamples: number[] = [];
@@ -133,7 +134,7 @@ function measureAllocation(
     const camera = getCameraAtFrame(cameraPath, frame % 100); // Loop camera path
     
     const startTime = performance.now();
-    renderer.render(geometry, camera, RESOLUTION, bsp);
+    renderer.render(geometry, camera, RESOLUTION, bspContext);
     const endTime = performance.now();
     
     frameTimes.push(endTime - startTime);
@@ -197,7 +198,7 @@ describe('Allocation and GC Pressure Benchmark', () => {
         geometry,
         cameraPath,
         SUSTAINED_FRAMES,
-        bsp
+        { tree: bsp, dirtyEdges: { removedEdgeIds: new Set(), addedEdgeIds: new Set(), modifiedEdgeIds: new Set() } }
       );
       
       // Force GC between tests
@@ -211,7 +212,7 @@ describe('Allocation and GC Pressure Benchmark', () => {
         geometry,
         cameraPath,
         SUSTAINED_FRAMES,
-        bsp
+        { tree: bsp, dirtyEdges: { removedEdgeIds: new Set(), addedEdgeIds: new Set(), modifiedEdgeIds: new Set() } }
       );
       
       // Calculate comparison
@@ -286,7 +287,7 @@ describe('Allocation and GC Pressure Benchmark', () => {
       
       for (let frame = 0; frame < extendedFrames; frame++) {
         const camera = getCameraAtFrame(cameraPath, frame % 100);
-        renderer.render(geometry, camera, RESOLUTION, bsp);
+        renderer.render(geometry, camera, RESOLUTION, { tree: bsp, dirtyEdges: { removedEdgeIds: new Set(), addedEdgeIds: new Set(), modifiedEdgeIds: new Set() } });
         
         if (frame % sampleInterval === 0) {
           heapSamples.push(process.memoryUsage().heapUsed);

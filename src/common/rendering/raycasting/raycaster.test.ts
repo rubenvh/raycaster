@@ -5,6 +5,7 @@ import { makeCamera, makeRays } from '../../camera';
 import { IEdge } from '../../geometry/edge';
 import { buildBspTree } from '../../geometry/bsp/creation';
 import { IBSPNode } from '../../geometry/bsp/model';
+import { IBspContext } from '../../store/bsp-state';
 import { Vector } from '../../math/vector';
 import { createGeometry, IGeometry } from '../../geometry/geometry';
 import { Face } from '../../geometry/properties';
@@ -16,7 +17,7 @@ beforeEach(() => resetTestRandom());
  * Wall is a horizontal line at y=20, from x=0 to x=100.
  * Camera/rays shoot from origin area toward positive y.
  */
-const makeSimpleGeometry = (): { geometry: IGeometry, bsp: IBSPNode } => {
+const makeSimpleGeometry = (): { geometry: IGeometry, bsp: IBSPNode, bspContext: IBspContext } => {
     return geometries.withBsp([
         [[0, 20], [100, 20], [100, 30], [0, 30]]
     ]);
@@ -46,19 +47,19 @@ describe('raycaster', () => {
 
     describe('castCameraRay', () => {
         test('returns hit when ray intersects wall', () => {
-            const { geometry: geom, bsp } = makeSimpleGeometry();
+            const { geometry: geom, bspContext } = makeSimpleGeometry();
             const ray = makeRay([50, 0], [0, 1]);
-            const hit = castCameraRay(ray, geom, bsp);
+            const hit = castCameraRay(ray, geom, bspContext);
             expect(hit).toBeDefined();
             expect(hit.distance).toBeGreaterThan(0);
             expect(hit.distance).toBeLessThan(100);
         });
 
         test('returns infinity distance when ray misses all geometry', () => {
-            const { geometry: geom, bsp } = makeSimpleGeometry();
+            const { geometry: geom, bspContext } = makeSimpleGeometry();
             // Ray pointing away from geometry
             const ray = makeRay([50, 0], [0, -1]);
-            const hit = castCameraRay(ray, geom, bsp);
+            const hit = castCameraRay(ray, geom, bspContext);
             expect(hit).toBeDefined();
             // Either no hit or infinite distance
             expect(hit.distance).toBeGreaterThan(100);
@@ -77,7 +78,7 @@ describe('raycaster', () => {
             // Rebuild BSP
             const bsp = buildBspTree(geom.polygons);
             const ray = makeRay([50, 0], [0, 1]);
-            const hit = castCameraRay(ray, geom, bsp);
+            const hit = castCameraRay(ray, geom, { tree: bsp, dirtyEdges: { removedEdgeIds: new Set(), addedEdgeIds: new Set(), modifiedEdgeIds: new Set() } });
             // Should not find a solid hit (distance should be infinity)
             expect(hit.distance).toBe(Number.POSITIVE_INFINITY);
         });

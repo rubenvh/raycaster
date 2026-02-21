@@ -4,6 +4,8 @@ import { IntersectionStats, intersectRayEdge, intersectRayPolygons, IRay, lookup
 import { IEdge } from "../../geometry/edge";
 import { IGeometry } from "../../geometry/geometry";
 import { isTranslucent } from "../../geometry/properties";
+import { IBspContext, IMutableEdgeDiff } from "../../store/bsp-state";
+import { isStaleInBsp, collectDirtyEdges } from "../zbuffering/zbuffer-core";
 
 export type CastingStats = { polygons: Set<String>, edgeTests: [number, number], polygonTests: [number, number], edgeCount: number, polygonCount: number, edgePercentage: number };
 export const EMPTY_STATS: CastingStats = { polygons: new Set<String>(), edgeTests: [+Infinity, -Infinity], polygonTests: [+Infinity, -Infinity], polygonCount: 0, edgeCount: 0, edgePercentage: 0 };
@@ -14,14 +16,35 @@ const makeInfinity = (ray: IRay, stats: IntersectionStats): CastedRay => ({
     stats
 });
 
-export const castCameraRay = (ray: IRay, geometry: IGeometry, bsp?: IBSPNode | null): RayHit => {
+export const castCameraRay = (ray: IRay, geometry: IGeometry, bspContext?: IBspContext): RayHit => {
+    const bsp = bspContext?.tree ?? null;
+    const dirtyEdges = bspContext?.dirtyEdges;
     const options: RayCastingOptions = {
         // stop on closest non-immaterial edge
         earlyExitPredicate: hit => !hit.edge.immaterial,
-        // ignore all non-immaterial edges
-        edgeFilter: edge => !edge.immaterial
+        // ignore all immaterial edges; also skip stale edges (removed/modified since last BSP build)
+        edgeFilter: dirtyEdges
+            ? edge => !edge.immaterial && !isStaleInBsp(edge.id, dirtyEdges)
+            : edge => !edge.immaterial
     };
-    return castRays([ray], geometry, options, bsp).castedRays[0].hits[0];
+    let bspHit = castRays([ray], geometry, options, bsp).castedRays[0].hits[0];
+
+    // Phase 2: brute-force test dirty edges from current geometry (added + modified).
+    // These edges are either not in the BSP (added) or at stale positions in the BSP
+    // (modified). We must test their current geometry positions for collision.
+    if (dirtyEdges) {
+        const dirty = collectDirtyEdges(geometry, dirtyEdges);
+        for (let i = 0, n = dirty.length; i < n; i++) {
+            const edge = dirty[i];
+            if (edge.immaterial) continue;
+            const hit = intersectRayEdge(edge, ray);
+            if (hit?.intersection && hit.distance < bspHit.distance) {
+                bspHit = hit;
+            }
+        }
+    }
+
+    return bspHit;
 }
 export const castCollisionRays = (rays: IRay[], geometry: IGeometry, bsp?: IBSPNode | null): CastedRays => {
     const options: RayCastingOptions = {

@@ -7,11 +7,11 @@
 
 import { IGeometry } from '../../geometry/geometry';
 import { ICamera, makeRays } from '../../camera';
-import { IBSPNode } from '../../geometry/bsp/model';
 import { RenderMetrics } from '../benchmark-types';
 import { ColumnHit, IRendererCore, RenderResult } from '../renderer-core';
 import { castCollisionRays, CastedRays } from './raycaster';
 import { getMaterial } from '../../geometry/properties';
+import { IBspContext } from '../../store/bsp-state';
 
 /**
  * Pure raycasting renderer core implementing IRendererCore.
@@ -28,8 +28,9 @@ export class RaycastCore implements IRendererCore {
    */
   constructor(private captureHits: boolean = false) {}
 
-  render(geometry: IGeometry, camera: ICamera, resolution: number, bsp?: IBSPNode | null): RenderResult {
+  render(geometry: IGeometry, camera: ICamera, resolution: number, bspContext?: IBspContext): RenderResult {
     const startTime = performance.now();
+    const bsp = bspContext?.tree ?? null;
     
     // Generate rays for each screen column
     const rays = makeRays(resolution, camera);

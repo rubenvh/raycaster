@@ -2,12 +2,12 @@ import * as vector from './math/vector';
 import { ILine, ILineSegment, lineAngle } from "./math/lineSegment";
 import { castCameraRay } from './rendering/raycasting/raycaster';
 import { IGeometry } from './geometry/geometry';
-import { IBSPNode } from './geometry/bsp/model';
 import { intersectRaySegment, IRay, makeRay, makeRayWithCos } from './geometry/collision';
 import { createPlane, Plane } from './math/plane';
 import { cloneEdge, clipEdgeLightweight, IEdge, NULL_EDGE } from './geometry/edge';
 import { classifyPointToPlane } from './geometry/bsp/classification';
 import { PointToPlaneRelation } from './geometry/bsp/model';
+import { IBspContext } from './store/bsp-state';
 
 type ICameraData = { position: vector.Vector, direction: vector.Vector, plane?: vector.Vector };
 export type ICamera = ICameraData & {
@@ -66,8 +66,8 @@ export const freeMove = (ratio: number, camera: ICamera) => {
     let delta = vector.scale(ratio, camera.direction);
     return changeLocation(delta, camera);
 };
-export const move = (direction: 1 | -1, camera: ICamera, geometry: IGeometry, speed: number = 0.15, bsp?: IBSPNode | null): ICamera =>
-    constrainedMove(direction, camera, freeMove, makeDirectionRay, geometry, speed, bsp);
+export const move = (direction: 1 | -1, camera: ICamera, geometry: IGeometry, speed: number = 0.15, bspContext?: IBspContext): ICamera =>
+    constrainedMove(direction, camera, freeMove, makeDirectionRay, geometry, speed, bspContext);
 
 export const rotate = (angle: number, camera: ICamera) => {
     return makeCamera({
@@ -84,8 +84,8 @@ export const freeStrafe = (ratio: number, camera: ICamera) => {
     let n = vector.scale(Math.abs(ratio), perp);
     return changeLocation(n, camera);
 };
-export const strafe = (direction: 1 | -1, camera: ICamera, geometry: IGeometry, speed: number = 0.15, bsp?: IBSPNode | null): ICamera =>
-    constrainedMove(direction, camera, freeStrafe, makeStrafeRay, geometry, speed, bsp);
+export const strafe = (direction: 1 | -1, camera: ICamera, geometry: IGeometry, speed: number = 0.15, bspContext?: IBspContext): ICamera =>
+    constrainedMove(direction, camera, freeStrafe, makeStrafeRay, geometry, speed, bspContext);
 
 const changeLocation = (delta: vector.Vector, camera: ICamera): ICamera => {
     return makeCamera({ ...camera, position: vector.add(camera.position, delta) });
@@ -99,14 +99,14 @@ const constrainedMove = (direction: 1 | -1, cam: ICamera,
     raymaker: (direction: 1 | -1, cam: ICamera) => IRay,
     geometry: IGeometry,
     speed: number,
-    bsp?: IBSPNode | null): ICamera => {
+    bspContext?: IBspContext): ICamera => {
 
     let currentMover = mover;
     let currentRaymaker = raymaker;
 
     for (let iteration = 0; iteration < MAX_WALL_SLIDE_ITERATIONS; iteration++) {
         let movementRatio = direction * speed;
-        const hit = castCameraRay(currentRaymaker(direction, cam), geometry, bsp);
+        const hit = castCameraRay(currentRaymaker(direction, cam), geometry, bspContext);
         const stepSize = Math.abs(speed) * cam.directionNorm;
         const safeDistance = stepSize * SAFE_DISTANCE_FACTOR;
         if (hit.distance >= safeDistance) {

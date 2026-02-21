@@ -5,6 +5,8 @@ import { edgeFactory, edges, geometries, cameras, resetTestRandom } from './test
 import { Vector, norm, subtract, dot, perpendicular, normalize, scale, add } from './math/vector';
 import { buildBspTree } from './geometry/bsp/creation';
 import { NULL_EDGE, makeEdge } from './geometry/edge';
+import { IBspContext, IMutableEdgeDiff } from './store/bsp-state';
+import { IEntityKey } from './geometry/entity';
 
 beforeEach(() => resetTestRandom());
 
@@ -216,42 +218,42 @@ describe('camera tests', () => {
     describe('move (constrained)', () => {
         test('moves forward when no wall in the way', () => {
             // Create geometry with a wall far away
-            const { geometry: geom, bsp } = geometries.withBsp([
+            const { geometry: geom, bsp, bspContext } = geometries.withBsp([
                 [[0, 100], [100, 100], [100, 200], [0, 200]]
             ]);
             const cam = makeCamera({ position: [50, 50], direction: [0, 10], plane: [15, 0] });
-            const result = move(1, cam, geom, undefined, bsp);
+            const result = move(1, cam, geom, undefined, bspContext);
             // Should move forward since wall is far away
             expect(result.position[1]).toBeGreaterThan(cam.position[1]);
         });
 
         test('moves backward when no wall behind', () => {
-            const { geometry: geom, bsp } = geometries.withBsp([
+            const { geometry: geom, bsp, bspContext } = geometries.withBsp([
                 [[0, 100], [100, 100], [100, 200], [0, 200]]
             ]);
             const cam = makeCamera({ position: [50, 50], direction: [0, 10], plane: [15, 0] });
-            const result = move(-1, cam, geom, undefined, bsp);
+            const result = move(-1, cam, geom, undefined, bspContext);
             expect(result.position[1]).toBeLessThan(cam.position[1]);
         });
 
         test('stops when wall is very close', () => {
             // Wall directly in front, very close
-            const { geometry: geom, bsp } = geometries.withBsp([
+            const { geometry: geom, bsp, bspContext } = geometries.withBsp([
                 [[0, 51], [100, 51], [100, 52], [0, 52]]
             ]);
             const cam = makeCamera({ position: [50, 50], direction: [0, 10], plane: [15, 0] });
-            const result = move(1, cam, geom, undefined, bsp);
+            const result = move(1, cam, geom, undefined, bspContext);
             // Should not move much or stay in place due to collision
             expect(Math.abs(result.position[1] - cam.position[1])).toBeLessThan(2);
         });
 
         test('uses custom speed parameter', () => {
-            const { geometry: geom, bsp } = geometries.withBsp([
+            const { geometry: geom, bsp, bspContext } = geometries.withBsp([
                 [[0, 1000], [100, 1000], [100, 1100], [0, 1100]]
             ]);
             const cam = makeCamera({ position: [50, 50], direction: [0, 10], plane: [15, 0] });
-            const slowResult = move(1, cam, geom, 0.05, bsp);
-            const fastResult = move(1, cam, geom, 0.5, bsp);
+            const slowResult = move(1, cam, geom, 0.05, bspContext);
+            const fastResult = move(1, cam, geom, 0.5, bspContext);
             // Faster speed should move further
             const slowDelta = Math.abs(slowResult.position[1] - cam.position[1]);
             const fastDelta = Math.abs(fastResult.position[1] - cam.position[1]);
@@ -261,11 +263,11 @@ describe('camera tests', () => {
 
     describe('strafe (constrained)', () => {
         test('strafes when no wall nearby', () => {
-            const { geometry: geom, bsp } = geometries.withBsp([
+            const { geometry: geom, bsp, bspContext } = geometries.withBsp([
                 [[-100, 0], [-100, 100], [-200, 100], [-200, 0]]
             ]);
             const cam = makeCamera({ position: [50, 50], direction: [0, 10], plane: [15, 0] });
-            const result = strafe(1, cam, geom, undefined, bsp);
+            const result = strafe(1, cam, geom, undefined, bspContext);
             // strafe direction 1 should use plane-based ray
             expect(result.position).not.toEqual(cam.position);
         });
@@ -424,6 +426,134 @@ describe('camera tests', () => {
             const result = isInView(edge, cam);
             // At least one point in front, so could be in view
             expect(typeof result).toBe('boolean');
+        });
+    });
+
+    describe('move/strafe with dirty edges', () => {
+        /** Collect all edge IDs from a geometry into a Set. */
+        const collectEdgeIds = (geometry: ReturnType<typeof geometries.withBsp>['geometry']): Set<IEntityKey> => {
+            const ids = new Set<IEntityKey>();
+            for (const p of geometry.polygons) {
+                for (const e of p.edges) {
+                    if (e.id) ids.add(e.id);
+                }
+            }
+            return ids;
+        };
+
+        const emptyDiff = (): IMutableEdgeDiff => ({
+            removedEdgeIds: new Set<IEntityKey>(),
+            addedEdgeIds: new Set<IEntityKey>(),
+            modifiedEdgeIds: new Set<IEntityKey>(),
+        });
+
+        test('move is blocked by a close wall without dirty edges', () => {
+            // Wall directly in front at y=52..53, camera at y=50 facing +y
+            const { geometry: geom, bsp, bspContext } = geometries.withBsp([
+                [[0, 52], [100, 52], [100, 53], [0, 53]]
+            ]);
+            const cam = makeCamera({ position: [50, 50], direction: [0, 10], plane: [15, 0] });
+            const result = move(1, cam, geom, undefined, bspContext);
+            // Should not move much due to collision
+            expect(Math.abs(result.position[1] - cam.position[1])).toBeLessThan(2);
+        });
+
+        test('moves through a wall when its edges are in removedEdgeIds', () => {
+            const { geometry: geom, bsp, bspContext } = geometries.withBsp([
+                [[0, 52], [100, 52], [100, 53], [0, 53]]
+            ]);
+            const cam = makeCamera({ position: [50, 50], direction: [0, 10], plane: [15, 0] });
+
+            // First confirm blocked without dirty edges
+            const blocked = move(1, cam, geom, undefined, bspContext);
+            expect(Math.abs(blocked.position[1] - cam.position[1])).toBeLessThan(2);
+
+            // Now mark all edges as removed — camera should move freely
+            // With speed=0.15 and direction=[0,10], one step moves 1.5 units
+            const diff = emptyDiff();
+            diff.removedEdgeIds = collectEdgeIds(geom);
+            const passed = move(1, cam, geom, undefined, { tree: bsp, dirtyEdges: diff });
+            // Should move the full step distance (1.5) without being blocked
+            expect(passed.position[1]).toBeCloseTo(cam.position[1] + 1.5, 5);
+        });
+
+        test('modified edges still block at current position (brute-force phase)', () => {
+            // Modified edges are skipped in the stale BSP (old positions), but the
+            // brute-force phase re-tests them from current geometry. Since the wall
+            // hasn't moved, collision still works.
+            const { geometry: geom, bsp, bspContext } = geometries.withBsp([
+                [[0, 52], [100, 52], [100, 53], [0, 53]]
+            ]);
+            const cam = makeCamera({ position: [50, 50], direction: [0, 10], plane: [15, 0] });
+
+            // Confirm blocked without dirty edges
+            const blocked = move(1, cam, geom, undefined, bspContext);
+            expect(blocked.position[1]).toBeCloseTo(cam.position[1], 5);
+
+            // Mark all edges as modified — brute-force phase re-tests them,
+            // so collision should still work
+            const diff = emptyDiff();
+            diff.modifiedEdgeIds = collectEdgeIds(geom);
+            const result = move(1, cam, geom, undefined, { tree: bsp, dirtyEdges: diff });
+            expect(result.position[1]).toBeCloseTo(cam.position[1], 5);
+        });
+
+        test('empty dirty diff does not change collision behavior', () => {
+            const { geometry: geom, bsp, bspContext } = geometries.withBsp([
+                [[0, 52], [100, 52], [100, 53], [0, 53]]
+            ]);
+            const cam = makeCamera({ position: [50, 50], direction: [0, 10], plane: [15, 0] });
+
+            const withoutDirty = move(1, cam, geom, undefined, bspContext);
+            const withEmptyDirty = move(1, cam, geom, undefined, { tree: bsp, dirtyEdges: emptyDiff() });
+            expect(withEmptyDirty.position[0]).toBeCloseTo(withoutDirty.position[0], 10);
+            expect(withEmptyDirty.position[1]).toBeCloseTo(withoutDirty.position[1], 10);
+        });
+
+        test('added edges block camera via brute-force on current geometry', () => {
+            // Build BSP from geometry WITHOUT the blocking wall
+            const { geometry: _farGeom, bsp, bspContext } = geometries.withBsp([
+                [[0, 200], [100, 200], [100, 300], [0, 300]]
+            ]);
+            // Current geometry HAS a blocking wall close to camera
+            const geom = geometries.from([
+                [[0, 52], [100, 52], [100, 53], [0, 53]]
+            ]);
+            const cam = makeCamera({ position: [50, 50], direction: [0, 10], plane: [15, 0] });
+
+            // Without dirty edges, BSP has no close wall — camera moves freely
+            const noDirty = move(1, cam, geom, undefined, bspContext);
+            // Camera should move freely (no close wall in BSP)
+            expect(noDirty.position[1]).toBeCloseTo(cam.position[1] + 1.5, 5);
+
+            // Mark the close wall's edges as added (not in BSP, only in geometry)
+            // Collision system should do brute-force pass on added edges
+            const diff = emptyDiff();
+            diff.addedEdgeIds = collectEdgeIds(geom);
+            const result = move(1, cam, geom, undefined, { tree: bsp, dirtyEdges: diff });
+            // Camera should be blocked by the newly added wall
+            expect(result.position[1]).toBeCloseTo(cam.position[1], 5);
+        });
+
+        test('strafe passes through a wall when its edges are in removedEdgeIds', () => {
+            // Wall to the left of camera: camera at x=50, wall at x=48..49
+            // Camera faces +y, strafe direction=1 moves in -x (perpendicular left)
+            const { geometry: geom, bsp, bspContext } = geometries.withBsp([
+                [[48, 0], [49, 0], [49, 100], [48, 100]]
+            ]);
+            const cam = makeCamera({ position: [50, 50], direction: [0, 10], plane: [15, 0] });
+
+            // Strafe direction=1 moves camera in -x direction (toward the wall)
+            const blocked = strafe(1, cam, geom, undefined, bspContext);
+            // Should be blocked or barely moved
+            expect(cam.position[0] - blocked.position[0]).toBeLessThan(3);
+
+            // Mark all edges as removed
+            const diff = emptyDiff();
+            diff.removedEdgeIds = collectEdgeIds(geom);
+            const passed = strafe(1, cam, geom, undefined, { tree: bsp, dirtyEdges: diff });
+            // Should move further since wall is skipped
+            expect(cam.position[0] - passed.position[0]).toBeGreaterThan(cam.position[0] - blocked.position[0]);
         });
     });
 

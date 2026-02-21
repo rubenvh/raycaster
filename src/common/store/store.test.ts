@@ -641,20 +641,20 @@ describe('player slice', () => {
 
     describe('moveCamera', () => {
         test('moves camera forward', () => {
-            const { geometry: geom, bsp } = geometries.withBsp([
+            const { geometry: geom, bspContext } = geometries.withBsp([
                 [[0, 1000], [100, 1000], [100, 1100], [0, 1100]]
             ]);
-            const state = playerReducer(initialState, moveCamera({ direction: 1, geometry: geom, bsp, speed: 0.15 }));
+            const state = playerReducer(initialState, moveCamera({ direction: 1, geometry: geom, bspContext, speed: 0.15 }));
             expect(state.camera.position[1]).toBeGreaterThan(50);
         });
     });
 
     describe('strafeCamera', () => {
         test('strafes camera', () => {
-            const { geometry: geom, bsp } = geometries.withBsp([
+            const { geometry: geom, bspContext } = geometries.withBsp([
                 [[-1000, 0], [-1000, 100], [-1100, 100], [-1100, 0]]
             ]);
-            const state = playerReducer(initialState, strafeCamera({ direction: 1, geometry: geom, bsp, speed: 0.15 }));
+            const state = playerReducer(initialState, strafeCamera({ direction: 1, geometry: geom, bspContext, speed: 0.15 }));
             expect(state.camera.position).not.toEqual(DEFAULT_CAMERA.position);
         });
     });

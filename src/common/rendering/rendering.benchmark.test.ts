@@ -24,6 +24,7 @@ import { IRendererCore } from './renderer-core';
 import { ZBufferCore } from './zbuffering/zbuffer-core';
 import { RaycastCore } from './raycasting/raycast-core';
 import { BenchmarkResult, BenchmarkReport, RenderMetrics } from './benchmark-types';
+import { IBspContext } from '../store/bsp-state';
 import { 
   generateComplexMap, 
   MapGeneratorConfig, 
@@ -192,13 +193,13 @@ function runRendererBenchmark(
   renderer: IRendererCore,
   geometry: IGeometry,
   cameraPath: CameraPath,
-  bsp?: IBSPNode | null
+  bspContext?: IBspContext
 ): RenderMetrics[] {
   const frameMetrics: RenderMetrics[] = [];
 
   for (let frame = 0; frame < FRAME_COUNT; frame++) {
     const camera = getCameraAtFrame(cameraPath, frame);
-    const result = renderer.render(geometry, camera, RESOLUTION, bsp);
+    const result = renderer.render(geometry, camera, RESOLUTION, bspContext);
     frameMetrics.push(result.metrics);
   }
 
@@ -332,7 +333,7 @@ describe('Rendering Performance Benchmark', () => {
               renderer,
               geometryNoBsp,
               cameraPath,
-              renderer.requiresBsp ? bsp : undefined
+              renderer.requiresBsp ? { tree: bsp, dirtyEdges: { removedEdgeIds: new Set(), addedEdgeIds: new Set(), modifiedEdgeIds: new Set() } } : undefined
             );
 
             // Create and store result

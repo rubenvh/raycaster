@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { adaptAngle, adaptDepth, DEFAULT_CAMERA, ICamera, makeCamera, move, rotate, strafe } from '../camera';
 import { IGeometry } from '../geometry/geometry';
-import { IBSPNode } from '../geometry/bsp/model';
+import { IBspContext } from './bsp-state';
 
 // Speed constants (units per second at 60fps baseline)
 // Original value was 0.15 per frame at 60fps = 9.0 per second
@@ -22,11 +22,11 @@ const slice = createSlice({
     rotateCamera: (state, action: PayloadAction<number>) => {       
         state.camera = rotate( action.payload, state.camera); 
     },
-    strafeCamera: (state, action: PayloadAction<{direction: 1|-1, geometry: IGeometry, bsp?: IBSPNode | null, speed: number}>) => {
-        state.camera = strafe(action.payload.direction, state.camera, action.payload.geometry, action.payload.speed, action.payload.bsp)
+    strafeCamera: (state, action: PayloadAction<{direction: 1|-1, geometry: IGeometry, bspContext?: IBspContext, speed: number}>) => {
+        state.camera = strafe(action.payload.direction, state.camera, action.payload.geometry, action.payload.speed, action.payload.bspContext)
     },    
-    moveCamera: (state, action: PayloadAction<{direction: 1|-1, geometry: IGeometry, bsp?: IBSPNode | null, speed: number}>) => {
-        state.camera = move(action.payload.direction, state.camera, action.payload.geometry, action.payload.speed, action.payload.bsp)
+    moveCamera: (state, action: PayloadAction<{direction: 1|-1, geometry: IGeometry, bspContext?: IBspContext, speed: number}>) => {
+        state.camera = move(action.payload.direction, state.camera, action.payload.geometry, action.payload.speed, action.payload.bspContext)
     },
     changeCameraAngle: (state, action: PayloadAction<1|-1>) => {
         state.camera = adaptAngle( action.payload, state.camera);

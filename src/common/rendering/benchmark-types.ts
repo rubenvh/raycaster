@@ -14,6 +14,10 @@ export interface RenderMetrics {
   edgesVisible: number;
   /** Number of screen columns processed */
   columnsProcessed: number;
+  /** Number of stale edges skipped during BSP walk (dirty/removed since last build) */
+  staleEdgesSkipped?: number;
+  /** Number of dirty edges tested via brute-force from current geometry */
+  dirtyEdgesTested?: number;
 }
 
 /**

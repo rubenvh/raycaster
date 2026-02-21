@@ -1,11 +1,11 @@
 import { norm } from "../math/vector";
 import { EMPTY_GEOMETRY } from "../geometry/geometry";
-import { IBSPNode } from "../geometry/bsp/model";
 import { useAppDispatch } from "../store";
 import { CAMERA_MOVE_SPEED, CAMERA_ROTATION_SPEED, changeCameraAngle, changeCameraDepth, moveCamera, rotateCamera, strafeCamera } from "../store/player";
 import { connect } from "../store/store-connector";
 import { bindFlagToKey, Flag, IActionHandler, makeFlag } from "./actions";
 import { ICamera } from "../camera";
+import { IBspContext } from "../store/bsp-state";
 
 const CAMERA_ACTIONS = ["turnleft","turnright","right","left","up","down",
 "camera_angle_up","camera_angle_down","camera_depth_up","camera_depth_down"] as const;
@@ -17,7 +17,7 @@ export class CameraActionsHandler implements IActionHandler {
         
     private flags: {[key in CameraAction]: Flag};
     private wallGeometry = EMPTY_GEOMETRY;
-    private bspTree: IBSPNode | null = null;
+    private bspContext: IBspContext | null = null;
     private camera: ICamera;
     private shiftHeld = false;
     private unsubscribe: () => void;
@@ -27,7 +27,7 @@ export class CameraActionsHandler implements IActionHandler {
         this.unsubscribe = connect(s => {            
             this.wallGeometry = s.walls.geometry;
             this.camera = s.player.camera;
-            this.bspTree = s.bsp.tree;
+            this.bspContext = { tree: s.bsp.tree, dirtyEdges: s.bsp.dirtyEdges };
         });
     }
 
@@ -86,6 +86,6 @@ export class CameraActionsHandler implements IActionHandler {
 
     isActive = () => true;
 
-    private move = (direction: 1|-1, speed: number) => dispatch(moveCamera({direction, geometry: this.wallGeometry, bsp: this.bspTree, speed}));
-    private strafe = (direction: 1|-1, speed: number) => dispatch(strafeCamera({direction, geometry: this.wallGeometry, bsp: this.bspTree, speed}));     
+    private move = (direction: 1|-1, speed: number) => dispatch(moveCamera({direction, geometry: this.wallGeometry, bspContext: this.bspContext, speed}));
+    private strafe = (direction: 1|-1, speed: number) => dispatch(strafeCamera({direction, geometry: this.wallGeometry, bspContext: this.bspContext, speed}));     
 }

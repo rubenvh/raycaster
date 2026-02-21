@@ -7,7 +7,6 @@ import { connect } from '../../store/store-connector';
 import { IRenderer } from '../renderer';
 import { IEdge, NULL_EDGE } from '../../geometry/edge';
 import { walkWithFrustum } from '../../geometry/bsp/querying';
-import { IBSPNode } from '../../geometry/bsp/model';
 import { distance } from '../../geometry/vertex';
 import { ILineSegment, segmentLength } from '../../math/lineSegment';
 import { castRaysOnEdgeRange } from '../raycasting/raycaster';
@@ -18,6 +17,8 @@ import { createPlane } from '../../math/plane';
 import { getMaterial, isTranslucent } from '../../geometry/properties';
 import { IWorldConfigState } from '../../store/world-config';
 import { statisticsUpdated } from '../../store/stats';
+import { IMutableEdgeDiff, IBspContext } from '../../store/bsp-state';
+import { isStaleInBsp, collectDirtyEdges } from './zbuffer-core';
 // T3.8: Removed PriorityDeque import — replaced with sorted array for small collections
 
 const dispatch = useAppDispatch();
@@ -30,7 +31,7 @@ export class ZBufferRenderer implements IRenderer {
     private resolution = 640;
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
-    private bspTree: IBSPNode | null = null;
+    private bspContext: IBspContext | null = null;
     private wallPainter: WallPainter;
     private worldConfig: IWorldConfigState;
     private lastUpdated;
@@ -52,14 +53,14 @@ export class ZBufferRenderer implements IRenderer {
             if (this.wallGeometry != s.walls.geometry) {
                 this.wallGeometry = s.walls.geometry;
             }
-            this.bspTree = s.bsp.tree;
+            this.bspContext = { tree: s.bsp.tree, dirtyEdges: s.bsp.dirtyEdges };
             this.worldConfig = s.worldConfig;
         });
     }
 
 
     public isActive(): boolean {
-        return !!this.bspTree
+        return !!this.bspContext?.tree
     }
 
     render(fps: number): void {
@@ -71,13 +72,18 @@ export class ZBufferRenderer implements IRenderer {
         let edgesTested: number = 0;
         let count = 0;
         let depth = 40;
+        const dirtyEdges = this.bspContext?.dirtyEdges;
         const shouldCollectStats = !this.lastUpdated || performance.now() - this.lastUpdated > 1000;
         let clippedSegments: {segment: ILineSegment, depth: number}[] = shouldCollectStats ? [] : null;
-        walkWithFrustum(this.bspTree, this.camera.position, this.camera.planes, (ps => {
+        walkWithFrustum(this.bspContext?.tree, this.camera.position, this.camera.planes, (ps => {
             let increment = 0;
             for (let p of ps) {
                 for (let e of p.edges) {
                     if (e.material == null) continue;
+                    
+                    // Skip stale edges (removed/modified since last BSP build)
+                    if (dirtyEdges && isStaleInBsp(e.id, dirtyEdges)) continue;
+                    
                     const clipped = clip(e, this.camera);
                     if (clipped === NULL_EDGE) continue;
 
@@ -94,6 +100,20 @@ export class ZBufferRenderer implements IRenderer {
             count = count + increment;
             return !this.buffer.isFull();
         }))
+        
+        // Brute-force iterate dirty edges from current geometry
+        if (dirtyEdges) {
+            const dirtyEdgeList = collectDirtyEdges(this.wallGeometry, dirtyEdges);
+            for (const e of dirtyEdgeList) {
+                if (e.material == null) continue;
+                const clipped = clip(e, this.camera);
+                if (clipped === NULL_EDGE) continue;
+                
+                if (clippedSegments) clippedSegments.push({ segment: clipped.segment, depth: count });
+                edgesTested++;
+                this.buffer.add(clipped, e.start.vector);
+            }
+        }
 
         // draw floor + sky
         const startDrawing = performance.now();

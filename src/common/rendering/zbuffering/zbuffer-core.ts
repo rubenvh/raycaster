@@ -8,7 +8,6 @@
 import { IGeometry } from '../../geometry/geometry';
 import { ICamera, clip, makeRays } from '../../camera';
 import { walk, walkWithFrustum } from '../../geometry/bsp/querying';
-import { IBSPNode } from '../../geometry/bsp/model';
 import { IEdge, NULL_EDGE } from '../../geometry/edge';
 import { IRay } from '../../geometry/collision';
 import { Vector } from '../../math/vector';
@@ -19,6 +18,8 @@ import { getMaterial } from '../../geometry/properties';
 import { RenderMetrics } from '../benchmark-types';
 import { ColumnHit, IRendererCore, RenderResult } from '../renderer-core';
 import { PriorityDeque } from 'priority-deque';
+import { IBspContext, IMutableEdgeDiff } from '../../store/bsp-state';
+import { IEntityKey } from '../../geometry/entity';
 
 /**
  * Simplified wall data for benchmarking (no drawing-specific fields).
@@ -80,6 +81,33 @@ class BenchmarkZBufferColumn {
 }
 
 /**
+ * Check if an edge is stale in the BSP tree (removed or modified since last build).
+ * Stale edges should be skipped during BSP walk — they'll be re-rendered from current geometry.
+ */
+export function isStaleInBsp(edgeId: IEntityKey | undefined, dirtyEdges: IMutableEdgeDiff): boolean {
+  if (edgeId == null) return false;
+  return dirtyEdges.removedEdgeIds.has(edgeId) || dirtyEdges.modifiedEdgeIds.has(edgeId);
+}
+
+/**
+ * Collect edges from current geometry that need brute-force rendering.
+ * These are edges that were added or modified since the last BSP build.
+ * Removed edges don't appear in current geometry, so they're naturally excluded.
+ */
+export function collectDirtyEdges(geometry: IGeometry, dirtyEdges: IMutableEdgeDiff): IEdge[] {
+  if (dirtyEdges.addedEdgeIds.size === 0 && dirtyEdges.modifiedEdgeIds.size === 0) return [];
+  const result: IEdge[] = [];
+  for (const p of geometry.polygons) {
+    for (const e of p.edges) {
+      if (e.id != null && (dirtyEdges.addedEdgeIds.has(e.id) || dirtyEdges.modifiedEdgeIds.has(e.id))) {
+        result.push(e);
+      }
+    }
+  }
+  return result;
+}
+
+/**
  * Pure ZBuffer renderer core implementing IRendererCore.
  * 
  * Performs BSP walk and visibility determination without actual drawing.
@@ -128,11 +156,15 @@ export class ZBufferCore implements IRendererCore {
     this.planeNumerator = p.d - (p.n[0] * camera.position[0] + p.n[1] * camera.position[1]);
   }
 
-  render(geometry: IGeometry, camera: ICamera, resolution: number, bsp?: IBSPNode | null): RenderResult {
+  render(geometry: IGeometry, camera: ICamera, resolution: number, bspContext?: IBspContext): RenderResult {
     const startTime = performance.now();
+    const bsp = bspContext?.tree ?? null;
+    const dirtyEdges = bspContext?.dirtyEdges;
     
     let edgesTested = 0;
     let edgesVisible = 0;
+    let staleEdgesSkipped = 0;
+    let dirtyEdgesTested = 0;
     
     // Update cached projection values for this camera
     this.updateCachedProjection(camera);
@@ -182,6 +214,12 @@ export class ZBufferCore implements IRendererCore {
             // Skip edges with no material
             if (e.material == null) continue;
             
+            // Skip stale edges (removed/modified since last BSP build)
+            if (dirtyEdges && isStaleInBsp(e.id, dirtyEdges)) {
+              staleEdgesSkipped++;
+              continue;
+            }
+            
             // Clip to camera frustum
             const clipped = clip(e, camera);
             if (clipped === NULL_EDGE) continue;
@@ -215,6 +253,32 @@ export class ZBufferCore implements IRendererCore {
       }
     }
     
+    // Brute-force iterate dirty edges from current geometry
+    if (dirtyEdges) {
+      const dirtyEdgeList = collectDirtyEdges(geometry, dirtyEdges);
+      for (const e of dirtyEdgeList) {
+        if (e.material == null) continue;
+        const clipped = clip(e, camera);
+        if (clipped === NULL_EDGE) continue;
+        
+        dirtyEdgesTested++;
+        edgesTested++;
+        
+        const added = this.addEdgeToBuffer(
+          clipped,
+          e.start.vector,
+          camera,
+          rays,
+          cols,
+          resolution
+        );
+        
+        if (added > 0) {
+          edgesVisible++;
+        }
+      }
+    }
+    
     // Count total columns that have content
     let columnsWithContent = 0;
     for (const col of cols) {
@@ -231,6 +295,8 @@ export class ZBufferCore implements IRendererCore {
         edgesTested,
         edgesVisible,
         columnsProcessed: columnsWithContent,
+        staleEdgesSkipped,
+        dirtyEdgesTested,
       },
     };
     

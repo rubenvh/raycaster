@@ -19,42 +19,42 @@ describe('RaycastCore', () => {
 
     describe('render', () => {
         test('returns metrics with render time', () => {
-            const { geometry: geom, bsp } = geometries.withBsp([
+            const { geometry: geom, bspContext } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 30], [0, 30]]
             ]);
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
             const core = new RaycastCore();
-            const result = core.render(geom, cam, 32, bsp);
+            const result = core.render(geom, cam, 32, bspContext);
             expect(result.metrics.renderTimeMs).toBeGreaterThanOrEqual(0);
         });
 
         test('returns edges tested count', () => {
-            const { geometry: geom, bsp } = geometries.withBsp([
+            const { geometry: geom, bspContext } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 30], [0, 30]]
             ]);
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
             const core = new RaycastCore();
-            const result = core.render(geom, cam, 32, bsp);
+            const result = core.render(geom, cam, 32, bspContext);
             expect(result.metrics.edgesTested).toBeGreaterThanOrEqual(0);
         });
 
         test('returns edges visible count when camera faces geometry', () => {
-            const { geometry: geom, bsp } = geometries.withBsp([
+            const { geometry: geom, bspContext } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 30], [0, 30]]
             ]);
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
             const core = new RaycastCore();
-            const result = core.render(geom, cam, 32, bsp);
+            const result = core.render(geom, cam, 32, bspContext);
             expect(result.metrics.edgesVisible).toBeGreaterThan(0);
         });
 
         test('returns columns processed count', () => {
-            const { geometry: geom, bsp } = geometries.withBsp([
+            const { geometry: geom, bspContext } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 30], [0, 30]]
             ]);
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
             const core = new RaycastCore();
-            const result = core.render(geom, cam, 32, bsp);
+            const result = core.render(geom, cam, 32, bspContext);
             expect(result.metrics.columnsProcessed).toBeGreaterThan(0);
         });
 
@@ -71,12 +71,12 @@ describe('RaycastCore', () => {
         });
 
         test('no visible edges when camera faces away', () => {
-            const { geometry: geom, bsp } = geometries.withBsp([
+            const { geometry: geom, bspContext } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 30], [0, 30]]
             ]);
             const cam = makeCamera({ position: [50, 0], direction: [0, -10], plane: [15, 0] });
             const core = new RaycastCore();
-            const result = core.render(geom, cam, 32, bsp);
+            const result = core.render(geom, cam, 32, bspContext);
             expect(result.metrics.edgesVisible).toBe(0);
         });
 
@@ -90,29 +90,29 @@ describe('RaycastCore', () => {
         });
 
         test('higher resolution creates more columns', () => {
-            const { geometry: geom, bsp } = geometries.withBsp([
+            const { geometry: geom, bspContext } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 30], [0, 30]]
             ]);
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
             const core = new RaycastCore();
-            const lowRes = core.render(geom, cam, 8, bsp);
-            const highRes = core.render(geom, cam, 64, bsp);
+            const lowRes = core.render(geom, cam, 8, bspContext);
+            const highRes = core.render(geom, cam, 64, bspContext);
             // Higher resolution should test at least as many rays
             expect(highRes.metrics.columnsProcessed).toBeGreaterThanOrEqual(lowRes.metrics.columnsProcessed);
         });
 
         test('multiple polygons result in more edges tested', () => {
-            const { geometry: singlePoly, bsp: singleBsp } = geometries.withBsp([
+            const { geometry: singlePoly, bspContext: singleBspContext } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 30], [0, 30]]
             ]);
-            const { geometry: multiPoly, bsp: multiBsp } = geometries.withBsp([
+            const { geometry: multiPoly, bspContext: multiBspContext } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 30], [0, 30]],
                 [[0, 40], [100, 40], [100, 50], [0, 50]],
             ]);
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
             const core = new RaycastCore();
-            const result1 = core.render(singlePoly, cam, 32, singleBsp);
-            const result2 = core.render(multiPoly, cam, 32, multiBsp);
+            const result1 = core.render(singlePoly, cam, 32, singleBspContext);
+            const result2 = core.render(multiPoly, cam, 32, multiBspContext);
             // More geometry should mean more visible edges
             expect(result2.metrics.edgesVisible).toBeGreaterThanOrEqual(result1.metrics.edgesVisible);
         });

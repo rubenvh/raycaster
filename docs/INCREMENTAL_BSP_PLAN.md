@@ -286,23 +286,46 @@ bspListenerMiddleware.startListening({
 
 **Additional files modified for BSP parameter threading (not in original plan):**
 Removing `bsp` from `IGeometry` required threading BSP as a separate parameter through the rendering and collision chain:
-- `src/common/camera.ts` — `move()`, `strafe()`, `constrainedMove()` accept `bsp?: IBSPNode | null`
-- `src/common/store/player.ts` — action payloads include `bsp` field
-- `src/common/rendering/renderer-core.ts` — `IRendererCore.render()` has `bsp` param
-- `src/common/rendering/raycasting/raycaster.ts` — all BSP-using functions accept `bsp` param
-- `src/common/rendering/raycasting/raycast-core.ts` — `render()` accepts and passes `bsp` param
-- `src/common/rendering/zbuffering/zbuffer-core.ts` — `render()` accepts and uses `bsp` param
-- `src/common/rendering/zbuffering/zbuffer-renderer.ts` — reads BSP from bspState via `connect()`
+- `src/common/camera.ts` — `move()`, `strafe()`, `constrainedMove()` accept `bspContext?: IBspContext`
+- `src/common/store/player.ts` — action payloads include `bspContext` field
+- `src/common/rendering/renderer-core.ts` — `IRendererCore.render()` has `bspContext` param
+- `src/common/rendering/raycasting/raycaster.ts` — all BSP-using functions accept `bsp` param (collision-only functions like `castCollisionRays` take raw `bsp`, rendering functions take `bspContext`)
+- `src/common/rendering/raycasting/raycast-core.ts` — `render()` accepts and passes `bspContext` param
+- `src/common/rendering/zbuffering/zbuffer-core.ts` — `render()` accepts and uses `bspContext` param
+- `src/common/rendering/zbuffering/zbuffer-renderer.ts` — reads BSP from `bspState` via `connect()`, stores as `bspContext` field
 - `src/common/rendering/raycasting/renderer3d.ts` — reads BSP from bspState via `connect()`
-- `src/common/actions/cameraActionsHandler.ts` — subscribes to `s.bsp.tree`, dispatches with `bsp`
+- `src/common/actions/cameraActionsHandler.ts` — subscribes to `s.bsp`, stores `bspContext`, dispatches with `bspContext`
 - `src/common/editor/mapEditor.ts` — subscribes to `s.bsp.tree`
 - `src/common/rendering/bspwalking/walker.ts` — subscribes to `s.bsp.tree`, `isActive()` uses `!!this.bspTree`
 - `src/common/geometry/bsp/bspGenerationStarter.ts` — dispatches `setBsp` from `bsp-state` instead of `updateBsp`
 - `src/common/storage/stateLoader.ts` — BSP save/load from bspState, legacy compatibility
 
+**IBspContext bundling (post-Phase 2 refactor):**
+After Phase 2 introduced `dirtyEdges` alongside `bsp` in many function signatures, the two were bundled into a single `IBspContext` type (defined in `bsp-state.ts`):
+
+```typescript
+interface IBspContext {
+    readonly tree: IBSPNode | null;
+    readonly dirtyEdges: IMutableEdgeDiff;
+}
+```
+
+Functions that previously took `(bsp?, dirtyEdges?)` as separate params now take `(bspContext?: IBspContext)` and destructure inside. This affected:
+- `renderer-core.ts` — `IRendererCore.render()` signature
+- `zbuffer-core.ts` — `ZBufferCore.render()`
+- `raycast-core.ts` — `RaycastCore.render()`
+- `raycaster.ts` — `castCameraRay()`
+- `camera.ts` — `move()`, `strafe()`, `constrainedMove()`
+- `player.ts` — `moveCamera`/`strafeCamera` payload types
+- `cameraActionsHandler.ts` — single `bspContext` field instead of `bspTree` + `dirtyEdges`
+- `zbuffer-renderer.ts` — single `bspContext` field instead of `bspTree` + `dirtyEdges`
+- `geometry.factory.ts` — `IGeometryWithBsp` type, `withBsp()` returns `{ geometry, bsp, bspContext }`
+
+Functions that ONLY use `bsp` (not `dirtyEdges`) were NOT changed: `castCollisionRays`, `castRays`, `detectCollisions`, `walker`, `mapEditor`, `renderer3d`.
+
 **Test file updates (10 files):**
 - `geometry.test.ts`, `store.test.ts`, `factories.test.ts`, `raycaster.test.ts`, `camera.test.ts`, `renderer-comparison.test.ts`, `raycast-core.test.ts`, `zbuffer.test.ts`, `rendering.benchmark.test.ts`, `allocation.benchmark.test.ts`
-- Factory `geometry.factory.ts` — added `IGeometryWithBsp` type, `withBsp()` returns `{ geometry, bsp }`
+- Factory `geometry.factory.ts` — added `IGeometryWithBsp` type, `withBsp()` returns `{ geometry, bsp, bspContext }`
 
 **Middleware tests:** 20 tests in `bsp-middleware.test.ts` covering all geometry mutations, undo/redo, no-op detection, accumulation, and cancellation semantics.
 
@@ -364,47 +387,85 @@ On **new file** (`clear()`): dispatches `requestFullBuild()`. Empty geometry →
 
 On **save**: `storeGeometry` serializes `bspState.staleBsp` (not `geometry.bsp` which no longer exists). Only the latest fully-built BSP is saved — dirty state is transient.
 
-### Module 7: Renderer Integration — ZBuffer Path
+### Module 7: Renderer Integration — ZBuffer Path — **IMPLEMENTED (Phase 2)**
 
-**File:** `src/common/rendering/zbuffering/zbuffer-renderer.ts`
+**Files:**
+- `src/common/rendering/zbuffering/zbuffer-renderer.ts`
+- `src/common/rendering/zbuffering/zbuffer-core.ts`
 
-Changes to `render()`:
-1. Walk `staleBsp` as before, BUT in the edge callback check `isStale(tracker, edge.id)` and skip stale edges
-2. After BSP walk, query `dirtyIndex.queryFrustum(camera.planes)` for candidate dirty edges
-3. For each dirty candidate: clip to frustum, add to ZBuffer (same code path as BSP edges)
-4. ZBuffer sort + render proceeds unchanged
+Both files implement a two-phase approach in `render()`:
 
-Changes to `isActive()`:
-- `return !!bspState.staleBsp` (was: `!!geometry.bsp`)
+**Phase 1 — BSP walk with stale filtering:**
+During `walkWithFrustum`, each edge is checked via `isStaleInBsp(edge.id, dirtyEdges)`. Stale edges (in `removedEdgeIds` or `modifiedEdgeIds`) are skipped. The `ZBufferCore` variant counts these as `staleEdgesSkipped` in metrics.
 
-The renderer caches a `IDirtyEdgeIndex` and rebuilds it when `tracker.generation` changes. The renderer does **not** distinguish permanent from transient — it uses `allStaleIds` and `allDirtyEdges`.
+**Phase 2 — Brute-force dirty edge iteration:**
+After the BSP walk, `collectDirtyEdges(geometry, dirtyEdges)` collects edges from current geometry whose IDs appear in `addedEdgeIds` or `modifiedEdgeIds`. Each is clipped to the frustum and added to the ZBuffer (same code path as BSP edges). The `ZBufferCore` variant counts these as `dirtyEdgesTested` in metrics.
 
-**Also update:** `src/common/rendering/zbuffering/zbuffer-core.ts` (benchmark variant) with same changes.
+**Shared utilities (exported from `zbuffer-core.ts`):**
+- `isStaleInBsp(edgeId, dirtyEdges)`: Returns true if edge ID is in `removedEdgeIds` or `modifiedEdgeIds`
+- `collectDirtyEdges(geometry, dirtyEdges)`: Scans geometry for edges in `addedEdgeIds` or `modifiedEdgeIds`
 
-### Module 8: Renderer Integration — Raycaster Path
+**`ZBufferRenderer`** subscribes to `s.bsp` via `connect()` and stores an `IBspContext` field (bundling `tree` + `dirtyEdges`). **`ZBufferCore`** accepts `bspContext?: IBspContext` on `render()` and destructures `bsp` and `dirtyEdges` internally.
+
+**Metrics extensions (`benchmark-types.ts`):**
+- `RenderMetrics.staleEdgesSkipped?: number` — edges skipped in BSP walk
+- `RenderMetrics.dirtyEdgesTested?: number` — dirty edges tested via brute-force
+
+**Interface change (`renderer-core.ts`):**
+- `IRendererCore.render()` has `bspContext?: IBspContext` parameter
+- `RaycastCore.render()` accepts but ignores the `dirtyEdges` portion (destructures `bsp` only, interface conformance)
+
+**Implementation notes (deviations from original plan):**
+- The plan described querying a spatial index (`dirtyIndex.queryFrustum`). Phase 2 uses simple brute-force iteration instead — the spatial index is deferred to Phase 3.
+- The plan described caching a `IDirtyEdgeIndex` and rebuilding on `generation` change. This is not yet implemented.
+- `isActive()` was already updated in Phase 1 to use `!!this.bspTree` (reading from `bspState`).
+- 17 tests added to `zbuffer.test.ts` covering stale edge skipping, dirty edge brute-force, metrics tracking, and edge case handling.
+
+**Future (Phase 3):** Replace brute-force `collectDirtyEdges` with spatial index queries for better performance with large dirty sets.
+
+### Module 8: Renderer Integration — Raycaster Path — **PARTIALLY IMPLEMENTED**
 
 **File:** `src/common/rendering/raycasting/raycaster.ts`
 
-Changes to `detectCollisions()`:
+**Implemented (collision — Phase 2):**
+`castCameraRay(ray, geometry, bsp?, dirtyEdges?)` implements the two-phase approach for camera movement collision:
+1. Phase 1: BSP traversal via `intersectRay()` with an `edgeFilter` that skips immaterial edges AND stale edges (`!edge.immaterial && !isStaleInBsp(edge.id, dirtyEdges)`)
+2. Phase 2: `collectDirtyEdges(geometry, dirtyEdges)` iterates added/modified edges, skips immaterial ones, calls `intersectRayEdge()` on each, keeps the closest hit
+3. Returns the closest hit from either phase
+
+Imports `isStaleInBsp` and `collectDirtyEdges` from `../zbuffering/zbuffer-core`.
+
+**Not yet implemented (rendering):**
+`castCollisionRays()` (used by `Renderer3d` for raycaster rendering) does NOT yet filter stale edges or test dirty edges. This is deferred to Phase 6.
+
+**Also updated in Phase 1:** `renderer3d.ts` — `isActive()` uses `!this.bspTree` (reading from `bspState`).
+
+### Module 9: Collision (Camera Movement) Integration — **IMPLEMENTED (Phase 2)**
+
+**Files:**
+- `src/common/camera.ts` — `move()`, `strafe()`, `constrainedMove()` accept optional `bspContext?: IBspContext`
+- `src/common/store/player.ts` — `moveCamera` and `strafeCamera` payloads include `bspContext?: IBspContext`
+- `src/common/actions/cameraActionsHandler.ts` — subscribes to `s.bsp`, stores `bspContext: IBspContext | null` field, passes in dispatches
+- `src/common/rendering/raycasting/raycaster.ts` — `castCameraRay()` two-phase approach (see Module 8)
+
+**Full call chain:**
 ```
-if staleBsp:
-    hits = intersectRay(staleBsp, ray, options)
-    filter out hits where isStale(tracker, hit.edge.id)
-    dirtyHits = intersectRayEdge() for each dirtyIndex.queryRay(ray)
-    merge both hit lists
-else:
-    intersectRayPolygons (brute-force, as today)
+CameraActionsHandler.handle()          [subscribes to s.bsp, stores bspContext]
+  └─ dispatches moveCamera/strafeCamera with bspContext in payload
+       └─ Player reducer                  [player.ts]
+            └─ move() / strafe()          [camera.ts, accepts bspContext?]
+                 └─ constrainedMove()     [camera.ts, destructures bsp + dirtyEdges]
+                      └─ castCameraRay(ray, geometry, bsp, dirtyEdges)
+                                          [raycaster.ts]
+                           Phase 1: BSP traversal with stale filter
+                           Phase 2: brute-force dirty edge collision
+                           Return: closest hit from either phase
 ```
 
-The brute-force fallback only applies during the brief window between loading a file without BSP and the worker completing the first build.
+**Critical bug found and fixed during implementation:**
+When the BSP became stale, the camera could pass through ALL geometry. Root cause: `castCameraRay` only did BSP traversal with the stale edge filter. Since conservative modification tracking marks ALL surviving edges as "modified", they were all skipped in the BSP walk. The fix was adding Phase 2 (brute-force dirty edge collision from current geometry).
 
-**Also update:** `src/common/rendering/raycasting/renderer3d.ts` — change `isActive()` to check `!bspState.staleBsp` (was: `!geometry.bsp`).
-
-### Module 9: Collision (Camera Movement) Integration
-
-**File:** `src/common/camera.ts`
-
-`castCameraRay` uses BSP intersection. Same pattern applies: skip stale edges in BSP walk, also test dirty edges for collision. Uses `immaterial` filter as today.
+**Tests:** 6 tests in `camera.test.ts` in `describe('move/strafe with dirty edges')` covering: baseline blocking, removed edges pass-through, modified edges still block (brute-force phase), empty diff equivalence, added edges block via brute-force, strafe respects removed edges.
 
 ### Module 10: BSP Status Indicator — Editor UI Feedback
 
@@ -537,11 +598,11 @@ The status bar uses the 5% height gap that currently exists below the container.
 | Phase | What | Status | System behavior |
 |-------|------|--------|----------------|
 | **1** | `DirtyEdgeTracker` + `bspState` slice + edge diff middleware + remove `bsp` from `IGeometry` + BSP parameter threading through rendering/collision chain. | **DONE** | BSP preserved across geometry mutations. Dirty edges tracked in Redux. BSP threaded as separate parameter. Stale edges still visible at old positions (Phase 2 fixes this). |
-| **2** | BSP walk filter (skip stale edges) + brute-force dirty edge iteration (no spatial index yet) | Pending | Correct rendering with stale BSP. Dirty edges tested via simple iteration. |
+| **2** | BSP walk filter (skip stale edges) + brute-force dirty edge iteration (no spatial index yet) + collision dirty edge threading + `castCameraRay` two-phase approach | **DONE** | Correct rendering with stale BSP. Dirty edges tested via simple iteration. Camera movement respects dirty edges (added/modified block, removed pass through). |
 | **3** | `DirtyEdgeSpatialIndex` | Pending | Performance optimization — spatial queries instead of iterating all dirty edges. |
 | **4** | `BspGenerationService` with web worker, debounce, cancellation | Pending | Full async BSP regeneration. Dirty set auto-clears after edits stop. |
 | **5** | File load integration: auto-generate BSP for maps loaded without one. Auto-generate on new file. | Pending | No more manual Ctrl+B needed for old maps or fresh starts. |
-| **6** | Raycaster path + collision integration | Pending | Both renderers and camera movement fully integrated. |
+| **6** | Raycaster path + collision integration | **PARTIAL** — collision done in Phase 2, raycaster rendering path pending | Camera movement fully integrated. Raycaster rendering path (`castCollisionRays`) not yet dirty-edge-aware. |
 | **7** | Transient partition — add transient tracking, original storage, `updateTransient`, `restoreTransient`, resting-state BSP build | Pending | Game mechanics (doors, platforms) can temporarily modify geometry without triggering BSP rebuild. |
 | **8** | In-place material mutation — runtime texture/material changes on BSP edge objects | Pending | Texture changes without any dirty tracking overhead. |
 | **9** | BSP status indicator — `<bsp-status>` component, status bar layout, `connect()` subscription to `bspState` | **DONE** | Editor shows green/yellow/red dot + label reflecting BSP health. |
@@ -562,38 +623,46 @@ Each phase is independently testable and the system stays functional throughout.
 | `src/common/store/index.ts` | **Modify** — added `bsp` slice + `bspListenerMiddleware`, filtered `bsp` from logger | 1 | **DONE** |
 | `src/common/geometry/bsp/bspGenerationStarter.ts` | **Modify** — dispatches `setBsp` from `bsp-state` instead of `updateBsp` from `walls` | 1 | **DONE** |
 | `src/common/storage/stateLoader.ts` | **Modify** — save/load BSP from `bspState`, legacy compat for old files | 1 | **DONE** |
-| `src/common/rendering/zbuffering/zbuffer-renderer.ts` | **Modify** — reads BSP from `bspState`, `isActive()` uses `this.bspTree` | 1 | **DONE** |
-| `src/common/rendering/zbuffering/zbuffer-core.ts` | **Modify** — `render()` accepts `bsp` parameter | 1 | **DONE** |
+| `src/common/rendering/zbuffering/zbuffer-renderer.ts` | **Modify** — reads BSP from `bspState`, stores `bspContext` field, `isActive()` uses `this.bspContext?.tree` | 1 | **DONE** |
+| `src/common/rendering/zbuffering/zbuffer-core.ts` | **Modify** — `render()` accepts `bspContext?: IBspContext` parameter | 1 | **DONE** |
 | `src/common/rendering/raycasting/renderer3d.ts` | **Modify** — reads BSP from `bspState`, `isActive()` uses `!this.bspTree` | 1 | **DONE** |
-| `src/common/rendering/raycasting/raycaster.ts` | **Modify** — all functions accept `bsp?: IBSPNode \| null` parameter | 1 | **DONE** |
-| `src/common/rendering/raycasting/raycast-core.ts` | **Modify** — `render()` accepts and passes `bsp` parameter | 1 | **DONE** |
-| `src/common/rendering/renderer-core.ts` | **Modify** — `IRendererCore.render()` has `bsp` parameter | 1 | **DONE** |
-| `src/common/camera.ts` | **Modify** — `move()`/`strafe()`/`constrainedMove()` accept `bsp` parameter | 1 | **DONE** |
-| `src/common/store/player.ts` | **Modify** — action payloads include `bsp`, reducer calls pass 5 args | 1 | **DONE** |
-| `src/common/actions/cameraActionsHandler.ts` | **Modify** — subscribes to `s.bsp.tree`, dispatches with `bsp` | 1 | **DONE** |
+| `src/common/rendering/raycasting/raycaster.ts` | **Modify** — BSP-using functions accept `bsp` param; `castCameraRay` accepts `bspContext` | 1 | **DONE** |
+| `src/common/rendering/raycasting/raycast-core.ts` | **Modify** — `render()` accepts and passes `bspContext` param | 1 | **DONE** |
+| `src/common/rendering/renderer-core.ts` | **Modify** — `IRendererCore.render()` has `bspContext?: IBspContext` param | 1 | **DONE** |
+| `src/common/camera.ts` | **Modify** — `move()`/`strafe()`/`constrainedMove()` accept `bspContext?: IBspContext` | 1 | **DONE** |
+| `src/common/store/player.ts` | **Modify** — action payloads use `bspContext?: IBspContext` | 1 | **DONE** |
+| `src/common/actions/cameraActionsHandler.ts` | **Modify** — subscribes to `s.bsp`, stores `bspContext: IBspContext \| null`, dispatches with `bspContext` | 1 | **DONE** |
 | `src/common/editor/mapEditor.ts` | **Modify** — added `bspTree` field, subscribes to `s.bsp.tree` | 1 | **DONE** |
 | `src/common/rendering/bspwalking/walker.ts` | **Modify** — added `bspTree` field, `isActive()` uses `!!this.bspTree` | 1 | **DONE** |
-| `src/common/testing/factories/geometry.factory.ts` | **Modify** — `IGeometryWithBsp` type, `withBsp()` returns `{ geometry, bsp }` | 1 | **DONE** |
+| `src/common/testing/factories/geometry.factory.ts` | **Modify** — `IGeometryWithBsp` type, `withBsp()` returns `{ geometry, bsp, bspContext }` | 1 | **DONE** |
 | `src/common/geometry/geometry.test.ts` | **Modify** — 2 BSP tests rewritten for new structure | 1 | **DONE** |
 | `src/common/store/store.test.ts` | **Modify** — `updateBsp` test replaced, camera tests updated | 1 | **DONE** |
-| `src/common/testing/factories/factories.test.ts` | **Modify** — `withBsp` tests updated for `{ geometry, bsp }` return | 1 | **DONE** |
-| `src/common/rendering/raycasting/raycaster.test.ts` | **Modify** — all BSP usages destructured and passed | 1 | **DONE** |
-| `src/common/camera.test.ts` | **Modify** — all `move`/`strafe` tests pass BSP param | 1 | **DONE** |
-| `src/common/rendering/renderer-comparison.test.ts` | **Modify** — both test blocks pass BSP | 1 | **DONE** |
-| `src/common/rendering/raycasting/raycast-core.test.ts` | **Modify** — all render calls pass BSP | 1 | **DONE** |
-| `src/common/rendering/zbuffering/zbuffer.test.ts` | **Modify** — all render calls pass BSP | 1 | **DONE** |
-| `src/common/rendering/rendering.benchmark.test.ts` | **Modify** — BSP separated, passes BSP | 1 | **DONE** |
-| `src/common/rendering/allocation.benchmark.test.ts` | **Modify** — BSP separated, passes BSP | 1 | **DONE** |
-| `src/common/rendering/zbuffering/zbuffer-renderer.ts` | **Modify** — filter stale edges in walk, add dirty edges after walk | 2 | Pending |
-| `src/common/rendering/zbuffering/zbuffer-core.ts` | **Modify** — same changes for benchmark variant | 2 | Pending |
+| `src/common/testing/factories/factories.test.ts` | **Modify** — `withBsp` tests updated for `{ geometry, bsp, bspContext }` return | 1 | **DONE** |
+| `src/common/rendering/raycasting/raycaster.test.ts` | **Modify** — all BSP usages destructured, `castCameraRay` calls use `bspContext` | 1 | **DONE** |
+| `src/common/camera.test.ts` | **Modify** — all `move`/`strafe` tests pass `bspContext` param | 1 | **DONE** |
+| `src/common/rendering/renderer-comparison.test.ts` | **Modify** — both test blocks pass `bspContext` | 1 | **DONE** |
+| `src/common/rendering/raycasting/raycast-core.test.ts` | **Modify** — all render calls pass `bspContext` | 1 | **DONE** |
+| `src/common/rendering/zbuffering/zbuffer.test.ts` | **Modify** — all render calls pass `bspContext` | 1 | **DONE** |
+| `src/common/rendering/rendering.benchmark.test.ts` | **Modify** — BSP separated, passes `bspContext` | 1 | **DONE** |
+| `src/common/rendering/allocation.benchmark.test.ts` | **Modify** — BSP separated, passes `bspContext` | 1 | **DONE** |
+| `src/common/rendering/zbuffering/zbuffer-renderer.ts` | **Modify** — stale skip guard in BSP walk, brute-force dirty edge iteration after walk, subscribe to `s.bsp`, stores `bspContext: IBspContext \| null` field | 2 | **DONE** |
+| `src/common/rendering/zbuffering/zbuffer-core.ts` | **Modify** — `isStaleInBsp()` + `collectDirtyEdges()` exports, stale skip + brute-force + metrics in `render()`, accepts `bspContext?: IBspContext` | 2 | **DONE** |
+| `src/common/rendering/benchmark-types.ts` | **Modify** — added `staleEdgesSkipped?` and `dirtyEdgesTested?` to `RenderMetrics` | 2 | **DONE** |
+| `src/common/rendering/renderer-core.ts` | **Modify** — `IRendererCore.render()` accepts `bspContext?: IBspContext` | 2 | **DONE** |
+| `src/common/rendering/raycasting/raycast-core.ts` | **Modify** — accepts `bspContext?: IBspContext`, destructures `bsp` for `castCollisionRays` | 2 | **DONE** |
+| `src/common/rendering/zbuffering/zbuffer.test.ts` | **Modify** — 17 dirty edge tests added | 2 | **DONE** |
+| `src/common/rendering/raycasting/raycaster.ts` | **Modify** — `castCameraRay()` accepts `bspContext?: IBspContext`, two-phase: BSP stale filter + brute-force `collectDirtyEdges` for collision | 2 (was 6) | **DONE** |
+| `src/common/camera.ts` | **Modify** — `move()`/`strafe()`/`constrainedMove()` accept `bspContext?: IBspContext`, destructure `bsp` + `dirtyEdges` inside | 2 (was 6) | **DONE** |
+| `src/common/store/player.ts` | **Modify** — `moveCamera`/`strafeCamera` payloads use `bspContext?: IBspContext` | 2 (was 6) | **DONE** |
+| `src/common/actions/cameraActionsHandler.ts` | **Modify** — subscribes to `s.bsp`, stores single `bspContext: IBspContext \| null` field, dispatches with `bspContext` | 2 (was 6) | **DONE** |
+| `src/common/camera.test.ts` | **Modify** — 6 dirty edge collision tests in `describe('move/strafe with dirty edges')` | 2 (was 6) | **DONE** |
 | `src/common/geometry/bsp/dirty-edge-index.ts` | **Create** | 3 | Pending |
 | `src/common/geometry/bsp/bsp-generation-service.ts` | **Create** | 4 | Pending |
 | `src/common/geometry/bsp/bspGenerationStarter.ts` | **Replace/Remove** — replaced by `BspGenerationService` | 4 | Pending |
 | `src/workers/bspGenerator.ts` | **Modify** — add `generationId` to message protocol | 4 | Pending |
 | `src/main/mainmenu.ts` | **Modify** — Ctrl+B becomes "force immediate regeneration" | 4 | Pending |
 | `src/common/storage/stateLoader.ts` | **Modify** — dispatch BSP actions on load, handle presence/absence of stored BSP | 5 | Pending |
-| `src/common/rendering/raycasting/raycaster.ts` | **Modify** — merge dirty edge hits into ray results | 6 | Pending |
-| `src/common/camera.ts` | **Modify** — dirty edge collision in `move`/`strafe` | 6 | Pending |
+| `src/common/rendering/raycasting/raycaster.ts` | **Modify** — `castCollisionRays()` dirty edge awareness for raycaster rendering | 6 | Pending |
 | `src/common/geometry/bsp/dirty-edge-tracker.ts` | **Modify** — add transient partition, originals storage, restore logic | 7 | Pending |
 | `src/common/store/bsp-state.ts` | **Modify** — add transient reducers, resting-state build support | 7 | Pending |
 | `src/common/geometry/bsp/bsp-generation-service.ts` | **Modify** — substitute transient edges with originals before posting to worker | 7 | Pending |
@@ -653,7 +722,7 @@ Each phase is independently testable and the system stays functional throughout.
 
 14. **Edge diffs via RTK listener middleware** (not `GeometryMutationResult` return types): Instead of modifying all geometry functions to return edge diffs, a `createListenerMiddleware` watches all `walls/*` actions and computes diffs by comparing edge ID sets before and after. This keeps geometry functions pure and unchanged. Diffs are dispatched as `markDirty` actions to `bspState`. Conservative modification tracking treats all surviving edge IDs as "modified" since we can't cheaply detect vertex position changes.
 
-15. **BSP parameter threading** (not global state reads in pure functions): Pure functions like `move()`, `strafe()`, `castCameraRay()`, and `render()` now accept BSP as an explicit parameter rather than reading from Redux. Only the imperative "handler" layer (`cameraActionsHandler`, `walker`, `mapEditor`, renderers) subscribes to `state.bsp.tree` and passes it down. This preserves function purity and testability.
+15. **BSP parameter threading via `IBspContext`** (not global state reads in pure functions): Pure functions like `move()`, `strafe()`, `castCameraRay()`, and `render()` now accept an `IBspContext` (bundling `tree` + `dirtyEdges`) as an explicit parameter rather than reading from Redux. The `IBspContext` type avoids parameter proliferation — functions that need both BSP and dirty edges take a single object. Only the imperative "handler" layer (`cameraActionsHandler`, `walker`, `mapEditor`, renderers) subscribes to `state.bsp` and passes the context down. Functions that only need `bsp` (like `castCollisionRays`) take the raw `IBSPNode` parameter. This preserves function purity and testability.
 
 ## Key Codebase Context
 
@@ -663,7 +732,7 @@ For implementors unfamiliar with the codebase, these are the key existing files 
 - **BSP walk:** `src/common/geometry/bsp/querying.ts` — `walk()` and `walkWithFrustum()` traverse the tree, calling a callback with polygons at each node. Callback returns `true` to continue, `false` to stop.
 - **BSP model:** `src/common/geometry/bsp/model.ts` — `LeafBspNode`, `SplitBspNode`, `NullBspNode`. BSP nodes store direct `IPolygon[]` references (not copies).
 - **Store connector:** `src/common/store/store-connector.ts` — `connect()` registers callbacks on every Redux state update. Renderers use this, not React hooks.
-- **Renderer switching:** `ZBufferRenderer.isActive()` returns true when BSP exists (reads `state.bsp.tree`); `Renderer3d.isActive()` returns true when BSP is absent. They are mutually exclusive. Both subscribe to `bspState` via `connect()`.
+- **Renderer switching:** `ZBufferRenderer.isActive()` returns true when BSP exists (reads `bspContext?.tree`); `Renderer3d.isActive()` returns true when BSP is absent. They are mutually exclusive. Both subscribe to `bspState` via `connect()`.
 - **Edge entity IDs:** `src/common/geometry/entity.ts` — `giveIdentity()` assigns UUID strings. Edge IDs are `string | undefined`.
 - **Existing web worker:** `src/workers/bspGenerator.ts` — listens for `message`, calls `buildBspTree`, posts result back. Currently unused (the `generate()` method in `BspGenerationStarter` is commented out).
 - **Current BSP trigger:** Manual only, via Ctrl+B menu item (`src/main/mainmenu.ts:303`) → IPC `'bsp_generate'` → `BspGenerationStarter.generateLocal()` → synchronous `buildBspTree()` on main thread.

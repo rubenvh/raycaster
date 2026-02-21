@@ -9,9 +9,10 @@ import { polygons } from './polygon.factory';
 import { IPolygon } from '../../geometry/polygon';
 import { buildBspTree } from '../../geometry/bsp/creation';
 import { IBSPNode } from '../../geometry/bsp/model';
+import { IBspContext } from '../../store/bsp-state';
 
 /** Result of creating geometry with a BSP tree */
-export type IGeometryWithBsp = { geometry: IGeometry, bsp: IBSPNode };
+export type IGeometryWithBsp = { geometry: IGeometry, bsp: IBSPNode, bspContext: IBspContext };
 
 /**
  * Generate random polygon vertices.
@@ -48,7 +49,8 @@ class GeometryFactory extends Factory<IGeometry> {
             build: (): IGeometryWithBsp => {
                 const geometry = this.build();
                 const bsp = buildBspTree(geometry.polygons);
-                return { geometry, bsp };
+                const bspContext: IBspContext = { tree: bsp, dirtyEdges: { removedEdgeIds: new Set(), addedEdgeIds: new Set(), modifiedEdgeIds: new Set() } };
+                return { geometry, bsp, bspContext };
             }
         };
     }
@@ -137,10 +139,11 @@ export const geometries = {
         return createGeometry(polys);
     },
     
-    /** Create geometry with BSP tree (returns { geometry, bsp }) */
+    /** Create geometry with BSP tree (returns { geometry, bsp, bspContext }) */
     withBsp: (polygonVertices: Vector[][]): IGeometryWithBsp => {
         const geometry = createGeometry(polygonVertices);
         const bsp = buildBspTree(geometry.polygons);
-        return { geometry, bsp };
+        const bspContext: IBspContext = { tree: bsp, dirtyEdges: { removedEdgeIds: new Set(), addedEdgeIds: new Set(), modifiedEdgeIds: new Set() } };
+        return { geometry, bsp, bspContext };
     },
 };
