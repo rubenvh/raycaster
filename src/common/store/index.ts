@@ -7,6 +7,8 @@ import walls from './walls'
 import worldConfig from './world-config'
 import uiConfig from './ui-config'
 import textures from './textures'
+import bsp from './bsp-state'
+import { bspListenerMiddleware } from './bsp-middleware'
 
 const reducer = combineReducers({
   stats,
@@ -15,17 +17,18 @@ const reducer = combineReducers({
   walls,
   worldConfig, 
   uiConfig,
-  textures
+  textures,
+  bsp
 });
 
 const logger = createLogger({
-  predicate: (getState, action) => !action.type.startsWith('stats') && !action.type.startsWith('player')
+  predicate: (getState, action) => !action.type.startsWith('stats') && !action.type.startsWith('player') && !action.type.startsWith('bsp')
 })
 const store = configureStore({
   reducer,  
   middleware: (getDefaultMiddleware) => getDefaultMiddleware({
     serializableCheck: false
-  }).concat(logger),
+  }).prepend(bspListenerMiddleware.middleware).concat(logger),
   devTools: process.env.NODE_ENV !== 'production',
 })
 export type RootState = ReturnType<typeof store.getState>

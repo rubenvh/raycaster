@@ -7,6 +7,7 @@ import { connect } from '../../store/store-connector';
 import { IRenderer } from '../renderer';
 import { IEdge, NULL_EDGE } from '../../geometry/edge';
 import { walkWithFrustum } from '../../geometry/bsp/querying';
+import { IBSPNode } from '../../geometry/bsp/model';
 import { distance } from '../../geometry/vertex';
 import { ILineSegment, segmentLength } from '../../math/lineSegment';
 import { castRaysOnEdgeRange } from '../raycasting/raycaster';
@@ -29,6 +30,7 @@ export class ZBufferRenderer implements IRenderer {
     private resolution = 640;
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
+    private bspTree: IBSPNode | null = null;
     private wallPainter: WallPainter;
     private worldConfig: IWorldConfigState;
     private lastUpdated;
@@ -50,13 +52,14 @@ export class ZBufferRenderer implements IRenderer {
             if (this.wallGeometry != s.walls.geometry) {
                 this.wallGeometry = s.walls.geometry;
             }
+            this.bspTree = s.bsp.tree;
             this.worldConfig = s.worldConfig;
         });
     }
 
 
     public isActive(): boolean {
-        return !!this.wallGeometry.bsp
+        return !!this.bspTree
     }
 
     render(fps: number): void {
@@ -70,7 +73,7 @@ export class ZBufferRenderer implements IRenderer {
         let depth = 40;
         const shouldCollectStats = !this.lastUpdated || performance.now() - this.lastUpdated > 1000;
         let clippedSegments: {segment: ILineSegment, depth: number}[] = shouldCollectStats ? [] : null;
-        walkWithFrustum(this.wallGeometry.bsp, this.camera.position, this.camera.planes, (ps => {
+        walkWithFrustum(this.bspTree, this.camera.position, this.camera.planes, (ps => {
             let increment = 0;
             for (let p of ps) {
                 for (let e of p.edges) {

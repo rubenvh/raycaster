@@ -4,6 +4,7 @@ import { edges, geometries, resetTestRandom, materialFactory } from '../../testi
 import { makeCamera, makeRays } from '../../camera';
 import { IEdge } from '../../geometry/edge';
 import { buildBspTree } from '../../geometry/bsp/creation';
+import { IBSPNode } from '../../geometry/bsp/model';
 import { Vector } from '../../math/vector';
 import { createGeometry, IGeometry } from '../../geometry/geometry';
 import { Face } from '../../geometry/properties';
@@ -15,7 +16,7 @@ beforeEach(() => resetTestRandom());
  * Wall is a horizontal line at y=20, from x=0 to x=100.
  * Camera/rays shoot from origin area toward positive y.
  */
-const makeSimpleGeometry = (): IGeometry => {
+const makeSimpleGeometry = (): { geometry: IGeometry, bsp: IBSPNode } => {
     return geometries.withBsp([
         [[0, 20], [100, 20], [100, 30], [0, 30]]
     ]);
@@ -45,19 +46,19 @@ describe('raycaster', () => {
 
     describe('castCameraRay', () => {
         test('returns hit when ray intersects wall', () => {
-            const geom = makeSimpleGeometry();
+            const { geometry: geom, bsp } = makeSimpleGeometry();
             const ray = makeRay([50, 0], [0, 1]);
-            const hit = castCameraRay(ray, geom);
+            const hit = castCameraRay(ray, geom, bsp);
             expect(hit).toBeDefined();
             expect(hit.distance).toBeGreaterThan(0);
             expect(hit.distance).toBeLessThan(100);
         });
 
         test('returns infinity distance when ray misses all geometry', () => {
-            const geom = makeSimpleGeometry();
+            const { geometry: geom, bsp } = makeSimpleGeometry();
             // Ray pointing away from geometry
             const ray = makeRay([50, 0], [0, -1]);
-            const hit = castCameraRay(ray, geom);
+            const hit = castCameraRay(ray, geom, bsp);
             expect(hit).toBeDefined();
             // Either no hit or infinite distance
             expect(hit.distance).toBeGreaterThan(100);
@@ -66,7 +67,7 @@ describe('raycaster', () => {
         test('ignores immaterial edges (no collision)', () => {
             // castCameraRay uses edgeFilter: edge => !edge.immaterial
             // So immaterial edges should be ignored
-            const geom = makeSimpleGeometry();
+            const { geometry: geom } = makeSimpleGeometry();
             // Mark all edges as immaterial
             for (const p of geom.polygons) {
                 for (const e of p.edges) {
@@ -74,9 +75,9 @@ describe('raycaster', () => {
                 }
             }
             // Rebuild BSP
-            geom.bsp = buildBspTree(geom.polygons);
+            const bsp = buildBspTree(geom.polygons);
             const ray = makeRay([50, 0], [0, 1]);
-            const hit = castCameraRay(ray, geom);
+            const hit = castCameraRay(ray, geom, bsp);
             // Should not find a solid hit (distance should be infinity)
             expect(hit.distance).toBe(Number.POSITIVE_INFINITY);
         });
@@ -94,16 +95,16 @@ describe('raycaster', () => {
         test('returns results for each ray', () => {
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
             const rays = makeRays(10, cam);
-            const geom = makeSimpleGeometry();
-            const result = castCollisionRays(rays, geom);
+            const { geometry: geom, bsp } = makeSimpleGeometry();
+            const result = castCollisionRays(rays, geom, bsp);
             expect(result.castedRays.length).toBe(rays.length);
         });
 
         test('returns stats with polygon information', () => {
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
             const rays = makeRays(5, cam);
-            const geom = makeSimpleGeometry();
-            const result = castCollisionRays(rays, geom);
+            const { geometry: geom, bsp } = makeSimpleGeometry();
+            const result = castCollisionRays(rays, geom, bsp);
             expect(result.stats).toBeDefined();
             expect(result.stats.polygons).toBeDefined();
         });
@@ -111,8 +112,8 @@ describe('raycaster', () => {
         test('finds hits for rays pointing at geometry', () => {
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [5, 0] });
             const rays = makeRays(5, cam);
-            const geom = makeSimpleGeometry();
-            const result = castCollisionRays(rays, geom);
+            const { geometry: geom, bsp } = makeSimpleGeometry();
+            const result = castCollisionRays(rays, geom, bsp);
             // At least some rays should hit the wall
             const hasHits = result.castedRays.some(cr =>
                 cr.hits.some(h => h.distance < Number.POSITIVE_INFINITY)
@@ -123,8 +124,8 @@ describe('raycaster', () => {
         test('returns infinity for rays missing geometry', () => {
             const cam = makeCamera({ position: [50, 0], direction: [0, -10], plane: [5, 0] });
             const rays = makeRays(5, cam);
-            const geom = makeSimpleGeometry();
-            const result = castCollisionRays(rays, geom);
+            const { geometry: geom, bsp } = makeSimpleGeometry();
+            const result = castCollisionRays(rays, geom, bsp);
             // All rays pointing away should miss
             const allMissed = result.castedRays.every(cr =>
                 cr.hits.every(h => h.distance === Number.POSITIVE_INFINITY)
@@ -134,28 +135,28 @@ describe('raycaster', () => {
 
         test('ignores edges without material', () => {
             // castCollisionRays uses edgeFilter: edge => !!edge.material
-            const geom = makeSimpleGeometry();
+            const { geometry: geom } = makeSimpleGeometry();
             for (const p of geom.polygons) {
                 for (const e of p.edges) {
                     (e as any).material = undefined;
                 }
             }
-            geom.bsp = buildBspTree(geom.polygons);
+            const bsp = buildBspTree(geom.polygons);
             const ray = makeRay([50, 0], [0, 1]);
-            const result = castCollisionRays([ray], geom);
+            const result = castCollisionRays([ray], geom, bsp);
             // No material => needsRendering returns false => infinity
             expect(result.castedRays[0].hits[0].distance).toBe(Number.POSITIVE_INFINITY);
         });
 
         test('hits are sorted by distance (closest first)', () => {
             // Create geometry with two walls at different distances
-            const geom = geometries.withBsp([
+            const { geometry: geom, bsp } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 21], [0, 21]],
                 [[0, 40], [100, 40], [100, 41], [0, 41]]
             ]);
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [5, 0] });
             const rays = makeRays(5, cam);
-            const result = castCollisionRays(rays, geom);
+            const result = castCollisionRays(rays, geom, bsp);
             for (const cr of result.castedRays) {
                 for (let i = 1; i < cr.hits.length; i++) {
                     expect(cr.hits[i].distance).toBeGreaterThanOrEqual(cr.hits[i - 1].distance);

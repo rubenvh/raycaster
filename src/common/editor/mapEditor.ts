@@ -22,6 +22,7 @@ export class MapEditorRenderer implements ISpaceTranslator {
     private selectedElements: SelectableElement[] = [];
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
+    private bspTree: IBSPNode | null = null;
     private selectedTreeNode: SelectableElement;
     private castingStats: CastingStats = EMPTY_STATS;
     private uiConfig: IUIConfigState = {};
@@ -53,6 +54,7 @@ export class MapEditorRenderer implements ISpaceTranslator {
             this.uiConfig = s.uiConfig;
             this.castingStats = s.stats.intersections.stats;
             this.detectedEdges = s.stats.detectedEdges || [];
+            this.bspTree = s.bsp.tree;
 
             if (s.walls.geometry !== this.wallGeometry) {
                 this.wallGeometry = s.walls.geometry;
@@ -81,9 +83,9 @@ export class MapEditorRenderer implements ISpaceTranslator {
             this.drawCamera(this._context, this.camera);
             this.drawGeometry(this._context, this.wallGeometry);
 
-            if (this.wallGeometry.bsp) {
+            if (this.bspTree) {
                 if (this.uiConfig.bspDrawMode === BspDrawMode.Planes) {
-                    this.drawBsp(this.wallGeometry.bsp);
+                    this.drawBsp(this.bspTree);
                 } else if (this.uiConfig.bspDrawMode === BspDrawMode.DetectedEdges) {
                     this.drawDetectedEdges(this._context);
                 }

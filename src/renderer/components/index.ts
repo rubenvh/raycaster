@@ -12,6 +12,7 @@ import TextureSelectorComponent from './texture-selector.component';
 import TextureDropdownComponent from './texture-dropdown.component';
 import DirectedMaterialEditorComponent from './directed-material.component';
 import PolygonEditorComponent from './polygonEditorComponent';
+import BspStatusComponent from './bspStatusComponent';
 
 export function loadComponents() {
     EdgeEditorComponent;
@@ -27,7 +28,8 @@ export function loadComponents() {
     TextureLibraryElement;
     TextureSourceEditorElement;
     TextureSelectorComponent;
-    TextureDropdownComponent
+    TextureDropdownComponent;
+    BspStatusComponent;
 }
 
 

@@ -13,6 +13,7 @@ import { IWorldConfigState } from '../../store/world-config';
 import { textureLib, TextureLibrary } from '../../textures/textureLibrary';
 import { Texture } from '../../textures/texture';
 import { IRenderer } from '../renderer';
+import { IBSPNode } from '../../geometry/bsp/model';
 
 const dispatch = useAppDispatch();
 
@@ -25,6 +26,7 @@ export class BspWalker implements IRenderer {
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
     private worldConfig: IWorldConfigState = {};
+    private bspTree: IBSPNode | null = null;
     private textureLibrary: TextureLibrary = textureLib;
     constructor(private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');
@@ -37,6 +39,7 @@ export class BspWalker implements IRenderer {
         connect(s => {
             this.camera = s.player.camera;
             this.worldConfig = s.worldConfig;
+            this.bspTree = s.bsp.tree;
             if (this.wallGeometry != s.walls.geometry) {
                 this.wallGeometry = s.walls.geometry;
             }
@@ -45,7 +48,7 @@ export class BspWalker implements IRenderer {
 
 
     public isActive(): boolean {
-        return !!this.wallGeometry.bsp
+        return !!this.bspTree
     }
     // private createWall = (hit: RayHit, rayIndex: number): WallProps => {
     //     const height = this.convertDistanceToWallHeight(hit.distance || this.horizonDistance);

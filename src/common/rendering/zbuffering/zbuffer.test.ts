@@ -175,42 +175,42 @@ describe('ZBufferCore', () => {
 
     describe('render', () => {
         test('returns metrics with render time', () => {
-            const geom = geometries.withBsp([
+            const { geometry: geom, bsp } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 30], [0, 30]]
             ]);
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
             const core = new ZBufferCore();
-            const result = core.render(geom, cam, 64);
+            const result = core.render(geom, cam, 64, bsp);
             expect(result.metrics.renderTimeMs).toBeGreaterThanOrEqual(0);
         });
 
         test('returns edges tested count', () => {
-            const geom = geometries.withBsp([
+            const { geometry: geom, bsp } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 30], [0, 30]]
             ]);
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
             const core = new ZBufferCore();
-            const result = core.render(geom, cam, 64);
+            const result = core.render(geom, cam, 64, bsp);
             expect(result.metrics.edgesTested).toBeGreaterThanOrEqual(0);
         });
 
         test('returns edges visible count', () => {
-            const geom = geometries.withBsp([
+            const { geometry: geom, bsp } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 30], [0, 30]]
             ]);
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
             const core = new ZBufferCore();
-            const result = core.render(geom, cam, 64);
+            const result = core.render(geom, cam, 64, bsp);
             expect(result.metrics.edgesVisible).toBeGreaterThanOrEqual(0);
         });
 
         test('returns columns processed count', () => {
-            const geom = geometries.withBsp([
+            const { geometry: geom, bsp } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 30], [0, 30]]
             ]);
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
             const core = new ZBufferCore();
-            const result = core.render(geom, cam, 64);
+            const result = core.render(geom, cam, 64, bsp);
             expect(result.metrics.columnsProcessed).toBeGreaterThanOrEqual(0);
         });
 
@@ -226,24 +226,24 @@ describe('ZBufferCore', () => {
         });
 
         test('detects visible edges when camera faces geometry', () => {
-            const geom = geometries.withBsp([
+            const { geometry: geom, bsp } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 30], [0, 30]]
             ]);
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
             const core = new ZBufferCore();
-            const result = core.render(geom, cam, 64);
+            const result = core.render(geom, cam, 64, bsp);
             // Camera faces the wall, should see something
             expect(result.metrics.edgesVisible).toBeGreaterThan(0);
         });
 
         test('no visible edges when camera faces away', () => {
-            const geom = geometries.withBsp([
+            const { geometry: geom, bsp } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 30], [0, 30]]
             ]);
             // Camera faces negative y, wall is at positive y
             const cam = makeCamera({ position: [50, 0], direction: [0, -10], plane: [15, 0] });
             const core = new ZBufferCore();
-            const result = core.render(geom, cam, 64);
+            const result = core.render(geom, cam, 64, bsp);
             expect(result.metrics.edgesVisible).toBe(0);
         });
     });
@@ -255,45 +255,45 @@ describe('ZBufferCore', () => {
         });
 
         test('reuse mode produces same results', () => {
-            const geom = geometries.withBsp([
+            const { geometry: geom, bsp } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 30], [0, 30]]
             ]);
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
             const noReuse = new ZBufferCore(false);
             const withReuse = new ZBufferCore(true);
 
-            const result1 = noReuse.render(geom, cam, 32);
-            const result2 = withReuse.render(geom, cam, 32);
+            const result1 = noReuse.render(geom, cam, 32, bsp);
+            const result2 = withReuse.render(geom, cam, 32, bsp);
 
             expect(result1.metrics.edgesTested).toBe(result2.metrics.edgesTested);
             expect(result1.metrics.edgesVisible).toBe(result2.metrics.edgesVisible);
         });
 
         test('reuse mode works across multiple renders', () => {
-            const geom = geometries.withBsp([
+            const { geometry: geom, bsp } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 30], [0, 30]]
             ]);
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
             const core = new ZBufferCore(true);
             
             // First render
-            const result1 = core.render(geom, cam, 32);
+            const result1 = core.render(geom, cam, 32, bsp);
             // Second render with same params
-            const result2 = core.render(geom, cam, 32);
+            const result2 = core.render(geom, cam, 32, bsp);
 
             expect(result1.metrics.edgesTested).toBe(result2.metrics.edgesTested);
             expect(result1.metrics.edgesVisible).toBe(result2.metrics.edgesVisible);
         });
 
         test('reuse mode handles resolution change', () => {
-            const geom = geometries.withBsp([
+            const { geometry: geom, bsp } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 30], [0, 30]]
             ]);
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
             const core = new ZBufferCore(true);
 
-            const result1 = core.render(geom, cam, 32);
-            const result2 = core.render(geom, cam, 64);
+            const result1 = core.render(geom, cam, 32, bsp);
+            const result2 = core.render(geom, cam, 64, bsp);
 
             // Different resolutions, both should work
             expect(result1.metrics).toBeDefined();

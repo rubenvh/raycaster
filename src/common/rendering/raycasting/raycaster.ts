@@ -1,4 +1,5 @@
 import { intersectRay } from "../../geometry/bsp/querying";
+import { IBSPNode } from "../../geometry/bsp/model";
 import { IntersectionStats, intersectRayEdge, intersectRayPolygons, IRay, lookupMaterialFor, RayCastingOptions, RayCollisions, RayHit } from "../../geometry/collision";
 import { IEdge } from "../../geometry/edge";
 import { IGeometry } from "../../geometry/geometry";
@@ -13,32 +14,32 @@ const makeInfinity = (ray: IRay, stats: IntersectionStats): CastedRay => ({
     stats
 });
 
-export const castCameraRay = (ray: IRay, geometry: IGeometry): RayHit => {
+export const castCameraRay = (ray: IRay, geometry: IGeometry, bsp?: IBSPNode | null): RayHit => {
     const options: RayCastingOptions = {
         // stop on closest non-immaterial edge
         earlyExitPredicate: hit => !hit.edge.immaterial,
         // ignore all non-immaterial edges
         edgeFilter: edge => !edge.immaterial
     };
-    return castRays([ray], geometry, options).castedRays[0].hits[0];
+    return castRays([ray], geometry, options, bsp).castedRays[0].hits[0];
 }
-export const castCollisionRays = (rays: IRay[], geometry: IGeometry): CastedRays => {
+export const castCollisionRays = (rays: IRay[], geometry: IGeometry, bsp?: IBSPNode | null): CastedRays => {
     const options: RayCastingOptions = {
         // stop on closest non-translucent hit
         earlyExitPredicate: hit => !isTranslucent(hit.intersection.face, hit.edge.material),
         // ignore edges without material
         edgeFilter: edge => !!edge.material,
     };
-    return castRays(rays, geometry, options);
+    return castRays(rays, geometry, options, bsp);
 }
 
 const castRays = (rays: IRay[], geometry: IGeometry,
-    options: RayCastingOptions): CastedRays => {
+    options: RayCastingOptions, bsp?: IBSPNode | null): CastedRays => {
     let stats: CastingStats = { polygons: new Set<String>(), edgeTests: [+Infinity, -Infinity], polygonTests: [+Infinity, -Infinity], polygonCount: 0, edgeCount: 0, edgePercentage: 0 };
     let castedRays: CastedRay[] = [];
     for (let i = 0, n = rays.length; i < n; i++) {
         const _ = rays[i];
-        const collisions = detectCollisions(_, geometry, options);
+        const collisions = detectCollisions(_, geometry, options, bsp);
 
         // Single-pass filter and insert in sorted order
         // This avoids creating an intermediate filtered array and then sorting
@@ -121,11 +122,11 @@ const accumulateStats = (stats: CastingStats, iStats: IntersectionStats): void =
     stats.edgePercentage = iStats.totalEdges !== 0 ? Math.max(stats.edgePercentage, iStats.testedEdges / iStats.totalEdges) : stats.edgePercentage;
 }
 
-const detectCollisions = (ray: IRay, geometry: IGeometry, options: RayCastingOptions): RayCollisions => {
-    const totalPolygons = geometry.bsp ? geometry.bsp.count : geometry.polygons.length;
+const detectCollisions = (ray: IRay, geometry: IGeometry, options: RayCastingOptions, bsp?: IBSPNode | null): RayCollisions => {
+    const totalPolygons = bsp ? bsp.count : geometry.polygons.length;
     const result: RayCollisions = { ray, stats: { testedEdges: 0, totalEdges: geometry.edgeCount, totalPolygons, testedPolygons: 0, polygons: new Set<string>() }, hits: [] };
-    const polygonIntersections = geometry.bsp
-        ? intersectRay(geometry.bsp, ray, options)
+    const polygonIntersections = bsp
+        ? intersectRay(bsp, ray, options)
         : intersectRayPolygons(geometry.polygons, ray, options);
 
     result.hits = polygonIntersections.hits;

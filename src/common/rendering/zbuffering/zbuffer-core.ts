@@ -8,6 +8,7 @@
 import { IGeometry } from '../../geometry/geometry';
 import { ICamera, clip, makeRays } from '../../camera';
 import { walk, walkWithFrustum } from '../../geometry/bsp/querying';
+import { IBSPNode } from '../../geometry/bsp/model';
 import { IEdge, NULL_EDGE } from '../../geometry/edge';
 import { IRay } from '../../geometry/collision';
 import { Vector } from '../../math/vector';
@@ -127,7 +128,7 @@ export class ZBufferCore implements IRendererCore {
     this.planeNumerator = p.d - (p.n[0] * camera.position[0] + p.n[1] * camera.position[1]);
   }
 
-  render(geometry: IGeometry, camera: ICamera, resolution: number): RenderResult {
+  render(geometry: IGeometry, camera: ICamera, resolution: number, bsp?: IBSPNode | null): RenderResult {
     const startTime = performance.now();
     
     let edgesTested = 0;
@@ -174,7 +175,7 @@ export class ZBufferCore implements IRendererCore {
     }
     
     // Walk BSP tree and collect visible edges
-    if (geometry.bsp) {
+    if (bsp) {
       const processPolygons = (polygons: import('../../geometry/polygon').IPolygon[]) => {
         for (const p of polygons) {
           for (const e of p.edges) {
@@ -208,9 +209,9 @@ export class ZBufferCore implements IRendererCore {
       };
 
       if (this.useFrustumCulling) {
-        walkWithFrustum(geometry.bsp, camera.position, camera.planes, processPolygons);
+        walkWithFrustum(bsp, camera.position, camera.planes, processPolygons);
       } else {
-        walk(geometry.bsp, camera.position, processPolygons);
+        walk(bsp, camera.position, processPolygons);
       }
     }
     

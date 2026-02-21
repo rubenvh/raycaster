@@ -8,6 +8,10 @@ import { testRandom } from '../seeded-random';
 import { polygons } from './polygon.factory';
 import { IPolygon } from '../../geometry/polygon';
 import { buildBspTree } from '../../geometry/bsp/creation';
+import { IBSPNode } from '../../geometry/bsp/model';
+
+/** Result of creating geometry with a BSP tree */
+export type IGeometryWithBsp = { geometry: IGeometry, bsp: IBSPNode };
 
 /**
  * Generate random polygon vertices.
@@ -36,12 +40,17 @@ class GeometryFactory extends Factory<IGeometry> {
     }
 
     /**
-     * Create geometry with a BSP tree built.
+     * Build a geometry and its BSP tree as a separate pair.
+     * Returns { geometry, bsp } instead of mutating geometry.
      */
-    withBsp() {
-        return this.afterBuild(geometry => {
-            geometry.bsp = buildBspTree(geometry.polygons);
-        });
+    withBsp(): { build(): IGeometryWithBsp } {
+        return {
+            build: (): IGeometryWithBsp => {
+                const geometry = this.build();
+                const bsp = buildBspTree(geometry.polygons);
+                return { geometry, bsp };
+            }
+        };
     }
 
     /**
@@ -128,10 +137,10 @@ export const geometries = {
         return createGeometry(polys);
     },
     
-    /** Create geometry with BSP tree */
-    withBsp: (polygonVertices: Vector[][]) => {
-        const geom = createGeometry(polygonVertices);
-        geom.bsp = buildBspTree(geom.polygons);
-        return geom;
+    /** Create geometry with BSP tree (returns { geometry, bsp }) */
+    withBsp: (polygonVertices: Vector[][]): IGeometryWithBsp => {
+        const geometry = createGeometry(polygonVertices);
+        const bsp = buildBspTree(geometry.polygons);
+        return { geometry, bsp };
     },
 };

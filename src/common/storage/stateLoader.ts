@@ -10,6 +10,9 @@ import * as wallActions  from '../store/walls';
 import * as worldActions  from '../store/world-config';
 import * as selectionActions  from '../store/selection';
 import * as textureActions from '../store/textures';
+import { setBsp } from '../store/bsp-state';
+import { recomputeBspBounds } from '../geometry/bsp/model';
+import { IBSPNode } from '../geometry/bsp/model';
 import { getEmbeddedTextureSources } from '../textures/embedded-textures';
 
 /// <reference path="../../renderer/electron.d.ts" />
@@ -20,6 +23,7 @@ export class WorldLoader {
     private loadedFile: string | null = null;
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
+    private bspTree: IBSPNode | null = null;
     private worldConfig: IWorldConfigState = {};
     private textureSources: ITextureSource[] = [];
     private unsubscribe: () => void;
@@ -49,7 +53,8 @@ export class WorldLoader {
             this.camera = state.player.camera;
             this.wallGeometry = state.walls.geometry;
             this.worldConfig = state.worldConfig;
-            this.textureSources = state.textures.sources;            
+            this.textureSources = state.textures.sources;
+            this.bspTree = state.bsp.tree;
         });
     }
 
@@ -115,9 +120,11 @@ export class WorldLoader {
 
     private saveFile = async (path: string): Promise<void> => {
         try {
+            const storedGeometry = storeGeometry(this.wallGeometry);
             const data = JSON.stringify({
                 camera: this.camera, 
-                geometry: storeGeometry(this.wallGeometry),
+                geometry: storedGeometry,
+                bsp: this.bspTree,
                 config: this.worldConfig,
                 textureSources: this.textureSources 
             });
@@ -139,7 +146,11 @@ export class WorldLoader {
         dispatch(textureActions.initialize(textureSources));
         dispatch(cameraActions.initializeCamera(w.camera ? makeCamera(w.camera): DEFAULT_CAMERA));
         dispatch(wallActions.loadWalls(w.geometry || EMPTY_GEOMETRY));
-        dispatch(worldActions.initialize(w.config || {fadeOn: null}));         
+        dispatch(worldActions.initialize(w.config || {fadeOn: null}));
+        // Restore BSP: prefer top-level bsp field, fall back to legacy geometry.bsp
+        const savedBsp = w.bsp || (w.geometry && w.geometry.bsp) || null;
+        const bsp = savedBsp ? recomputeBspBounds(savedBsp) : null;
+        dispatch(setBsp(bsp));
     }
 
     private showError = (title: string, message: string): void => {

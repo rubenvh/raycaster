@@ -1,4 +1,3 @@
-import { IBSPNode, recomputeBspBounds } from './bsp/model';
 import { selectPolygon } from './../selection/selectable';
 
 import * as vector from '../math/vector';
@@ -11,21 +10,20 @@ import { SelectableElement, selectEdge, selectVertex } from '../selection/select
 import { areEqual, areClose, IVertex, IVertexMap, makeVertex } from './vertex';
 import { cloneMaterial } from './properties';
 
-export type IStoredGeometry = IEntity & { polygons: IStoredPolygon[],bsp?: IBSPNode};
-export type IGeometry = IEntity & { polygons: IPolygon[], bsp?: IBSPNode, edgeCount: number, bounds: vector.Vector};
+export type IStoredGeometry = IEntity & { polygons: IStoredPolygon[]};
+export type IGeometry = IEntity & { polygons: IPolygon[], edgeCount: number, bounds: vector.Vector};
 export const EMPTY_GEOMETRY: IGeometry = {polygons: [], edgeCount: 0, bounds: [0,0]};
-export const storeGeometry = (g: IGeometry): IStoredGeometry => ({id: g.id, polygons: g.polygons.map(storePolygon), bsp: g.bsp});
+export const storeGeometry = (g: IGeometry): IStoredGeometry => ({id: g.id, polygons: g.polygons.map(storePolygon)});
 export const loadGeometry = (g : IStoredGeometry): IGeometry => {
     const polygons = g.polygons.map(loadPolygon);
-    const bsp = g.bsp ? recomputeBspBounds(g.bsp) : undefined;
-    return ({id: g.id, polygons, edgeCount: countEdges(polygons), bounds: findBounds(polygons), bsp});
+    return ({id: g.id, polygons, edgeCount: countEdges(polygons), bounds: findBounds(polygons)});
 };
 export const createGeometry = (polygonCollection: vector.Vector[][]): IGeometry => {
     const polygons = polygonCollection.map(createPolygon);
     return ({polygons, edgeCount: countEdges(polygons), bounds: findBounds(polygons)});
 };
 export const addPolygon = (p: IPolygon, geometry: IGeometry): IGeometry => ({...geometry, 
-    polygons: [...geometry.polygons, p], edgeCount: geometry.edgeCount+1, bsp: null});
+    polygons: [...geometry.polygons, p], edgeCount: geometry.edgeCount+1});
 const countEdges = (ps : IPolygon[]): number => ps.reduce((acc, p) => acc + p.edgeCount, 0);
 const findBounds = (ps : IPolygon[]): vector.Vector => ps.reduce((acc, p) => vector.maximumComponents(acc, p.boundingBox[1]), [0,0] as vector.Vector);
 export const detectCollisionAt = (vector: vector.Vector, geometry: IGeometry): collision.Collision => {
@@ -49,7 +47,7 @@ const forkPolygons = (ids: IEntityKey[], geometry: IGeometry, polygonSplitter: (
         })), [] as IPolygon[]);
 
     const polygons = [...unchanged, ...adaptedPolygons];
-    return ({...geometry, bsp: null, polygons, edgeCount: countEdges(polygons), bounds: findBounds(polygons)});
+    return ({...geometry, polygons, edgeCount: countEdges(polygons), bounds: findBounds(polygons)});
 };
 
 const adaptPolygons = (ids: IEntityKey[], geometry: IGeometry, edgeTransformer: (poligon: IPolygon)=>IEdge[]) => {    
@@ -132,7 +130,7 @@ export const duplicatePolygons = (poligons: IPolygon[], delta: vector.Vector, ge
     const newPoligons = poligons.map(p => 
         loadPolygon(giveIdentity<IStoredPolygon>({edges: p.edges.map(e => duplicateEdge(e, delta))})));
     return [
-        {...geometry, polygons: [...geometry.polygons, ...newPoligons], bsp: null},
+        {...geometry, polygons: [...geometry.polygons, ...newPoligons]},
         newPoligons];
 };
 
@@ -694,7 +692,6 @@ export const insetPolygon = (polygonId: IEntityKey, dist: number, geometry: IGeo
 
     const newGeometry = {
         ...geometry,
-        bsp: null,
         polygons: [...geometry.polygons, innerPolygon],
         edgeCount: countEdges([...geometry.polygons, innerPolygon]),
         bounds: findBounds([...geometry.polygons, innerPolygon]),
@@ -780,7 +777,7 @@ export const mergePolygons = (polygonIds: IEntityKey[], geometry: IGeometry): IG
     // Remove merged polygons, add the new one
     const remaining = geometry.polygons.filter(p => !polygonIds.includes(p.id));
     const polygons = [...remaining, mergedPolygon];
-    return { ...geometry, bsp: null, polygons, edgeCount: countEdges(polygons), bounds: findBounds(polygons) };
+    return { ...geometry, polygons, edgeCount: countEdges(polygons), bounds: findBounds(polygons) };
 };
 
 // ============================================================================

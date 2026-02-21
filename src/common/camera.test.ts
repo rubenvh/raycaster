@@ -216,42 +216,42 @@ describe('camera tests', () => {
     describe('move (constrained)', () => {
         test('moves forward when no wall in the way', () => {
             // Create geometry with a wall far away
-            const geom = geometries.withBsp([
+            const { geometry: geom, bsp } = geometries.withBsp([
                 [[0, 100], [100, 100], [100, 200], [0, 200]]
             ]);
             const cam = makeCamera({ position: [50, 50], direction: [0, 10], plane: [15, 0] });
-            const result = move(1, cam, geom);
+            const result = move(1, cam, geom, undefined, bsp);
             // Should move forward since wall is far away
             expect(result.position[1]).toBeGreaterThan(cam.position[1]);
         });
 
         test('moves backward when no wall behind', () => {
-            const geom = geometries.withBsp([
+            const { geometry: geom, bsp } = geometries.withBsp([
                 [[0, 100], [100, 100], [100, 200], [0, 200]]
             ]);
             const cam = makeCamera({ position: [50, 50], direction: [0, 10], plane: [15, 0] });
-            const result = move(-1, cam, geom);
+            const result = move(-1, cam, geom, undefined, bsp);
             expect(result.position[1]).toBeLessThan(cam.position[1]);
         });
 
         test('stops when wall is very close', () => {
             // Wall directly in front, very close
-            const geom = geometries.withBsp([
+            const { geometry: geom, bsp } = geometries.withBsp([
                 [[0, 51], [100, 51], [100, 52], [0, 52]]
             ]);
             const cam = makeCamera({ position: [50, 50], direction: [0, 10], plane: [15, 0] });
-            const result = move(1, cam, geom);
+            const result = move(1, cam, geom, undefined, bsp);
             // Should not move much or stay in place due to collision
             expect(Math.abs(result.position[1] - cam.position[1])).toBeLessThan(2);
         });
 
         test('uses custom speed parameter', () => {
-            const geom = geometries.withBsp([
+            const { geometry: geom, bsp } = geometries.withBsp([
                 [[0, 1000], [100, 1000], [100, 1100], [0, 1100]]
             ]);
             const cam = makeCamera({ position: [50, 50], direction: [0, 10], plane: [15, 0] });
-            const slowResult = move(1, cam, geom, 0.05);
-            const fastResult = move(1, cam, geom, 0.5);
+            const slowResult = move(1, cam, geom, 0.05, bsp);
+            const fastResult = move(1, cam, geom, 0.5, bsp);
             // Faster speed should move further
             const slowDelta = Math.abs(slowResult.position[1] - cam.position[1]);
             const fastDelta = Math.abs(fastResult.position[1] - cam.position[1]);
@@ -261,11 +261,11 @@ describe('camera tests', () => {
 
     describe('strafe (constrained)', () => {
         test('strafes when no wall nearby', () => {
-            const geom = geometries.withBsp([
+            const { geometry: geom, bsp } = geometries.withBsp([
                 [[-100, 0], [-100, 100], [-200, 100], [-200, 0]]
             ]);
             const cam = makeCamera({ position: [50, 50], direction: [0, 10], plane: [15, 0] });
-            const result = strafe(1, cam, geom);
+            const result = strafe(1, cam, geom, undefined, bsp);
             // strafe direction 1 should use plane-based ray
             expect(result.position).not.toEqual(cam.position);
         });

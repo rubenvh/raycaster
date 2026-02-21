@@ -15,6 +15,7 @@ import * as path from 'path';
 
 import { loadGeometry, IGeometry } from '../geometry/geometry';
 import { buildBspTree } from '../geometry/bsp/creation';
+import { IBSPNode } from '../geometry/bsp/model';
 import { ZBufferCore } from './zbuffering/zbuffer-core';
 import { 
   generateComplexMap, 
@@ -117,7 +118,8 @@ function measureAllocation(
   renderer: ZBufferCore,
   geometry: IGeometry,
   cameraPath: CameraPath,
-  frameCount: number
+  frameCount: number,
+  bsp?: IBSPNode | null
 ): AllocationMetrics {
   const frameTimes: number[] = [];
   const heapSamples: number[] = [];
@@ -131,7 +133,7 @@ function measureAllocation(
     const camera = getCameraAtFrame(cameraPath, frame % 100); // Loop camera path
     
     const startTime = performance.now();
-    renderer.render(geometry, camera, RESOLUTION);
+    renderer.render(geometry, camera, RESOLUTION, bsp);
     const endTime = performance.now();
     
     frameTimes.push(endTime - startTime);
@@ -161,6 +163,7 @@ function measureAllocation(
 
 describe('Allocation and GC Pressure Benchmark', () => {
   let geometry: IGeometry;
+  let bsp: IBSPNode;
   let cameraPath: CameraPath;
   
   // Load textures and generate test geometry
@@ -174,11 +177,8 @@ describe('Allocation and GC Pressure Benchmark', () => {
       seed: SEED,
     });
     
-    const geomNoBsp = loadGeometry(stored);
-    geometry = {
-      ...geomNoBsp,
-      bsp: buildBspTree(geomNoBsp.polygons),
-    };
+    geometry = loadGeometry(stored);
+    bsp = buildBspTree(geometry.polygons);
     
     cameraPath = generateCameraPath(geometry, 10, 10, SEED);
     
@@ -196,7 +196,8 @@ describe('Allocation and GC Pressure Benchmark', () => {
         rendererNoReuse,
         geometry,
         cameraPath,
-        SUSTAINED_FRAMES
+        SUSTAINED_FRAMES,
+        bsp
       );
       
       // Force GC between tests
@@ -209,7 +210,8 @@ describe('Allocation and GC Pressure Benchmark', () => {
         rendererWithReuse,
         geometry,
         cameraPath,
-        SUSTAINED_FRAMES
+        SUSTAINED_FRAMES,
+        bsp
       );
       
       // Calculate comparison
@@ -284,7 +286,7 @@ describe('Allocation and GC Pressure Benchmark', () => {
       
       for (let frame = 0; frame < extendedFrames; frame++) {
         const camera = getCameraAtFrame(cameraPath, frame % 100);
-        renderer.render(geometry, camera, RESOLUTION);
+        renderer.render(geometry, camera, RESOLUTION, bsp);
         
         if (frame % sampleInterval === 0) {
           heapSamples.push(process.memoryUsage().heapUsed);

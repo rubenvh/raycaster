@@ -1,4 +1,3 @@
-import { IBSPNode } from './../geometry/bsp/model';
 import { createPolygon as doCreatePolygon, IPolygon } from './../geometry/polygon';
 import { IEntityKey } from './../geometry/entity';
 import { IEdge } from './../geometry/edge';
@@ -107,9 +106,6 @@ const slice = createSlice({
       const vertexMap = new Map<string, IVertex[]>([[polygonId, [vertex]]]);
       undoableUpdate(state, moveVertices(false, direction, vertexMap, state.geometry));
     },
-    updateBsp: (state, action: PayloadAction<IBSPNode>) => {
-      state.geometry.bsp = action.payload;
-    },
     subdivideEdge: (state, action: PayloadAction<{edge: IEdge, polygon: IEntityKey, segments: number}>) => {
       const {edge, polygon, segments} = action.payload;
       undoableUpdate(state, doSubdivideEdge(edge, polygon, segments, state.geometry));
@@ -177,7 +173,7 @@ const undoableUpdate = (state: IWallState, geometry: IGeometry) => {
 export default slice.reducer
 // Actions
 export const { undo, redo, loadWalls, updateWalls, adaptEdges, splitEdge, move, remove, createPolygon, clonePolygon, 
-              expandPolygon, reversePolygon, splitPolygon, rotatePolygon, editVertex, updateBsp,
+              expandPolygon, reversePolygon, splitPolygon, rotatePolygon, editVertex,
               subdivideEdge, extrudeEdge, bevelVertex, insetEdge, flipPolygon, scalePolygon,
               regularizePolygon, convexHull, insetPolygon, mergePolygons, alignVertices, alignPolygons,
               weldVertices, createRegularPolygon } = slice.actions

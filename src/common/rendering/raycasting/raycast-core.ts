@@ -7,6 +7,7 @@
 
 import { IGeometry } from '../../geometry/geometry';
 import { ICamera, makeRays } from '../../camera';
+import { IBSPNode } from '../../geometry/bsp/model';
 import { RenderMetrics } from '../benchmark-types';
 import { ColumnHit, IRendererCore, RenderResult } from '../renderer-core';
 import { castCollisionRays, CastedRays } from './raycaster';
@@ -27,14 +28,14 @@ export class RaycastCore implements IRendererCore {
    */
   constructor(private captureHits: boolean = false) {}
 
-  render(geometry: IGeometry, camera: ICamera, resolution: number): RenderResult {
+  render(geometry: IGeometry, camera: ICamera, resolution: number, bsp?: IBSPNode | null): RenderResult {
     const startTime = performance.now();
     
     // Generate rays for each screen column
     const rays = makeRays(resolution, camera);
     
     // Cast all rays against geometry
-    const castedRays: CastedRays = castCollisionRays(rays, geometry);
+    const castedRays: CastedRays = castCollisionRays(rays, geometry, bsp);
     
     // Calculate metrics from results
     let edgesTested = 0;

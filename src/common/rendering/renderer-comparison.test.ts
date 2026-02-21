@@ -118,16 +118,16 @@ describe('Renderer Comparison: frustum culling correctness', () => {
         const camDef = scene.cameras[camIdx];
         
         test(`camera ${camIdx}: pos=[${camDef.position}] dir=[${camDef.direction}]`, () => {
-          const geom = geometries.withBsp(scene.polygons);
+          const { geometry: geom, bsp } = geometries.withBsp(scene.polygons);
           const camera: ICamera = makeCamera(camDef);
           
           // Render with frustum culling
           const withCulling = new ZBufferCore(false, true, true);
-          const resultCulled = withCulling.render(geom, camera, resolution);
+          const resultCulled = withCulling.render(geom, camera, resolution, bsp);
           
           // Render without frustum culling
           const withoutCulling = new ZBufferCore(false, true, false);
-          const resultNoCull = withoutCulling.render(geom, camera, resolution);
+          const resultNoCull = withoutCulling.render(geom, camera, resolution, bsp);
           
           // Both should have column hits (captureHits=true)
           expect(resultCulled.columnHits).toBeDefined();
@@ -153,7 +153,7 @@ describe('Renderer Comparison: frustum culling correctness', () => {
   
   test('frustum culling tests fewer edges (performance benefit)', () => {
     // Use a scene where some geometry is clearly outside the frustum
-    const geom = geometries.withBsp([
+    const { geometry: geom, bsp } = geometries.withBsp([
       // Wall directly in front
       [[0, 20], [100, 20], [100, 30], [0, 30]],
       // Walls far to the sides (should be culled)
@@ -167,8 +167,8 @@ describe('Renderer Comparison: frustum culling correctness', () => {
     const withCulling = new ZBufferCore(false, false, true);
     const withoutCulling = new ZBufferCore(false, false, false);
     
-    const resultCulled = withCulling.render(geom, camera, 64);
-    const resultNoCull = withoutCulling.render(geom, camera, 64);
+    const resultCulled = withCulling.render(geom, camera, 64, bsp);
+    const resultNoCull = withoutCulling.render(geom, camera, 64, bsp);
     
     // Frustum culling should test fewer or equal edges
     expect(resultCulled.metrics.edgesTested).toBeLessThanOrEqual(

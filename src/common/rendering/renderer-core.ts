@@ -7,6 +7,7 @@
 
 import { IGeometry } from '../geometry/geometry';
 import { ICamera } from '../camera';
+import { IBSPNode } from '../geometry/bsp/model';
 import { RenderMetrics } from './benchmark-types';
 
 /**
@@ -52,7 +53,8 @@ export interface IRendererCore {
    * @param geometry - The world geometry to render
    * @param camera - The camera viewpoint
    * @param resolution - Screen width in pixels (columns)
+   * @param bsp - Optional BSP tree (separate from geometry)
    * @returns Metrics about the rendering work performed
    */
-  render(geometry: IGeometry, camera: ICamera, resolution: number): RenderResult;
+  render(geometry: IGeometry, camera: ICamera, resolution: number, bsp?: IBSPNode | null): RenderResult;
 }

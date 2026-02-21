@@ -222,14 +222,14 @@ describe('geometry tests', () => {
             expect(edgesWithMaterial.length).toBeGreaterThanOrEqual(2);
         });
 
-        it('clears BSP tree after modification', () => {
+        it('BSP is no longer on geometry (managed by bspState)', () => {
             const geometry = createGeometry([[[0, 0], [100, 0], [100, 100]]]);
-            (geometry as any).bsp = {}; // Set fake BSP
             const polygon = geometry.polygons[0];
             
             const result = splitEdge([50, 0], polygon.edges[0], polygon.id, geometry);
             
-            expect(result.bsp).toBeNull();
+            // BSP is no longer a property of geometry
+            expect((result as any).bsp).toBeUndefined();
         });
     });
 
@@ -709,13 +709,13 @@ describe('geometry tests', () => {
             expect(stored.polygons.length).toBe(1);
         });
 
-        it('stores BSP if present', () => {
+        it('BSP is no longer stored on geometry', () => {
             const geometry = createGeometry([[[0, 0], [100, 0], [100, 100]]]);
-            (geometry as any).bsp = { type: 'leaf' };
             
             const stored = storeGeometry(geometry);
             
-            expect(stored.bsp).toEqual({ type: 'leaf' });
+            // BSP is managed externally by bspState, not stored on geometry
+            expect((stored as any).bsp).toBeUndefined();
         });
     });
 

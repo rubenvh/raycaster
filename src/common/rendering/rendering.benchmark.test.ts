@@ -19,6 +19,7 @@ import * as path from 'path';
 
 import { loadGeometry, IGeometry } from '../geometry/geometry';
 import { buildBspTree } from '../geometry/bsp/creation';
+import { IBSPNode } from '../geometry/bsp/model';
 import { IRendererCore } from './renderer-core';
 import { ZBufferCore } from './zbuffering/zbuffer-core';
 import { RaycastCore } from './raycasting/raycast-core';
@@ -190,13 +191,14 @@ function createBenchmarkResult(
 function runRendererBenchmark(
   renderer: IRendererCore,
   geometry: IGeometry,
-  cameraPath: CameraPath
+  cameraPath: CameraPath,
+  bsp?: IBSPNode | null
 ): RenderMetrics[] {
   const frameMetrics: RenderMetrics[] = [];
 
   for (let frame = 0; frame < FRAME_COUNT; frame++) {
     const camera = getCameraAtFrame(cameraPath, frame);
-    const result = renderer.render(geometry, camera, RESOLUTION);
+    const result = renderer.render(geometry, camera, RESOLUTION, bsp);
     frameMetrics.push(result.metrics);
   }
 
@@ -299,7 +301,7 @@ describe('Rendering Performance Benchmark', () => {
     MATERIAL_CONFIGS.forEach(materialPreset => {
       describe(`${sizeConfig.name} map (${sizeConfig.polygons} polygons) - ${materialPreset} materials`, () => {
         let geometryNoBsp: IGeometry;
-        let geometryWithBsp: IGeometry;
+        let bsp: IBSPNode;
         let cameraPath: CameraPath;
 
         beforeAll(() => {
@@ -314,13 +316,10 @@ describe('Rendering Performance Benchmark', () => {
           geometryNoBsp = loadGeometry(stored);
 
           // Build BSP tree for BSP-based renderer
-          geometryWithBsp = {
-            ...geometryNoBsp,
-            bsp: buildBspTree(geometryNoBsp.polygons),
-          };
+          bsp = buildBspTree(geometryNoBsp.polygons);
 
           // Generate camera path
-          cameraPath = generateCameraPath(geometryWithBsp, 10, 10, SEED);
+          cameraPath = generateCameraPath(geometryNoBsp, 10, 10, SEED);
 
           console.log(`\nGenerated ${sizeConfig.name} map: ${geometryNoBsp.polygons.length} polygons, ${geometryNoBsp.edgeCount} edges`);
         });
@@ -328,17 +327,19 @@ describe('Rendering Performance Benchmark', () => {
         // Test each renderer
         renderers.forEach(renderer => {
           test(`${renderer.name}`, () => {
-            // Select appropriate geometry based on renderer requirements
-            const geometry = renderer.requiresBsp ? geometryWithBsp : geometryNoBsp;
-
-            // Run benchmark
-            const frameMetrics = runRendererBenchmark(renderer, geometry, cameraPath);
+            // Run benchmark (BSP is passed separately for renderers that need it)
+            const frameMetrics = runRendererBenchmark(
+              renderer,
+              geometryNoBsp,
+              cameraPath,
+              renderer.requiresBsp ? bsp : undefined
+            );
 
             // Create and store result
             const result = createBenchmarkResult(frameMetrics, {
               mapName: sizeConfig.name,
-              polygonCount: geometry.polygons.length,
-              edgeCount: geometry.edgeCount,
+              polygonCount: geometryNoBsp.polygons.length,
+              edgeCount: geometryNoBsp.edgeCount,
               renderer: renderer.name,
               materialPreset,
             });

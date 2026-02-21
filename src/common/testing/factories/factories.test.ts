@@ -616,11 +616,12 @@ describe('geometryFactory', () => {
     });
 
     it('withBsp() builds a BSP tree', () => {
-        const g = gf.fromPolygons([
+        const { geometry: g, bsp } = gf.fromPolygons([
             [[0, 0], [10, 0], [10, 10], [0, 10]],
             [[20, 20], [30, 20], [30, 30], [20, 30]]
         ]).withBsp().build();
-        expect(g.bsp).toBeDefined();
+        expect(bsp).toBeDefined();
+        expect(g.polygons).toHaveLength(2);
     });
 
     it('singleRectangle() with defaults', () => {
@@ -708,11 +709,11 @@ describe('geometries convenience functions', () => {
     });
 
     it('geometries.withBsp() creates geometry with BSP tree', () => {
-        const g = geometries.withBsp([
+        const { geometry: g, bsp } = geometries.withBsp([
             [[0, 0], [10, 0], [10, 10], [0, 10]],
             [[20, 20], [30, 20], [30, 30], [20, 30]]
         ]);
-        expect(g.bsp).toBeDefined();
+        expect(bsp).toBeDefined();
         expect(g.polygons).toHaveLength(2);
     });
 });

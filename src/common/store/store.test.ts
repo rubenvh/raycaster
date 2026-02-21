@@ -1,5 +1,5 @@
 import wallsReducer, { loadWalls, updateWalls, undo, redo, move, remove, createPolygon, 
-    clonePolygon, expandPolygon, reversePolygon, splitPolygon, rotatePolygon, editVertex, updateBsp, 
+    clonePolygon, expandPolygon, reversePolygon, splitPolygon, rotatePolygon, editVertex,
     splitEdge, adaptEdges, IWallState,
     subdivideEdge, extrudeEdge, bevelVertex, insetEdge, flipPolygon, scalePolygon,
     regularizePolygon, convexHull, insetPolygon, mergePolygons, alignVertices, alignPolygons,
@@ -15,7 +15,6 @@ import { DEFAULT_CAMERA, makeCamera } from '../camera';
 import { geometries, resetTestRandom, edges } from '../testing/factories';
 import { selectVertex, selectEdge, selectPolygon } from '../selection/selectable';
 import { makeVertex } from '../geometry/vertex';
-import { buildBspTree } from '../geometry/bsp/creation';
 import { EMPTY_STATS } from '../rendering/raycasting/raycaster';
 
 beforeEach(() => resetTestRandom());
@@ -167,14 +166,11 @@ describe('walls slice', () => {
         });
     });
 
-    describe('updateBsp', () => {
-        test('sets BSP tree on geometry', () => {
+    describe('BSP is managed by bspState (not walls)', () => {
+        test('geometry no longer has bsp property', () => {
             const geom = createGeometry([[[0, 0], [100, 0], [100, 100], [0, 100]]]);
             let state = wallsReducer(initialState, updateWalls(geom));
-            expect(state.geometry.bsp).toBeUndefined();
-            const bsp = buildBspTree(geom.polygons);
-            state = wallsReducer(state, updateBsp(bsp));
-            expect(state.geometry.bsp).toBeDefined();
+            expect((state.geometry as any).bsp).toBeUndefined();
         });
     });
 
@@ -645,20 +641,20 @@ describe('player slice', () => {
 
     describe('moveCamera', () => {
         test('moves camera forward', () => {
-            const geom = geometries.withBsp([
+            const { geometry: geom, bsp } = geometries.withBsp([
                 [[0, 1000], [100, 1000], [100, 1100], [0, 1100]]
             ]);
-            const state = playerReducer(initialState, moveCamera({ direction: 1, geometry: geom, speed: 0.15 }));
+            const state = playerReducer(initialState, moveCamera({ direction: 1, geometry: geom, bsp, speed: 0.15 }));
             expect(state.camera.position[1]).toBeGreaterThan(50);
         });
     });
 
     describe('strafeCamera', () => {
         test('strafes camera', () => {
-            const geom = geometries.withBsp([
+            const { geometry: geom, bsp } = geometries.withBsp([
                 [[-1000, 0], [-1000, 100], [-1100, 100], [-1100, 0]]
             ]);
-            const state = playerReducer(initialState, strafeCamera({ direction: 1, geometry: geom, speed: 0.15 }));
+            const state = playerReducer(initialState, strafeCamera({ direction: 1, geometry: geom, bsp, speed: 0.15 }));
             expect(state.camera.position).not.toEqual(DEFAULT_CAMERA.position);
         });
     });

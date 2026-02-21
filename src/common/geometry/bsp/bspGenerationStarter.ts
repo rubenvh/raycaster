@@ -1,6 +1,6 @@
 import { useAppDispatch } from "../../store";
 import { connect } from "../../store/store-connector";
-import { updateBsp } from "../../store/walls";
+import { setBsp } from "../../store/bsp-state";
 import { EMPTY_GEOMETRY, IGeometry } from "../geometry";
 import { IBSPNode } from "./model";
 import { buildBspTree } from './creation'
@@ -41,7 +41,7 @@ export class BspGenerationStarter {
     
     private generateLocal = () => {
         const tree = buildBspTree(this.geometry.polygons);
-        dispatch(updateBsp(tree))
+        dispatch(setBsp(tree))
     }
 
     // TODO: this can be used for web worker based bsp generation (for now not needed)
@@ -52,7 +52,7 @@ export class BspGenerationStarter {
         this.workerMessageHandler = (e: MessageEvent) => {
             console.log('Finished bsp construction', e);            
             const bsp = (<MessageEvent<IBSPNode>>e).data;
-            dispatch(updateBsp(bsp))
+            dispatch(setBsp(bsp))
             this.terminateWorker();
         };
         this.worker.addEventListener('message', this.workerMessageHandler);
