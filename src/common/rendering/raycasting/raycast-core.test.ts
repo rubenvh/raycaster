@@ -1,6 +1,7 @@
 import { RaycastCore } from './raycast-core';
 import { geometries, resetTestRandom } from '../../testing/factories';
 import { makeCamera } from '../../camera';
+import { IBspContext, IMutableEdgeDiff } from '../../store/bsp-state';
 
 beforeEach(() => resetTestRandom());
 
@@ -115,6 +116,38 @@ describe('RaycastCore', () => {
             const result2 = core.render(multiPoly, cam, 32, multiBspContext);
             // More geometry should mean more visible edges
             expect(result2.metrics.edgesVisible).toBeGreaterThanOrEqual(result1.metrics.edgesVisible);
+        });
+
+        test('passes dirty edges through to castCollisionRays', () => {
+            // Build BSP from a far wall, then add a closer wall as dirty
+            const { bsp } = geometries.withBsp([
+                [[0, 50], [100, 50], [100, 60], [0, 60]]
+            ]);
+            const geom = geometries.from([
+                [[0, 50], [100, 50], [100, 60], [0, 60]],
+                [[0, 20], [100, 20], [100, 21], [0, 21]],  // Closer dirty wall
+            ]);
+            const addedIds = new Set<string>();
+            for (const e of geom.polygons[1].edges) {
+                if (e.id) addedIds.add(e.id);
+            }
+            const dirtyEdges: IMutableEdgeDiff = {
+                removedEdgeIds: new Set(),
+                addedEdgeIds: addedIds,
+                modifiedEdgeIds: new Set(),
+            };
+            const bspContext: IBspContext = { tree: bsp, dirtyEdges };
+            const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
+            const core = new RaycastCore(true);  // captureHits = true
+            const result = core.render(geom, cam, 32, bspContext);
+            // Should see the dirty wall (visible edges > 0)
+            expect(result.metrics.edgesVisible).toBeGreaterThan(0);
+            // Column hits should include edges at close distance (~20)
+            expect(result.columnHits).toBeDefined();
+            const hasCloseHit = result.columnHits!.some(hits =>
+                hits.some(h => h.distance < 30)
+            );
+            expect(hasCloseHit).toBe(true);
         });
     });
 });

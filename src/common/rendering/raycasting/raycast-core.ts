@@ -30,13 +30,12 @@ export class RaycastCore implements IRendererCore {
 
   render(geometry: IGeometry, camera: ICamera, resolution: number, bspContext?: IBspContext): RenderResult {
     const startTime = performance.now();
-    const bsp = bspContext?.tree ?? null;
     
     // Generate rays for each screen column
     const rays = makeRays(resolution, camera);
     
-    // Cast all rays against geometry
-    const castedRays: CastedRays = castCollisionRays(rays, geometry, bsp);
+    // Cast all rays against geometry (pass full bspContext for dirty-edge awareness)
+    const castedRays: CastedRays = castCollisionRays(rays, geometry, bspContext);
     
     // Calculate metrics from results
     let edgesTested = 0;

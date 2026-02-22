@@ -5,7 +5,7 @@ import { makeCamera, makeRays } from '../../camera';
 import { IEdge } from '../../geometry/edge';
 import { buildBspTree } from '../../geometry/bsp/creation';
 import { IBSPNode } from '../../geometry/bsp/model';
-import { IBspContext } from '../../store/bsp-state';
+import { IBspContext, IMutableEdgeDiff } from '../../store/bsp-state';
 import { Vector } from '../../math/vector';
 import { createGeometry, IGeometry } from '../../geometry/geometry';
 import { Face } from '../../geometry/properties';
@@ -96,16 +96,16 @@ describe('raycaster', () => {
         test('returns results for each ray', () => {
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
             const rays = makeRays(10, cam);
-            const { geometry: geom, bsp } = makeSimpleGeometry();
-            const result = castCollisionRays(rays, geom, bsp);
+            const { geometry: geom, bspContext } = makeSimpleGeometry();
+            const result = castCollisionRays(rays, geom, bspContext);
             expect(result.castedRays.length).toBe(rays.length);
         });
 
         test('returns stats with polygon information', () => {
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [15, 0] });
             const rays = makeRays(5, cam);
-            const { geometry: geom, bsp } = makeSimpleGeometry();
-            const result = castCollisionRays(rays, geom, bsp);
+            const { geometry: geom, bspContext } = makeSimpleGeometry();
+            const result = castCollisionRays(rays, geom, bspContext);
             expect(result.stats).toBeDefined();
             expect(result.stats.polygons).toBeDefined();
         });
@@ -113,8 +113,8 @@ describe('raycaster', () => {
         test('finds hits for rays pointing at geometry', () => {
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [5, 0] });
             const rays = makeRays(5, cam);
-            const { geometry: geom, bsp } = makeSimpleGeometry();
-            const result = castCollisionRays(rays, geom, bsp);
+            const { geometry: geom, bspContext } = makeSimpleGeometry();
+            const result = castCollisionRays(rays, geom, bspContext);
             // At least some rays should hit the wall
             const hasHits = result.castedRays.some(cr =>
                 cr.hits.some(h => h.distance < Number.POSITIVE_INFINITY)
@@ -125,8 +125,8 @@ describe('raycaster', () => {
         test('returns infinity for rays missing geometry', () => {
             const cam = makeCamera({ position: [50, 0], direction: [0, -10], plane: [5, 0] });
             const rays = makeRays(5, cam);
-            const { geometry: geom, bsp } = makeSimpleGeometry();
-            const result = castCollisionRays(rays, geom, bsp);
+            const { geometry: geom, bspContext } = makeSimpleGeometry();
+            const result = castCollisionRays(rays, geom, bspContext);
             // All rays pointing away should miss
             const allMissed = result.castedRays.every(cr =>
                 cr.hits.every(h => h.distance === Number.POSITIVE_INFINITY)
@@ -144,20 +144,20 @@ describe('raycaster', () => {
             }
             const bsp = buildBspTree(geom.polygons);
             const ray = makeRay([50, 0], [0, 1]);
-            const result = castCollisionRays([ray], geom, bsp);
+            const result = castCollisionRays([ray], geom, { tree: bsp, dirtyEdges: { removedEdgeIds: new Set(), addedEdgeIds: new Set(), modifiedEdgeIds: new Set() } });
             // No material => needsRendering returns false => infinity
             expect(result.castedRays[0].hits[0].distance).toBe(Number.POSITIVE_INFINITY);
         });
 
         test('hits are sorted by distance (closest first)', () => {
             // Create geometry with two walls at different distances
-            const { geometry: geom, bsp } = geometries.withBsp([
+            const { geometry: geom, bspContext } = geometries.withBsp([
                 [[0, 20], [100, 20], [100, 21], [0, 21]],
                 [[0, 40], [100, 40], [100, 41], [0, 41]]
             ]);
             const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [5, 0] });
             const rays = makeRays(5, cam);
-            const result = castCollisionRays(rays, geom, bsp);
+            const result = castCollisionRays(rays, geom, bspContext);
             for (const cr of result.castedRays) {
                 for (let i = 1; i < cr.hits.length; i++) {
                     expect(cr.hits[i].distance).toBeGreaterThanOrEqual(cr.hits[i - 1].distance);
@@ -171,6 +171,112 @@ describe('raycaster', () => {
             const rays = makeRays(3, cam);
             const result = castCollisionRays(rays, geom);
             expect(result.castedRays.length).toBe(rays.length);
+        });
+
+        test('skips stale edges during BSP walk when dirtyEdges provided', () => {
+            // Build BSP, then mark an edge as modified — the stale BSP version should be skipped
+            const { geometry: geom, bsp } = makeSimpleGeometry();
+            // Get the ID of an edge that would normally be hit
+            const targetEdge = geom.polygons[0].edges[0];
+            const edgeId = targetEdge.id!;
+            const dirtyEdges: IMutableEdgeDiff = {
+                removedEdgeIds: new Set(),
+                addedEdgeIds: new Set(),
+                modifiedEdgeIds: new Set([edgeId]),
+            };
+            // Cast a ray that would hit the edge — but it's marked stale in BSP
+            const ray = makeRay([50, 0], [0, 1]);
+            const result = castCollisionRays([ray], geom, { tree: bsp, dirtyEdges });
+            // The stale edge should be skipped in the BSP walk,
+            // but found again via the brute-force dirty-edge pass (since it's in current geometry).
+            // So the hit should still register — but from the current geometry, not the BSP.
+            const hasHit = result.castedRays[0].hits.some(h => h.distance < Number.POSITIVE_INFINITY);
+            expect(hasHit).toBe(true);
+        });
+
+        test('finds added dirty edges via brute-force pass', () => {
+            // Build BSP from one polygon, then add a new polygon to geometry and mark its edges as added
+            const { geometry: geom, bsp } = geometries.withBsp([
+                [[0, 50], [100, 50], [100, 60], [0, 60]]  // Wall at y=50 (farther)
+            ]);
+            // Add a closer wall to current geometry that doesn't exist in the BSP
+            const closerGeom = geometries.from([
+                [[0, 50], [100, 50], [100, 60], [0, 60]],  // Original wall
+                [[0, 20], [100, 20], [100, 21], [0, 21]],  // New closer wall at y=20
+            ]);
+            // Mark the new wall's edges as added
+            const addedIds = new Set<string>();
+            for (const e of closerGeom.polygons[1].edges) {
+                if (e.id) addedIds.add(e.id);
+            }
+            const dirtyEdges: IMutableEdgeDiff = {
+                removedEdgeIds: new Set(),
+                addedEdgeIds: addedIds,
+                modifiedEdgeIds: new Set(),
+            };
+            const ray = makeRay([50, 0], [0, 1]);
+            const result = castCollisionRays([ray], closerGeom, { tree: bsp, dirtyEdges });
+            // Should find a hit at the closer wall (~distance 20)
+            const closestHit = result.castedRays[0].hits[0];
+            expect(closestHit.distance).toBeLessThan(30);
+        });
+
+        test('dirty-edge hits are inserted in sorted distance order', () => {
+            // Build BSP from a wall at y=40, add a dirty wall at y=20 (closer)
+            const { bsp } = geometries.withBsp([
+                [[0, 40], [100, 40], [100, 41], [0, 41]]
+            ]);
+            const geom = geometries.from([
+                [[0, 40], [100, 40], [100, 41], [0, 41]],
+                [[0, 20], [100, 20], [100, 21], [0, 21]],  // Closer dirty wall
+            ]);
+            const addedIds = new Set<string>();
+            for (const e of geom.polygons[1].edges) {
+                if (e.id) addedIds.add(e.id);
+            }
+            const dirtyEdges: IMutableEdgeDiff = {
+                removedEdgeIds: new Set(),
+                addedEdgeIds: addedIds,
+                modifiedEdgeIds: new Set(),
+            };
+            const cam = makeCamera({ position: [50, 0], direction: [0, 10], plane: [5, 0] });
+            const rays = makeRays(5, cam);
+            const result = castCollisionRays(rays, geom, { tree: bsp, dirtyEdges });
+            // All rays' hits should be in sorted distance order
+            for (const cr of result.castedRays) {
+                for (let i = 1; i < cr.hits.length; i++) {
+                    expect(cr.hits[i].distance).toBeGreaterThanOrEqual(cr.hits[i - 1].distance);
+                }
+            }
+        });
+
+        test('skips dirty edges without material', () => {
+            const { bsp } = geometries.withBsp([
+                [[0, 40], [100, 40], [100, 41], [0, 41]]
+            ]);
+            const geom = geometries.from([
+                [[0, 40], [100, 40], [100, 41], [0, 41]],
+                [[0, 20], [100, 20], [100, 21], [0, 21]],
+            ]);
+            // Remove material from the dirty wall's edges
+            for (const e of geom.polygons[1].edges) {
+                (e as any).material = undefined;
+            }
+            const addedIds = new Set<string>();
+            for (const e of geom.polygons[1].edges) {
+                if (e.id) addedIds.add(e.id);
+            }
+            const dirtyEdges: IMutableEdgeDiff = {
+                removedEdgeIds: new Set(),
+                addedEdgeIds: addedIds,
+                modifiedEdgeIds: new Set(),
+            };
+            const ray = makeRay([50, 0], [0, 1]);
+            const result = castCollisionRays([ray], geom, { tree: bsp, dirtyEdges });
+            // Should NOT find a hit for the materialless dirty wall at y=20,
+            // but should find the BSP wall at y=40
+            const closestHit = result.castedRays[0].hits[0];
+            expect(closestHit.distance).toBeGreaterThan(30);
         });
     });
 

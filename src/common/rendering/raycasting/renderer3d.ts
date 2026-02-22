@@ -15,6 +15,7 @@ import { textureLib, TextureLibrary } from '../../textures/textureLibrary';
 import { Texture } from '../../textures/texture';
 import { CastedRays, PartionedRayCaster } from './raycaster';
 import { IRenderer } from '../renderer';
+import { IBspContext } from '../../store/bsp-state';
 
 const dispatch = useAppDispatch();
 
@@ -39,7 +40,7 @@ export class Renderer3d implements IRenderer {
     private horizonDistance = 300;
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
-    private bspTree: import('../../geometry/bsp/model').IBSPNode | null = null;
+    private bspContext: IBspContext | null = null;
     private worldConfig: IWorldConfigState = {};
     private textureLibrary: TextureLibrary = textureLib;
     // private caster: PartionedRayCaster = new PartionedRayCaster();
@@ -54,7 +55,7 @@ export class Renderer3d implements IRenderer {
         connect(s => {
             this.camera = s.player.camera;
             this.worldConfig = s.worldConfig;
-            this.bspTree = s.bsp.tree;
+            this.bspContext = { tree: s.bsp.tree, dirtyEdges: s.bsp.dirtyEdges };
             if (this.wallGeometry != s.walls.geometry) {
                 this.wallGeometry = s.walls.geometry;
                 // this.caster.updateGeometry(this.wallGeometry);
@@ -64,7 +65,7 @@ export class Renderer3d implements IRenderer {
 
 
     public isActive(): boolean {
-        return !this.bspTree
+        return !this.bspContext?.tree;
     }
     private createWall = (hit: RayHit, rayIndex: number): WallProps => {
         const height = this.convertDistanceToWallHeight(hit.distance || this.horizonDistance);
@@ -94,7 +95,7 @@ export class Renderer3d implements IRenderer {
         //     .cast(makeRays(this.resolution, this.camera))
         //     .then(rays => this.processCastedRays(startCasting, fps, rays));
 
-        const rays = raycaster.castCollisionRays(makeRays(this.resolution, this.camera), this.wallGeometry, this.bspTree);
+        const rays = raycaster.castCollisionRays(makeRays(this.resolution, this.camera), this.wallGeometry, this.bspContext);
         this.processCastedRays(startCasting, fps, rays);
     };
 

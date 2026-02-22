@@ -46,14 +46,54 @@ export const castCameraRay = (ray: IRay, geometry: IGeometry, bspContext?: IBspC
 
     return bspHit;
 }
-export const castCollisionRays = (rays: IRay[], geometry: IGeometry, bsp?: IBSPNode | null): CastedRays => {
+export const castCollisionRays = (rays: IRay[], geometry: IGeometry, bspContext?: IBspContext): CastedRays => {
+    const bsp = bspContext?.tree ?? null;
+    const dirtyEdges = bspContext?.dirtyEdges;
     const options: RayCastingOptions = {
         // stop on closest non-translucent hit
         earlyExitPredicate: hit => !isTranslucent(hit.intersection.face, hit.edge.material),
-        // ignore edges without material
-        edgeFilter: edge => !!edge.material,
+        // ignore edges without material; also skip stale edges (removed/modified since last BSP build)
+        edgeFilter: dirtyEdges
+            ? edge => !!edge.material && !isStaleInBsp(edge.id, dirtyEdges)
+            : edge => !!edge.material,
     };
-    return castRays(rays, geometry, options, bsp);
+    const result = castRays(rays, geometry, options, bsp);
+
+    // Phase 2: brute-force test dirty edges from current geometry (added + modified).
+    // These edges are either not in the BSP (added) or at stale positions in the BSP
+    // (modified). We must test their current geometry positions for rendering.
+    if (dirtyEdges) {
+        const dirty = collectDirtyEdges(geometry, dirtyEdges);
+        for (let di = 0, dn = dirty.length; di < dn; di++) {
+            const edge = dirty[di];
+            if (!edge.material) continue;
+            for (let ri = 0, rn = rays.length; ri < rn; ri++) {
+                const hit = intersectRayEdge(edge, rays[ri]);
+                if (!hit || !needsRendering(hit)) continue;
+                // Insert into the ray's sorted hits array (binary search by distance)
+                const hits = result.castedRays[ri].hits;
+                // If the only hit is infinity, replace it
+                if (hits.length === 1 && hits[0].distance === Number.POSITIVE_INFINITY) {
+                    hits[0] = hit;
+                    continue;
+                }
+                let lo = 0;
+                let hi = hits.length;
+                const dist = hit.distance;
+                while (lo < hi) {
+                    const mid = (lo + hi) >>> 1;
+                    if (hits[mid].distance < dist) {
+                        lo = mid + 1;
+                    } else {
+                        hi = mid;
+                    }
+                }
+                hits.splice(lo, 0, hit);
+            }
+        }
+    }
+
+    return result;
 }
 
 const castRays = (rays: IRay[], geometry: IGeometry,

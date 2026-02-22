@@ -463,22 +463,32 @@ After the BSP walk, `collectDirtyEdges(geometry, dirtyEdges)` collects edges fro
 
 **Future (Phase 3):** Replace brute-force `collectDirtyEdges` with spatial index queries for better performance with large dirty sets.
 
-### Module 8: Renderer Integration — Raycaster Path — **PARTIALLY IMPLEMENTED**
+### Module 8: Renderer Integration — Raycaster Path — **IMPLEMENTED**
 
-**File:** `src/common/rendering/raycasting/raycaster.ts`
+**Files:**
+- `src/common/rendering/raycasting/raycaster.ts`
+- `src/common/rendering/raycasting/raycast-core.ts`
+- `src/common/rendering/raycasting/renderer3d.ts`
 
 **Implemented (collision — Phase 2):**
-`castCameraRay(ray, geometry, bsp?, dirtyEdges?)` implements the two-phase approach for camera movement collision:
+`castCameraRay(ray, geometry, bspContext?)` implements the two-phase approach for camera movement collision:
 1. Phase 1: BSP traversal via `intersectRay()` with an `edgeFilter` that skips immaterial edges AND stale edges (`!edge.immaterial && !isStaleInBsp(edge.id, dirtyEdges)`)
 2. Phase 2: `collectDirtyEdges(geometry, dirtyEdges)` iterates added/modified edges, skips immaterial ones, calls `intersectRayEdge()` on each, keeps the closest hit
 3. Returns the closest hit from either phase
 
+**Implemented (rendering — Phase 6):**
+`castCollisionRays(rays, geometry, bspContext?)` now implements the same two-phase approach for raycaster rendering:
+1. Phase 1: BSP traversal with an `edgeFilter` that skips materialless edges AND stale edges (`!!edge.material && !isStaleInBsp(edge.id, dirtyEdges)`)
+2. Phase 2: `collectDirtyEdges(geometry, dirtyEdges)` iterates added/modified edges, skips materialless ones, tests each against every ray via `intersectRayEdge()`, inserts renderable hits into the ray's sorted hit array using binary search
+3. Signature changed from `(rays, geometry, bsp?: IBSPNode | null)` to `(rays, geometry, bspContext?: IBspContext)` — BSP and dirty edges are extracted internally
+
+`RaycastCore.render()` now passes the full `bspContext` to `castCollisionRays` instead of extracting only the BSP tree.
+
+`Renderer3d` now stores `bspContext: IBspContext | null` instead of `bspTree: IBSPNode | null`, subscribes to both `s.bsp.tree` and `s.bsp.dirtyEdges` from Redux, and passes the full context to `castCollisionRays`.
+
 Imports `isStaleInBsp` and `collectDirtyEdges` from `../zbuffering/zbuffer-core`.
 
-**Not yet implemented (rendering):**
-`castCollisionRays()` (used by `Renderer3d` for raycaster rendering) does NOT yet filter stale edges or test dirty edges. This is deferred to Phase 6.
-
-**Also updated in Phase 1:** `renderer3d.ts` — `isActive()` uses `!this.bspTree` (reading from `bspState`).
+**Also updated:** `renderer3d.ts` — `isActive()` uses `!this.bspContext?.tree` (reading from `bspState`).
 
 ### Module 9: Collision (Camera Movement) Integration — **IMPLEMENTED (Phase 2)**
 
@@ -642,7 +652,7 @@ The status bar uses the 5% height gap that currently exists below the container.
 | **3** | `DirtyEdgeSpatialIndex` | Pending | Performance optimization — spatial queries instead of iterating all dirty edges. |
 | **4** | `BspGenerationService` with web worker, debounce, cancellation | **DONE** | Full async BSP regeneration. Dirty set auto-clears after edits stop. |
 | **5** | File load integration: auto-generate BSP for maps loaded without one. Auto-generate on new file. | **DONE** | No more manual Ctrl+B needed for old maps or fresh starts. |
-| **6** | Raycaster path + collision integration | **PARTIAL** — collision done in Phase 2, raycaster rendering path pending | Camera movement fully integrated. Raycaster rendering path (`castCollisionRays`) not yet dirty-edge-aware. |
+| **6** | Raycaster path + collision integration | **DONE** | Both camera movement collision and raycaster rendering path are fully dirty-edge-aware. |
 | **7** | Transient partition — add transient tracking, original storage, `updateTransient`, `restoreTransient`, resting-state BSP build | Pending | Game mechanics (doors, platforms) can temporarily modify geometry without triggering BSP rebuild. |
 | **8** | In-place material mutation — runtime texture/material changes on BSP edge objects | Pending | Texture changes without any dirty tracking overhead. |
 | **9** | BSP status indicator — `<bsp-status>` component, status bar layout, `connect()` subscription to `bspState` | **DONE** | Editor shows green/yellow/red dot + label reflecting BSP health. |
@@ -665,9 +675,9 @@ Each phase is independently testable and the system stays functional throughout.
 | `src/common/storage/stateLoader.ts` | **Modify** — save/load BSP from `bspState`, legacy compat for old files | 1 | **DONE** |
 | `src/common/rendering/zbuffering/zbuffer-renderer.ts` | **Modify** — reads BSP from `bspState`, stores `bspContext` field, `isActive()` uses `this.bspContext?.tree` | 1 | **DONE** |
 | `src/common/rendering/zbuffering/zbuffer-core.ts` | **Modify** — `render()` accepts `bspContext?: IBspContext` parameter | 1 | **DONE** |
-| `src/common/rendering/raycasting/renderer3d.ts` | **Modify** — reads BSP from `bspState`, `isActive()` uses `!this.bspTree` | 1 | **DONE** |
+| `src/common/rendering/raycasting/renderer3d.ts` | **Modify** — reads BSP from `bspState`, `isActive()` uses `!this.bspTree` | 1 | **DONE** (updated in Phase 6) |
 | `src/common/rendering/raycasting/raycaster.ts` | **Modify** — BSP-using functions accept `bsp` param; `castCameraRay` accepts `bspContext` | 1 | **DONE** |
-| `src/common/rendering/raycasting/raycast-core.ts` | **Modify** — `render()` accepts and passes `bspContext` param | 1 | **DONE** |
+| `src/common/rendering/raycasting/raycast-core.ts` | **Modify** — `render()` accepts and passes `bspContext` param | 1 | **DONE** (updated in Phase 6) |
 | `src/common/rendering/renderer-core.ts` | **Modify** — `IRendererCore.render()` has `bspContext?: IBspContext` param | 1 | **DONE** |
 | `src/common/camera.ts` | **Modify** — `move()`/`strafe()`/`constrainedMove()` accept `bspContext?: IBspContext` | 1 | **DONE** |
 | `src/common/store/player.ts` | **Modify** — action payloads use `bspContext?: IBspContext` | 1 | **DONE** |
@@ -689,7 +699,7 @@ Each phase is independently testable and the system stays functional throughout.
 | `src/common/rendering/zbuffering/zbuffer-core.ts` | **Modify** — `isStaleInBsp()` + `collectDirtyEdges()` exports, stale skip + brute-force + metrics in `render()`, accepts `bspContext?: IBspContext` | 2 | **DONE** |
 | `src/common/rendering/benchmark-types.ts` | **Modify** — added `staleEdgesSkipped?` and `dirtyEdgesTested?` to `RenderMetrics` | 2 | **DONE** |
 | `src/common/rendering/renderer-core.ts` | **Modify** — `IRendererCore.render()` accepts `bspContext?: IBspContext` | 2 | **DONE** |
-| `src/common/rendering/raycasting/raycast-core.ts` | **Modify** — accepts `bspContext?: IBspContext`, destructures `bsp` for `castCollisionRays` | 2 | **DONE** |
+| `src/common/rendering/raycasting/raycast-core.ts` | **Modify** — accepts `bspContext?: IBspContext`, destructures `bsp` for `castCollisionRays` | 2 | **DONE** (updated in Phase 6) |
 | `src/common/rendering/zbuffering/zbuffer.test.ts` | **Modify** — 17 dirty edge tests added | 2 | **DONE** |
 | `src/common/rendering/raycasting/raycaster.ts` | **Modify** — `castCameraRay()` accepts `bspContext?: IBspContext`, two-phase: BSP stale filter + brute-force `collectDirtyEdges` for collision | 2 (was 6) | **DONE** |
 | `src/common/camera.ts` | **Modify** — `move()`/`strafe()`/`constrainedMove()` accept `bspContext?: IBspContext`, destructure `bsp` + `dirtyEdges` inside | 2 (was 6) | **DONE** |
@@ -708,7 +718,11 @@ Each phase is independently testable and the system stays functional throughout.
 | `src/common/store/bsp-state.ts` | **Modify** — removed `clearBsp` reducer (dead code after middleware change), removed from exports | 5 | **DONE** |
 | `src/common/store/bsp-middleware.test.ts` | **Modify** — replaced `loadWalls/clearBsp` test with `loadWalls does not affect bspState` (2 tests) | 5 | **DONE** |
 | `src/common/geometry/bsp/bsp-generation-service.test.ts` | **Modify** — added `file load scenarios` describe block (3 tests) | 5 | **DONE** |
-| `src/common/rendering/raycasting/raycaster.ts` | **Modify** — `castCollisionRays()` dirty edge awareness for raycaster rendering | 6 | Pending |
+| `src/common/rendering/raycasting/raycaster.ts` | **Modify** — `castCollisionRays()` accepts `IBspContext`, two-phase: BSP stale filter + brute-force `collectDirtyEdges` for rendering | 6 | **DONE** |
+| `src/common/rendering/raycasting/raycast-core.ts` | **Modify** — passes full `bspContext` to `castCollisionRays` instead of extracting only `bsp` | 6 | **DONE** |
+| `src/common/rendering/raycasting/renderer3d.ts` | **Modify** — stores `bspContext: IBspContext \| null`, subscribes to `s.bsp.tree` + `s.bsp.dirtyEdges`, `isActive()` uses `!this.bspContext?.tree` | 6 | **DONE** |
+| `src/common/rendering/raycasting/raycaster.test.ts` | **Modify** — existing `castCollisionRays` tests updated to use `IBspContext`, 4 dirty-edge tests added | 6 | **DONE** |
+| `src/common/rendering/raycasting/raycast-core.test.ts` | **Modify** — 1 dirty-edge passthrough test added | 6 | **DONE** |
 | `src/common/geometry/bsp/dirty-edge-tracker.ts` | **Modify** — add transient partition, originals storage, restore logic | 7 | Pending |
 | `src/common/store/bsp-state.ts` | **Modify** — add transient reducers, resting-state build support | 7 | Pending |
 | `src/common/geometry/bsp/bsp-generation-service.ts` | **Modify** — substitute transient edges with originals before posting to worker | 7 | Pending |
