@@ -267,8 +267,10 @@ bspListenerMiddleware.startListening({
 
 **Edge diff computation (`computeEdgeDiff`):**
 - Short-circuits on reference equality (same geometry object → no diff)
-- Collects all edge IDs from old and new geometry
-- Three diff categories: `removedEdgeIds` (in old, not new), `addedEdgeIds` (in new, not old), `modifiedEdgeIds` (in both old and new — conservative, assumes geometry changed)
+- Two-tier targeted diff (performance improvement over original conservative approach):
+  1. **Polygon-level**: Compares polygon arrays by reference equality — unchanged polygons are skipped entirely
+  2. **Vertex-level**: For changed polygons, compares individual edge vertex positions to detect actual modifications
+- Three diff categories: `removedEdgeIds` (in old, not new), `addedEdgeIds` (in new, not old), `modifiedEdgeIds` (in both but with changed vertex positions)
 - Returns `EMPTY_DIFF` singleton for identity-check fast path
 
 **Geometry changes (Phase 1):**
@@ -281,7 +283,7 @@ bspListenerMiddleware.startListening({
 - Changing mutation function signatures would have required modifying ~20 mutation functions and their callers in the walls slice
 - The listener middleware approach keeps geometry functions pure — they don't need to know about BSP at all
 - `getOriginalState()` gives us the pre-action state for free, enabling clean diffing
-- Conservative modification tracking (all surviving IDs treated as "modified") is correct because the BSP dirty tracker handles no-op modifications gracefully
+- ~~Conservative modification tracking (all surviving IDs treated as "modified") is correct because the BSP dirty tracker handles no-op modifications gracefully~~ — Replaced with two-tier targeted diff: polygon reference equality skips unchanged polygons, vertex position comparison detects actual modifications
 - The middleware is prepended to the middleware chain (before logger) so it runs after reducers but before side effects
 
 **Additional files modified for BSP parameter threading (not in original plan):**
@@ -297,7 +299,7 @@ Removing `bsp` from `IGeometry` required threading BSP as a separate parameter t
 - `src/common/actions/cameraActionsHandler.ts` — subscribes to `s.bsp`, stores `bspContext`, dispatches with `bspContext`
 - `src/common/editor/mapEditor.ts` — subscribes to `s.bsp.tree`
 - `src/common/rendering/bspwalking/walker.ts` — subscribes to `s.bsp.tree`, `isActive()` uses `!!this.bspTree`
-- `src/common/geometry/bsp/bspGenerationStarter.ts` — dispatches `setBsp` from `bsp-state` instead of `updateBsp`
+- `src/common/geometry/bsp/bsp-generation-service.ts` — subscribes to `bspState` via `connect()`, debounces edits, posts to web worker, dispatches `setBsp`; replaces deleted `bspGenerationStarter.ts`
 - `src/common/storage/stateLoader.ts` — BSP save/load from bspState, legacy compatibility
 
 **IBspContext bundling (post-Phase 2 refactor):**
@@ -363,6 +365,28 @@ This ensures the BSP always represents the world at rest, regardless of active g
 **Cancellation:** Terminate the worker and create a new one (simplest approach), or use a message-based cancellation flag if the worker can check between recursion levels of `buildBspTree`.
 
 **Existing worker:** `src/workers/bspGenerator.ts` already exists and calls `buildBspTree`. It needs the `generationId` added to the message protocol.
+
+**Implementation notes (deviations from original plan):**
+
+The actual implementation differs from the plan above in several ways:
+
+1. **`BspStatus` enum triggers instead of `permanentGeneration`/`needsFullBuild`**: The service reacts to `bspState.status` values (`'stale'`, `'none'`, `'rebuilding'`, `'fresh'`) via `connect()` subscription rather than individual boolean fields.
+
+2. **Option A for concurrent edits (accept + re-queue)**: Instead of cancelling in-flight workers on new edits, the service accepts the worker result and checks if `dirtyCount` changed during generation. If so, it dispatches the result (still an improvement) and re-queues. This avoids wasting completed work.
+
+3. **No resting-state polygon substitution**: Transient partition (Phase 7) is not yet implemented, so the worker receives current polygons directly without transient→original substitution.
+
+4. **Debounce behavior**: 500ms debounce (configurable via constructor). The debounce timer is only started when `status === 'stale'` AND no timer/generation is already running. Unrelated Redux dispatches do NOT restart the timer.
+
+5. **`status === 'none'` triggers immediate generation** (no debounce) when polygons exist — covers file load without stored BSP.
+
+6. **Ctrl+B via IPC `'bsp_generate'`**: Cancels any active debounce timer and in-flight generation, then starts immediate generation. `mainmenu.ts` was NOT modified — the same IPC channel is used, just the receiver changed from `BspGenerationStarter` to `BspGenerationService`.
+
+7. **Typed worker protocol**: `BspWorkerRequest { type: 'generate', polygons, generationId }` and `BspWorkerResponse { type: 'result', bsp, generationId }` — more structured than originally planned.
+
+8. **Critical ordering in result handler**: `editsArrivedDuringGeneration` check happens BEFORE `dispatch(setBsp())` because `setBsp` resets `dirtyCount` to 0 synchronously via `connect()` callback.
+
+9. **22 tests** in `bsp-generation-service.test.ts` covering debounce timing, worker message protocol, dirty re-queue logic, Ctrl+B immediate generation, status transitions, and cleanup.
 
 ### Module 6: File Load Integration
 
@@ -600,7 +624,7 @@ The status bar uses the 5% height gap that currently exists below the container.
 | **1** | `DirtyEdgeTracker` + `bspState` slice + edge diff middleware + remove `bsp` from `IGeometry` + BSP parameter threading through rendering/collision chain. | **DONE** | BSP preserved across geometry mutations. Dirty edges tracked in Redux. BSP threaded as separate parameter. Stale edges still visible at old positions (Phase 2 fixes this). |
 | **2** | BSP walk filter (skip stale edges) + brute-force dirty edge iteration (no spatial index yet) + collision dirty edge threading + `castCameraRay` two-phase approach | **DONE** | Correct rendering with stale BSP. Dirty edges tested via simple iteration. Camera movement respects dirty edges (added/modified block, removed pass through). |
 | **3** | `DirtyEdgeSpatialIndex` | Pending | Performance optimization — spatial queries instead of iterating all dirty edges. |
-| **4** | `BspGenerationService` with web worker, debounce, cancellation | Pending | Full async BSP regeneration. Dirty set auto-clears after edits stop. |
+| **4** | `BspGenerationService` with web worker, debounce, cancellation | **DONE** | Full async BSP regeneration. Dirty set auto-clears after edits stop. |
 | **5** | File load integration: auto-generate BSP for maps loaded without one. Auto-generate on new file. | Pending | No more manual Ctrl+B needed for old maps or fresh starts. |
 | **6** | Raycaster path + collision integration | **PARTIAL** — collision done in Phase 2, raycaster rendering path pending | Camera movement fully integrated. Raycaster rendering path (`castCollisionRays`) not yet dirty-edge-aware. |
 | **7** | Transient partition — add transient tracking, original storage, `updateTransient`, `restoreTransient`, resting-state BSP build | Pending | Game mechanics (doors, platforms) can temporarily modify geometry without triggering BSP rebuild. |
@@ -657,10 +681,12 @@ Each phase is independently testable and the system stays functional throughout.
 | `src/common/actions/cameraActionsHandler.ts` | **Modify** — subscribes to `s.bsp`, stores single `bspContext: IBspContext \| null` field, dispatches with `bspContext` | 2 (was 6) | **DONE** |
 | `src/common/camera.test.ts` | **Modify** — 6 dirty edge collision tests in `describe('move/strafe with dirty edges')` | 2 (was 6) | **DONE** |
 | `src/common/geometry/bsp/dirty-edge-index.ts` | **Create** | 3 | Pending |
-| `src/common/geometry/bsp/bsp-generation-service.ts` | **Create** | 4 | Pending |
-| `src/common/geometry/bsp/bspGenerationStarter.ts` | **Replace/Remove** — replaced by `BspGenerationService` | 4 | Pending |
-| `src/workers/bspGenerator.ts` | **Modify** — add `generationId` to message protocol | 4 | Pending |
-| `src/main/mainmenu.ts` | **Modify** — Ctrl+B becomes "force immediate regeneration" | 4 | Pending |
+| `src/common/geometry/bsp/bsp-generation-service.ts` | **Create** | 4 | **DONE** |
+| `src/common/geometry/bsp/bsp-generation-service.test.ts` | **Create** — 22 tests covering debounce, worker protocol, dirty re-queue, Ctrl+B | 4 | **DONE** |
+| `src/common/geometry/bsp/bspGenerationStarter.ts` | **Deleted** — replaced by `BspGenerationService` | 4 | **DONE** |
+| `src/workers/bspGenerator.ts` | **Modify** — typed `BspWorkerRequest`/`BspWorkerResponse` with `generationId` | 4 | **DONE** |
+| `src/renderer/renderer.ts` | **Modify** — swapped `BspGenerationStarter` → `BspGenerationService` | 4 | **DONE** |
+| `src/main/mainmenu.ts` | N/A — Ctrl+B IPC unchanged; `BspGenerationService` listens to same `'bsp_generate'` channel | 4 | **DONE** |
 | `src/common/storage/stateLoader.ts` | **Modify** — dispatch BSP actions on load, handle presence/absence of stored BSP | 5 | Pending |
 | `src/common/rendering/raycasting/raycaster.ts` | **Modify** — `castCollisionRays()` dirty edge awareness for raycaster rendering | 6 | Pending |
 | `src/common/geometry/bsp/dirty-edge-tracker.ts` | **Modify** — add transient partition, originals storage, restore logic | 7 | Pending |
@@ -720,7 +746,7 @@ Each phase is independently testable and the system stays functional throughout.
 
 13. **Three-tier status indicator (green/yellow/red)**: Yellow for stale and generating states because the system is still rendering correctly via dirty edge tracking — the BSP is degraded but functional. Red is reserved for the "no BSP" fallback state where brute-force raycasting is active and performance is impacted. This severity distinction prevents false alarm fatigue from a binary red/green indicator that would show red during every normal edit-regenerate cycle.
 
-14. **Edge diffs via RTK listener middleware** (not `GeometryMutationResult` return types): Instead of modifying all geometry functions to return edge diffs, a `createListenerMiddleware` watches all `walls/*` actions and computes diffs by comparing edge ID sets before and after. This keeps geometry functions pure and unchanged. Diffs are dispatched as `markDirty` actions to `bspState`. Conservative modification tracking treats all surviving edge IDs as "modified" since we can't cheaply detect vertex position changes.
+14. **Edge diffs via RTK listener middleware** (not `GeometryMutationResult` return types): Instead of modifying all geometry functions to return edge diffs, a `createListenerMiddleware` watches all `walls/*` actions and computes diffs by comparing geometry before and after. This keeps geometry functions pure and unchanged. Diffs are dispatched as `markDirty` actions to `bspState`. The diff uses a two-tier targeted approach: polygon-level reference equality skips unchanged polygons entirely, then vertex position comparison on changed polygons detects actual edge modifications. This replaced the original conservative approach (which treated all surviving IDs as "modified") for better performance.
 
 15. **BSP parameter threading via `IBspContext`** (not global state reads in pure functions): Pure functions like `move()`, `strafe()`, `castCameraRay()`, and `render()` now accept an `IBspContext` (bundling `tree` + `dirtyEdges`) as an explicit parameter rather than reading from Redux. The `IBspContext` type avoids parameter proliferation — functions that need both BSP and dirty edges take a single object. Only the imperative "handler" layer (`cameraActionsHandler`, `walker`, `mapEditor`, renderers) subscribes to `state.bsp` and passes the context down. Functions that only need `bsp` (like `castCollisionRays`) take the raw `IBSPNode` parameter. This preserves function purity and testability.
 
@@ -734,8 +760,9 @@ For implementors unfamiliar with the codebase, these are the key existing files 
 - **Store connector:** `src/common/store/store-connector.ts` — `connect()` registers callbacks on every Redux state update. Renderers use this, not React hooks.
 - **Renderer switching:** `ZBufferRenderer.isActive()` returns true when BSP exists (reads `bspContext?.tree`); `Renderer3d.isActive()` returns true when BSP is absent. They are mutually exclusive. Both subscribe to `bspState` via `connect()`.
 - **Edge entity IDs:** `src/common/geometry/entity.ts` — `giveIdentity()` assigns UUID strings. Edge IDs are `string | undefined`.
-- **Existing web worker:** `src/workers/bspGenerator.ts` — listens for `message`, calls `buildBspTree`, posts result back. Currently unused (the `generate()` method in `BspGenerationStarter` is commented out).
-- **Current BSP trigger:** Manual only, via Ctrl+B menu item (`src/main/mainmenu.ts:303`) → IPC `'bsp_generate'` → `BspGenerationStarter.generateLocal()` → synchronous `buildBspTree()` on main thread.
+- **Web worker:** `src/workers/bspGenerator.ts` — listens for typed `BspWorkerRequest`, calls `buildBspTree`, posts `BspWorkerResponse` with `generationId`. Used by `BspGenerationService` for async BSP generation.
+- **BSP generation service:** `src/common/geometry/bsp/bsp-generation-service.ts` — subscribes to `bspState` via `connect()`, debounces edits (500ms), posts polygons to web worker, dispatches `setBsp` on completion. Handles Ctrl+B via IPC `'bsp_generate'` for immediate generation. Replaces the deleted `BspGenerationStarter`.
+- **Manual BSP trigger:** Ctrl+B menu item (`src/main/mainmenu.ts:303`) → IPC `'bsp_generate'` → `BspGenerationService` cancels debounce and generates immediately.
 - **File loading:** `src/common/storage/stateLoader.ts` — `loadWorld()` dispatches `wallActions.loadWalls()`. BSP is loaded from saved state and dispatched to `bspState` via `setBsp`, with legacy compatibility for old files that stored BSP on geometry.
 - **Geometry type:** `src/common/geometry/geometry.ts` — `IGeometry` no longer has a `bsp` field (removed in Phase 1). BSP lives in the `bspState` Redux slice (`state.bsp.tree`).
 - **Undo skip pattern:** `src/common/store/walls.ts:64-71` — the `move` reducer uses `disableUndo` to suppress undo history for continuous game actions. Transient wall reducers (e.g., `applyTransientEdges`, `restoreEdges`) should use this same pattern since game mechanic state changes should not pollute the undo stack.
