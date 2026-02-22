@@ -20,6 +20,46 @@ function verticesMatch(oldEdge: IEdge, newEdge: IEdge): boolean {
 }
 
 /**
+ * Returns true if two edges have different non-spatial properties (material, immaterial).
+ * When BSP state is separated from geometry, the BSP tree holds stale edge references.
+ * Material/immaterial changes must be tracked so the renderer uses current geometry
+ * edges instead of the stale BSP copies.
+ */
+function nonSpatialPropertiesChanged(oldEdge: IEdge, newEdge: IEdge): boolean {
+    if (oldEdge.immaterial !== newEdge.immaterial) return true;
+    return !materialsEqual(oldEdge.material, newEdge.material);
+}
+
+/** Shallow comparison of directed materials. */
+function materialsEqual(a: IEdge['material'], b: IEdge['material']): boolean {
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+    // Both are arrays (directed) or both are single materials
+    const aArr = Array.isArray(a);
+    const bArr = Array.isArray(b);
+    if (aArr !== bArr) return false;
+    if (aArr && bArr) {
+        return singleMaterialEquals(a[0], b[0]) && singleMaterialEquals(a[1], b[1]);
+    }
+    return singleMaterialEquals(a as any, b as any);
+}
+
+/** Compare two single IMaterial objects. */
+function singleMaterialEquals(a: {color: number[], texture?: any, luminosity?: number} | null, 
+                               b: {color: number[], texture?: any, luminosity?: number} | null): boolean {
+    if (a === b) return true;
+    if (a == null || b == null) return false;
+    const ca = a.color, cb = b.color;
+    if (ca[0] !== cb[0] || ca[1] !== cb[1] || ca[2] !== cb[2] || ca[3] !== cb[3]) return false;
+    // Texture comparison (reference or structural)
+    if (a.texture !== b.texture) {
+        if (a.texture == null || b.texture == null) return false;
+        if (a.texture.id !== b.texture.id || a.texture.index !== b.texture.index) return false;
+    }
+    return true;
+}
+
+/**
  * Computes an edge diff between old and new geometry using a two-tier approach:
  * 
  * **Tier 1 — Polygon reference equality:**
@@ -27,16 +67,14 @@ function verticesMatch(oldEdge: IEdge, newEdge: IEdge): boolean {
  * are skipped entirely. This works because adaptPolygons/forkPolygons/addPolygon
  * preserve unchanged polygon objects by reference.
  * 
- * **Tier 2 — Edge vertex comparison (within changed polygons only):**
+ * **Tier 2 — Edge comparison (within changed polygons only):**
  * For polygons that changed (different reference or different ID set), compare
- * each edge's start/end vertex positions. Only edges whose vertices actually
- * moved are marked as "modified". This means moving 1 vertex in a 20-edge
- * polygon marks only 2 edges dirty (the two adjacent ones), not all 20.
- * 
- * Material-only changes are intentionally NOT tracked as "modified" because
- * the BSP is a spatial index — material changes don't invalidate an edge's
- * position in the tree. The renderer will find the edge via normal BSP walk
- * and render its current material regardless.
+ * each edge's vertex positions AND non-spatial properties (material, immaterial).
+ * Edges whose vertices moved are marked as "modified" for spatial re-indexing.
+ * Edges whose vertices are unchanged but whose material/immaterial changed are
+ * also marked as "modified" so the renderer uses the current geometry's edge
+ * instead of the stale BSP copy. (The BSP tree holds references to old edge
+ * objects; without marking these dirty, the renderer would display old materials.)
  */
 function computeEdgeDiff(oldGeometry: IGeometry, newGeometry: IGeometry): IEdgeDiff {
     // Quick identity check — if the geometry object is the same reference, 
@@ -78,8 +116,11 @@ function computeEdgeDiff(oldGeometry: IGeometry, newGeometry: IGeometry): IEdgeD
                     const oldEdge = oldEdgeMap.get(e.id);
                     if (oldEdge != null) {
                         oldEdgeMap.delete(e.id);
-                        // Only mark modified if vertices actually moved
-                        if (!verticesMatch(oldEdge, e)) {
+                        // Mark modified if vertices moved OR non-spatial properties changed.
+                        // Vertex moves invalidate BSP spatial indexing; material/immaterial
+                        // changes require the renderer to use the current edge instead of
+                        // the stale BSP copy.
+                        if (!verticesMatch(oldEdge, e) || nonSpatialPropertiesChanged(oldEdge, e)) {
                             modifiedEdgeIds.add(e.id);
                         }
                     } else {

@@ -5,7 +5,7 @@ import { bspListenerMiddleware } from './bsp-middleware';
 import { createGeometry, IGeometry, storeGeometry, EMPTY_GEOMETRY } from '../geometry/geometry';
 import { loadWalls, updateWalls, createPolygon, clonePolygon, splitEdge, 
     move, remove, expandPolygon, splitPolygon, insetPolygon, mergePolygons,
-    reversePolygon, subdivideEdge, extrudeEdge, undo, redo } from './walls';
+    reversePolygon, subdivideEdge, extrudeEdge, adaptEdges, undo, redo } from './walls';
 import { setBsp, IBspState } from './bsp-state';
 import { buildBspTree } from '../geometry/bsp/creation';
 import { resetTestRandom } from '../testing/factories';
@@ -364,6 +364,46 @@ describe('BSP middleware — edge diff tracking', () => {
             for (const id of addedIds) {
                 expect(bspState.dirtyEdges.addedEdgeIds.has(id)).toBe(false);
             }
+        });
+    });
+
+    describe('material-only changes mark edges as dirty', () => {
+        test('adaptEdges with material change marks edges as modified', () => {
+            const store = createTestStore();
+            store.dispatch(createPolygon([[0, 0], [100, 0], [100, 100], [0, 100]]));
+            store.dispatch(setBsp(buildBspTree(store.getState().walls.geometry.polygons)));
+            expect(store.getState().bsp.status).toBe('fresh');
+            expect(store.getState().bsp.dirtyCount).toBe(0);
+
+            // Change material on an edge (same vertices, different material)
+            const poly = store.getState().walls.geometry.polygons[0];
+            const edge = poly.edges[0];
+            const edgeMap = new Map([[poly.id!, [edge]]]);
+            const transformer = (e: any) => ({ ...e, material: { color: [0, 255, 0, 1] } });
+            store.dispatch(adaptEdges({ edgeMap, transformer }));
+
+            const bspState = store.getState().bsp;
+            // Material change should be tracked so the renderer uses current geometry
+            expect(bspState.status).toBe('stale');
+            expect(bspState.dirtyCount).toBeGreaterThan(0);
+            // The edge should be in modifiedEdgeIds (same ID, different material)
+            expect(bspState.dirtyEdges.modifiedEdgeIds.has(edge.id!)).toBe(true);
+        });
+
+        test('adaptEdges changing immateriality marks edges as modified', () => {
+            const store = createTestStore();
+            store.dispatch(createPolygon([[0, 0], [100, 0], [100, 100], [0, 100]]));
+            store.dispatch(setBsp(buildBspTree(store.getState().walls.geometry.polygons)));
+            
+            const poly = store.getState().walls.geometry.polygons[0];
+            const edge = poly.edges[0];
+            const edgeMap = new Map([[poly.id!, [edge]]]);
+            const transformer = (e: any) => ({ ...e, immaterial: true });
+            store.dispatch(adaptEdges({ edgeMap, transformer }));
+
+            const bspState = store.getState().bsp;
+            expect(bspState.status).toBe('stale');
+            expect(bspState.dirtyEdges.modifiedEdgeIds.has(edge.id!)).toBe(true);
         });
     });
 });
