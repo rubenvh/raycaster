@@ -9,11 +9,47 @@ import { queryVertex } from '../../common/geometry/geometry';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
-<style> 
+<style>
+:host {
+    display: block;
+    font-family: monospace;
+    font-size: 11px;
+    color: #ccc;
+}
+:host([hidden]) {
+    display: none;
+}
+.row {
+    display: flex;
+    align-items: center;
+    padding: 1px 0;
+    gap: 4px;
+}
+.label {
+    color: #aaa;
+    min-width: 2em;
+}
+.value {
+    color: #eee;
+}
+input[type="number"] {
+    background: #333;
+    border: 1px solid #555;
+    color: #eee;
+    font-family: monospace;
+    font-size: 11px;
+    padding: 1px 4px;
+    width: 6em;
+    border-radius: 2px;
+}
+input[type="number"]:focus {
+    outline: none;
+    border-color: #42a5f5;
+}
 </style>
-<div><span id="label_id">id:</span><span id="identifier"></span></div>
-<div><span id="label_x">x:</span><input id="x" type="number" min="0" name="x" /></div>
-<div><span id="label_y">y:</span><input id="y" type="number" min="0" name="y" /></div>
+<div class="row"><span class="label">id:</span><span id="identifier" class="value"></span></div>
+<div class="row"><span class="label">x:</span><input id="x" type="number" min="0" name="x" /></div>
+<div class="row"><span class="label">y:</span><input id="y" type="number" min="0" name="y" /></div>
 `;
 
 const dispatch = useAppDispatch();

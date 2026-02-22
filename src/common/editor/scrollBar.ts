@@ -31,14 +31,14 @@ export class ScrollBar {
         // don't draw when everything in view
         if (this.barSize === this.size) { return; }
 
-        context.fillStyle = "rgba(125,125,125,0.7)";
+        context.fillStyle = "rgba(0,0,0,0.9)";
         if (this.isHorizontal) { 
             context.fillRect(this.pos/scale, location/scale, this.size/scale, 5/scale);
         } else {
             context.fillRect(location/scale, this.pos/scale, 5/scale, this.size/scale);
         }
 
-        context.fillStyle = "rgba(0,0,0,0.9)";
+        context.fillStyle = "rgba(125,125,125,0.7)";
         if (this.isHorizontal) {            
             context.fillRect((this.pos + this.barOffset)/scale, location/scale, this.barSize/scale, 5/scale);
         } else {            

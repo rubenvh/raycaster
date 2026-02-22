@@ -4,42 +4,44 @@ import { textureLib } from '../../common/textures/textureLibrary';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
-<style> 
-#images::-webkit-scrollbar-track
-{
-  border: 1px solid black;
-  background-color: #555555;
+<style>
+#images::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.9);
 }
-
-#images::-webkit-scrollbar
-{
-  width: 10px;
-  background-color: #555555;
+#images::-webkit-scrollbar {
+    width: 5px;
 }
-
-#images::-webkit-scrollbar-thumb
-{
-  background-color: #000000;  
+#images::-webkit-scrollbar-thumb {
+    background: rgba(125, 125, 125, 0.7);
+}
+#images::-webkit-scrollbar-thumb:hover {
+    background: rgba(125, 125, 125, 1);
 }
 #images {
-    z-index: 1000; 
-	position: absolute;
     display: flex;
     flex-flow: row wrap;
     max-height: 264px;
-    max-width: 208px;
-    overflow-y: scroll;   
+    overflow-y: auto;
     align-content: flex-start;
-    background: #000000;
+    background: #1a1a1a;
+    border: 1px solid #444;
+    border-radius: 2px;
 }
 .image {
-    cursor: pointer;   
-    padding: 1px; 
+    cursor: pointer;
+    padding: 2px;
     height: 64px;
     width: 64px;
+    border-radius: 2px;
+    opacity: 0.85;
+    transition: opacity 0.1s;
+}
+.image:hover {
+    opacity: 1;
 }
 .selected {
-    background-color: yellow;
+    background-color: #42a5f5;
+    opacity: 1;
 }
 </style>
 <div id="images"></div>

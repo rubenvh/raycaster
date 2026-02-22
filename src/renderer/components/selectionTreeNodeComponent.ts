@@ -4,45 +4,54 @@ import { selectedId } from '../../common/selection/selectable';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
-<style> 
+<style>
+:host {
+    font-family: monospace;
+    font-size: 11px;
+    color: #ccc;
+}
 ul {
-  list-style-type: none;
+    list-style-type: none;
+    margin: 0;
+    padding-left: 12px;
 }
 .root {
-  margin: 0;
-  padding: 0;
+    margin: 0;
+    padding: 0;
 }
-/* Style the caret/arrow */
 .caret {
-  cursor: pointer;
-  user-select: none; /* Prevent text selection */
+    cursor: pointer;
+    user-select: none;
 }
-
-/* Create the caret/arrow with a unicode, and style it */
 .caret::before {
-  content: "\u25B6";
-  color: black;
-  display: inline-block;
-  margin-right: 6px;
+    content: "\u25B6";
+    color: #aaa;
+    display: inline-block;
+    margin-right: 6px;
+    font-size: 9px;
+    transition: transform 0.15s ease;
 }
-
-/* Rotate the caret/arrow icon when clicked on (using JavaScript) */
 .caret-down::before {
-  transform: rotate(90deg);
+    transform: rotate(90deg);
 }
-
-/* Hide the nested list */
 .nested {
-  display: none;
+    display: none;
 }
-
-/* Show the nested list when the user clicks on the caret/arrow (with JavaScript) */
 .active {
-  display: block;
+    display: block;
 }
-
+#title {
+    cursor: pointer;
+    padding: 1px 4px;
+    border-radius: 2px;
+    transition: background 0.1s;
+}
+#title:hover {
+    background: #333;
+}
 .selected {
-  background-color: blue;
+    background-color: #42a5f5 !important;
+    color: #fff;
 }
 </style>
 <span id="expander" class="caret"></span>

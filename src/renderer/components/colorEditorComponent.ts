@@ -2,21 +2,48 @@ import { Color } from '../../common/geometry/properties';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
-<style> 
-#tile {    
+<style>
+:host {
+    display: inline-flex;
+    align-items: center;
+    font-family: monospace;
+    font-size: 11px;
+    color: #ccc;
+    gap: 4px;
+}
+#tile {
     display: inline-block;
-    width: 3em;
-    height: 1.3em;
-    text-align: center;
+    width: 18px;
+    height: 18px;
+    border: 1px solid #555;
+    border-radius: 2px;
+    vertical-align: middle;
+    flex-shrink: 0;
+}
+.channel-label {
+    color: #aaa;
+    font-size: 10px;
+}
+input[type="number"] {
+    background: #333;
+    border: 1px solid #555;
+    color: #eee;
+    font-family: monospace;
+    font-size: 11px;
+    padding: 1px 2px;
+    width: 3.5em;
+    border-radius: 2px;
+}
+input[type="number"]:focus {
+    outline: none;
+    border-color: #42a5f5;
 }
 </style>
-<div>
-    <span id="tile">&nbsp;</span>
-    <span>R</span><input id="red" type="number" min="0" max="255" name="red" />
-    <span>G</span><input id="green" type="number" min="0" max="255" name="green" />
-    <span>B</span><input id="blue" type="number" min="0" max="255" name="blue" />
-    <span>A</span><input id="alpha" type="number" min="0" max="1" name="alpha" />
-</div>
+<span id="tile">&nbsp;</span>
+<span class="channel-label">R</span><input id="red" type="number" min="0" max="255" name="red" />
+<span class="channel-label">G</span><input id="green" type="number" min="0" max="255" name="green" />
+<span class="channel-label">B</span><input id="blue" type="number" min="0" max="255" name="blue" />
+<span class="channel-label">A</span><input id="alpha" type="number" min="0" max="1" step="0.1" name="alpha" />
 `;
 
 

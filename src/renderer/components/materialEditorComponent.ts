@@ -5,11 +5,41 @@ import TextureDropdownComponent from './texture-dropdown.component';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
-<style> 
+<style>
+:host {
+    display: block;
+    font-family: monospace;
+    font-size: 11px;
+    color: #ccc;
+}
+.row {
+    display: flex;
+    align-items: center;
+    padding: 1px 0;
+    gap: 4px;
+}
+.label {
+    color: #aaa;
+    min-width: 5em;
+}
+input[type="number"] {
+    background: #333;
+    border: 1px solid #555;
+    color: #eee;
+    font-family: monospace;
+    font-size: 11px;
+    padding: 1px 4px;
+    width: 4em;
+    border-radius: 2px;
+}
+input[type="number"]:focus {
+    outline: none;
+    border-color: #42a5f5;
+}
 </style>
-<div><span>color: </span><color-editor id="color"></color-editor></div>
-<div><span>lumen override: </span><input type="number" id="lumen" min="0" max="1" /></div>
-<div><span>texture: </span><texture-dropdown id="texture"></texture-dropdown></div>
+<div class="row"><span class="label">color:</span><color-editor id="color"></color-editor></div>
+<div class="row"><span class="label">lumen:</span><input type="number" id="lumen" min="0" max="1" step="0.1" /></div>
+<div class="row"><span class="label">texture:</span><texture-dropdown id="texture"></texture-dropdown></div>
 `;
 
 export default class MaterialEditorComponent extends HTMLElement {

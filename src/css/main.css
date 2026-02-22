@@ -1,3 +1,7 @@
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
 html, body {
     background-color: #2d2d2d;
     color: #eee;  
@@ -6,37 +10,48 @@ html, body {
     height: 100%; 
 }
 
+/* Scrollbar styling matching 2D map editor */
+::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.9);
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(125, 125, 125, 0.7);
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(125, 125, 125, 1);
+}
+
 .widget {
-    border: 1px solid black;
+    border: 1px solid #444;
 }
 
 .container {
     display: flex; 
     flex-direction: column;    
-    height: 95%;
-    /* align-items: stretch;
-    justify-content: space-evenly;
-    align-content: stretch;     */
+    height: 100vh;
 }
 
 .views {
     flex: 2;
     display: flex;
-    flex-direction: row;    
-    /* align-items: stretch;
-    justify-content: space-evenly;
-    align-content: stretch;      */
+    flex-direction: row;
+    min-height: 0;
 }
 
 .tools {
     flex: 1;
     display: flex;
-    flex-direction: row;    
+    flex-direction: row;
+    min-height: 0;
+    overflow: hidden;
 }
 
 .dim2 {
     flex: 1;   
-    /* overflow: scroll; */
 }
 .dim3 {
     flex: 1;
@@ -56,17 +71,20 @@ html, body {
     padding: 0;  
     display: block;    
     width: 100%;
-    /* height: 100%; */
 }
 
 #geometry-selection {
-    flex: 2;    
+    flex: 2;
+    overflow-y: auto;
 }
 #geometry-editor {
-    flex: 4;    
+    flex: 4;
+    overflow-y: auto;
 }
 #texture-library {
     flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 #stats {
     flex: 1;
@@ -75,6 +93,7 @@ html, body {
 .status-bar {
     display: flex;
     align-items: center;
+    flex-shrink: 0;
     height: 20px;
     background: #252525;
     border-top: 1px solid #444;

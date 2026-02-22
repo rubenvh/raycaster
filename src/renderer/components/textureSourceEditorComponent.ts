@@ -5,31 +5,48 @@ import TextureSelectorComponent from './texture-selector.component';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
-<style> 
-#container {    
-    display: flex;
-    flex-flow: column;    
-    align-content: flex-start;
-    width: 210px;
+<style>
+:host {
+    display: block;
+    font-family: monospace;
+    font-size: 11px;
+    color: #ccc;
+    margin-top: 4px;
 }
-.containerElement {
+.row {
     display: flex;
-    flex-flow: row;
-    width: 100%;
+    align-items: center;
+    padding: 1px 0;
+    gap: 4px;
 }
 .label {
-    min-width: 5em; 
-    float: left;   
+    color: #aaa;
+    min-width: 5em;
 }
-input {
-    min-width: 3em;
+.value {
+    color: #eee;
+}
+input[type="number"] {
+    background: #333;
+    border: 1px solid #555;
+    color: #eee;
+    font-family: monospace;
+    font-size: 11px;
+    padding: 1px 4px;
+    width: 4em;
+    border-radius: 2px;
+}
+input[type="number"]:focus {
+    outline: none;
+    border-color: #42a5f5;
+}
+.separator {
+    color: #666;
 }
 </style>
-<div id="container">      
-    <div class="containerElement"><span class="label">dimensions:</span><span id="dimensions"></span></div>
-    <div class="containerElement"><span class="label">size:</span><input id="width" type="number" min="0" name="width" /> &Cross; <input id="height" type="number" min="0" name="height" /></div> 
-    <texture-selector id="selector" class="containerElement"></texture-selector>
-</div>
+<div class="row"><span class="label">dims:</span><span id="dimensions" class="value"></span></div>
+<div class="row"><span class="label">size:</span><input id="width" type="number" min="0" name="width" /><span class="separator">&times;</span><input id="height" type="number" min="0" name="height" /></div>
+<texture-selector id="selector"></texture-selector>
 `;
 /// …
 const dispatch = useAppDispatch();

@@ -4,33 +4,58 @@ import TextureSourceEditorElement from "./textureSourceEditorComponent";
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
-<style> 
-#container {    
-    display: flex;
-    flex-flow: column;    
-    align-content: flex-start;
-    width: 210px;
+<style>
+:host {
+    display: block;
+    font-family: monospace;
+    font-size: 11px;
+    color: #ccc;
+    padding: 4px 8px;
+    overflow-y: auto;
 }
-.containerElement {
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: rgba(0,0,0,0.9); }
+::-webkit-scrollbar-thumb { background: rgba(125,125,125,0.7); border-radius: 2px; }
+h3 {
+    margin: 0 0 4px 0;
+    font-size: 12px;
+    color: #eee;
+    border-bottom: 1px solid #444;
+    padding-bottom: 2px;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #2d2d2d;
+}
+.row {
     display: flex;
-    flex-flow: row;
-    width: 100%;
+    align-items: center;
+    padding: 1px 0;
+    gap: 4px;
 }
 .label {
-    min-width: 5em; 
-    float: left;   
+    color: #aaa;
+    min-width: 5em;
 }
 select {
-    width: 130px;
+    background: #333;
+    border: 1px solid #555;
+    color: #eee;
+    font-family: monospace;
+    font-size: 11px;
+    padding: 1px 4px;
+    border-radius: 2px;
+    max-width: 130px;
 }
-
+select:focus {
+    outline: none;
+    border-color: #42a5f5;
+}
 </style>
-<p>Texture editor</p>
-<div id="container">
-    <div class="containerElement">
-        <span class="label">source:</span>
-        <select name="sources" id="sources"></select>
-    </div>
+<h3>Textures</h3>
+<div class="row">
+    <span class="label">source:</span>
+    <select name="sources" id="sources"></select>
 </div>
 <texture-source-editor id="texture-source-editor"></texture-source-editor>
 `;

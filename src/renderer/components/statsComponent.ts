@@ -15,12 +15,19 @@ template.innerHTML =  /*html*/`
         padding: 4px 8px;
         overflow-y: auto;
     }
+    ::-webkit-scrollbar { width: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(0,0,0,0.9); }
+    ::-webkit-scrollbar-thumb { background: rgba(125,125,125,0.7); border-radius: 2px; }
     h3 {
         margin: 0 0 4px 0;
         font-size: 12px;
         color: #eee;
         border-bottom: 1px solid #444;
         padding-bottom: 2px;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: #2d2d2d;
     }
     .section {
         margin-bottom: 6px;

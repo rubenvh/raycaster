@@ -11,18 +11,74 @@ import DirectedMaterialEditorComponent from './directed-material.component';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
-<style> 
+<style>
+:host {
+    display: block;
+    font-family: monospace;
+    font-size: 11px;
+    color: #ccc;
+}
+:host([hidden]) {
+    display: none;
+}
+.row {
+    display: flex;
+    align-items: center;
+    padding: 1px 0;
+    gap: 4px;
+}
+.label {
+    color: #aaa;
+    min-width: 6em;
+}
+.value {
+    color: #eee;
+}
+.section {
+    margin-bottom: 6px;
+}
+.section-label {
+    color: #999;
+    font-size: 10px;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+    margin-top: 6px;
+}
+input[type="checkbox"] {
+    accent-color: #42a5f5;
+}
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 1px 0;
+}
+.stat-label {
+    color: #aaa;
+}
+.stat-value {
+    color: #eee;
+    text-align: right;
+}
 </style>
-<div><span id="label_id">id:</span><span id="identifier"></span></div>
-<div><span id="label_immaterial">immaterial:</span><input id="immaterial" type="checkbox" /></div>
-<div><span id="label_start">start:</span><vertex-editor id="start" hideId></vertex-editor></div>
-<div><span id="label_end">end:</span><vertex-editor id="end" hideId></vertex-editor></div>
-<div><span id="label_material">material:</span>
-    <directed-material-editor id="material"></directed-material-editor>    
+<div class="section">
+    <div class="row"><span class="label">id:</span><span id="identifier" class="value"></span></div>
+    <div class="row"><span class="label">immaterial:</span><input id="immaterial" type="checkbox" /></div>
 </div>
-<div><span id="label_stats">stats:</span>
-<ul id="stats">    
-</ul>
+<div class="section">
+    <div class="section-label">Start</div>
+    <vertex-editor id="start" hideId></vertex-editor>
+</div>
+<div class="section">
+    <div class="section-label">End</div>
+    <vertex-editor id="end" hideId></vertex-editor>
+</div>
+<div class="section">
+    <div class="section-label">Material</div>
+    <directed-material-editor id="material"></directed-material-editor>
+</div>
+<div class="section">
+    <div class="section-label">Stats</div>
+    <div id="stats"></div>
 </div>
 `;
 
@@ -36,7 +92,7 @@ export default class EdgeEditorComponent extends HTMLElement {
     private startElement: VertexEditorComponent;
     private endElement: VertexEditorComponent;
     private materialElement: DirectedMaterialEditorComponent;
-    private statsElement: HTMLUListElement;
+    private statsElement: HTMLElement;
     private distanceToCamera: (edge: IEdge) => number;    
 
     constructor() {
@@ -48,7 +104,7 @@ export default class EdgeEditorComponent extends HTMLElement {
         this.immaterialElement = <HTMLInputElement>shadowRoot.querySelector('#immaterial');
         this.startElement = <VertexEditorComponent>shadowRoot.querySelector('#start');
         this.endElement = <VertexEditorComponent>shadowRoot.querySelector('#end');
-        this.statsElement = <HTMLUListElement>shadowRoot.querySelector('#stats');
+        this.statsElement = shadowRoot.querySelector('#stats');
         this.materialElement = <DirectedMaterialEditorComponent>shadowRoot.querySelector('#material');
 
         this.immaterialElement.addEventListener('change', (event) => {                       
@@ -104,14 +160,10 @@ export default class EdgeEditorComponent extends HTMLElement {
     }
 
     private renderStats() {
-        this.statsElement.textContent = '';
-        let automaticLuminosity = document.createElement('li');
-        automaticLuminosity.textContent = `auto-lumen: ${this._edge.luminosity.toFixed(2)}`;
-        let length = document.createElement('li');
-        length.textContent = `length: ${this._edge.length.toFixed(2)}`;
-        let distance = document.createElement('li');
-        distance.textContent = `distance: ${this.distanceToCamera(this._edge).toFixed(2)}`;
-        this.statsElement.append(automaticLuminosity, length, distance);
+        this.statsElement.innerHTML = `
+            <div class="stat-row"><span class="stat-label">auto-lumen</span><span class="stat-value">${this._edge.luminosity.toFixed(2)}</span></div>
+            <div class="stat-row"><span class="stat-label">length</span><span class="stat-value">${this._edge.length.toFixed(2)}</span></div>
+            <div class="stat-row"><span class="stat-label">distance</span><span class="stat-value">${this.distanceToCamera(this._edge).toFixed(2)}</span></div>`;
     }
 }
 

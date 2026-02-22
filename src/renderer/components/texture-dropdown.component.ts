@@ -4,22 +4,52 @@ import TextureSelectorComponent from './texture-selector.component';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
-<style> 
-.image {
-    cursor: pointer;   
-    padding: 1px; 
-    height: 64px;
-    width: 64px;
-}
-#selector {
-    display: flex;
+<style>
+:host {
+    display: block;
+    font-family: monospace;
+    font-size: 11px;
+    color: #ccc;
 }
 .container {
-    display: flex;    
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+.image {
+    cursor: pointer;
+    height: 32px;
+    width: 32px;
+    border: 1px solid #555;
+    border-radius: 2px;
+}
+.image:hover {
+    border-color: #42a5f5;
+}
+button {
+    background: #333;
+    border: 1px solid #555;
+    color: #aaa;
+    font-family: monospace;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 2px;
+    cursor: pointer;
+}
+button:hover {
+    background: #444;
+    color: #eee;
+}
+button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+#selector {
+    margin-top: 4px;
 }
 </style>
 <div class="container">
-    <div id="selectedImage"></div>    
+    <div id="selectedImage"></div>
     <button id="clear">clear</button>
 </div>
 <texture-selector id="selector"></texture-selector>
