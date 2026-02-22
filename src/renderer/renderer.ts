@@ -10,7 +10,7 @@ import { WorldLoader } from '../common/storage/stateLoader';
 import { UndoService } from '../common/actions/undoService';
 import { connect } from '../common/store/store-connector';
 import { isEdge, isPolygon, isVertex, SelectableElement } from '../common/selection/selectable';
-import { BspGenerationStarter } from '../common/geometry/bsp/bspGenerationStarter';
+import { BspGenerationService } from '../common/geometry/bsp/bsp-generation-service';
 import { loadComponents } from './components';
 import GeometrySelectionComponent from './components/geometrySelectionComponent';
 import GeometryEditorComponent from './components/geometryEditorComponent';
@@ -45,7 +45,7 @@ window.addEventListener('load', (event) => {
     const handlers = [...globalHandlers.handlers, ...canvasHandlers.handlers];
 
     let testCanvas = new TestCanvasRenderer(ui.view_2d.canvas);//, mapEditor.context);
-    const bspStarter = new BspGenerationStarter();
+    const bspService = new BspGenerationService();
 
     const unsubscribeStats = connect(s => {
         ui.stats.data = s.stats;
@@ -123,7 +123,7 @@ window.addEventListener('load', (event) => {
         // Dispose services
         worldLoader.dispose();
         undoService.dispose();
-        bspStarter.dispose();
+        bspService.dispose();
         
         // Unsubscribe store connections
         unsubscribeStats();
