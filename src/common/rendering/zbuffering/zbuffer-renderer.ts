@@ -70,6 +70,8 @@ export class ZBufferRenderer implements IRenderer {
         this.buffer.updateCamera(this.camera);
         
         let edgesTested: number = 0;
+        let staleEdgesSkipped: number = 0;
+        let dirtyEdgesTested: number = 0;
         let count = 0;
         let depth = 40;
         const dirtyEdges = this.bspContext?.dirtyEdges;
@@ -82,7 +84,10 @@ export class ZBufferRenderer implements IRenderer {
                     if (e.material == null) continue;
                     
                     // Skip stale edges (removed/modified since last BSP build)
-                    if (dirtyEdges && isStaleInBsp(e.id, dirtyEdges)) continue;
+                    if (dirtyEdges && isStaleInBsp(e.id, dirtyEdges)) {
+                        staleEdgesSkipped++;
+                        continue;
+                    }
                     
                     const clipped = clip(e, this.camera);
                     if (clipped === NULL_EDGE) continue;
@@ -110,6 +115,7 @@ export class ZBufferRenderer implements IRenderer {
                 if (clipped === NULL_EDGE) continue;
                 
                 if (clippedSegments) clippedSegments.push({ segment: clipped.segment, depth: count });
+                dirtyEdgesTested++;
                 edgesTested++;
                 this.buffer.add(clipped, e.start.vector);
             }
@@ -142,11 +148,16 @@ export class ZBufferRenderer implements IRenderer {
                     edgeCount: 0, 
                     polygonCount: 0, 
                     edgePercentage: 0 } },
-                detectedEdges: clippedSegments || []
+                detectedEdges: clippedSegments || [],
+                bspRendering: {
+                    staleEdgesSkipped,
+                    dirtyEdgesTested,
+                    edgesTested,
+                }
             }));
         }
 
-    }      
+    }
 
     private drawSky = () => this.drawBackground('rgb(200,200,200)', 0, this.canvas.height / 2);
     private drawFloor = () => this.drawBackground('rgb(50,80,80)', this.canvas.height / 2, this.canvas.height);

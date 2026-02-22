@@ -1,63 +1,111 @@
 import { createListenerMiddleware, isAnyOf } from '@reduxjs/toolkit';
 import { RootState } from './index';
 import { IGeometry } from '../geometry/geometry';
+import { IEdge } from '../geometry/edge';
+import { IPolygon } from '../geometry/polygon';
 import { IEntityKey } from '../geometry/entity';
 import { IEdgeDiff, EMPTY_DIFF } from '../geometry/bsp/dirty-edge-tracker';
 import { markDirty, clearBsp } from './bsp-state';
 
 /**
- * Collects all edge IDs from a geometry into a Set.
+ * Returns true if two edges have identical vertex positions.
+ * Used to distinguish edges that were cloned but not moved from edges
+ * whose vertices actually changed (e.g., a vertex drag).
  */
-function collectEdgeIds(geometry: IGeometry): Set<IEntityKey> {
-    const ids = new Set<IEntityKey>();
-    for (const polygon of geometry.polygons) {
-        for (const edge of polygon.edges) {
-            if (edge.id != null) {
-                ids.add(edge.id);
-            }
-        }
-    }
-    return ids;
+function verticesMatch(oldEdge: IEdge, newEdge: IEdge): boolean {
+    return oldEdge.start.vector[0] === newEdge.start.vector[0]
+        && oldEdge.start.vector[1] === newEdge.start.vector[1]
+        && oldEdge.end.vector[0] === newEdge.end.vector[0]
+        && oldEdge.end.vector[1] === newEdge.end.vector[1];
 }
 
 /**
- * Computes an edge diff between old and new geometry.
+ * Computes an edge diff between old and new geometry using a two-tier approach:
  * 
- * - removed: IDs present in old but not in new
- * - added: IDs present in new but not in old
- * - modified: IDs present in both (edge was cloned/transformed — same ID, possibly new geometry)
+ * **Tier 1 — Polygon reference equality:**
+ * Polygons that are the same JS reference (===) in both old and new geometry
+ * are skipped entirely. This works because adaptPolygons/forkPolygons/addPolygon
+ * preserve unchanged polygon objects by reference.
  * 
- * Note: We treat ALL surviving IDs as "modified" because we can't cheaply
- * detect whether the edge geometry actually changed (vertices are mutable).
- * This is conservative but correct — the BSP dirty tracker handles no-op
- * modifications gracefully.
+ * **Tier 2 — Edge vertex comparison (within changed polygons only):**
+ * For polygons that changed (different reference or different ID set), compare
+ * each edge's start/end vertex positions. Only edges whose vertices actually
+ * moved are marked as "modified". This means moving 1 vertex in a 20-edge
+ * polygon marks only 2 edges dirty (the two adjacent ones), not all 20.
+ * 
+ * Material-only changes are intentionally NOT tracked as "modified" because
+ * the BSP is a spatial index — material changes don't invalidate an edge's
+ * position in the tree. The renderer will find the edge via normal BSP walk
+ * and render its current material regardless.
  */
 function computeEdgeDiff(oldGeometry: IGeometry, newGeometry: IGeometry): IEdgeDiff {
     // Quick identity check — if the geometry object is the same reference, 
     // no mutation occurred (e.g., undo to same state, or no-op operations).
     if (oldGeometry === newGeometry) return EMPTY_DIFF;
 
-    const oldIds = collectEdgeIds(oldGeometry);
-    const newIds = collectEdgeIds(newGeometry);
+    // Tier 1: Build polygon lookup for old geometry
+    const oldPolygonMap = new Map<IEntityKey, IPolygon>();
+    for (const p of oldGeometry.polygons) {
+        if (p.id != null) oldPolygonMap.set(p.id, p);
+    }
 
     const removedEdgeIds = new Set<IEntityKey>();
     const addedEdgeIds = new Set<IEntityKey>();
     const modifiedEdgeIds = new Set<IEntityKey>();
+    const seenOldPolygonIds = new Set<IEntityKey>();
 
-    // IDs in old but not new → removed
-    for (const id of oldIds) {
-        if (!newIds.has(id)) {
-            removedEdgeIds.add(id);
+    for (const newPoly of newGeometry.polygons) {
+        const oldPoly = newPoly.id != null ? oldPolygonMap.get(newPoly.id) : undefined;
+
+        if (oldPoly === newPoly) {
+            // Tier 1: Same reference — polygon is completely unchanged, skip all edges
+            if (newPoly.id != null) seenOldPolygonIds.add(newPoly.id);
+            continue;
+        }
+
+        if (oldPoly != null) {
+            // Polygon was mutated (same ID, different reference)
+            // Tier 2: Compare individual edge vertices
+            seenOldPolygonIds.add(newPoly.id!);
+
+            const oldEdgeMap = new Map<IEntityKey, IEdge>();
+            for (const e of oldPoly.edges) {
+                if (e.id != null) oldEdgeMap.set(e.id, e);
+            }
+
+            for (const e of newPoly.edges) {
+                if (e.id != null) {
+                    const oldEdge = oldEdgeMap.get(e.id);
+                    if (oldEdge != null) {
+                        oldEdgeMap.delete(e.id);
+                        // Only mark modified if vertices actually moved
+                        if (!verticesMatch(oldEdge, e)) {
+                            modifiedEdgeIds.add(e.id);
+                        }
+                    } else {
+                        addedEdgeIds.add(e.id);
+                    }
+                }
+            }
+
+            // Old edges not found in new polygon → removed
+            for (const id of oldEdgeMap.keys()) {
+                removedEdgeIds.add(id);
+            }
+        } else {
+            // Polygon not in old geometry → all its edges are new
+            for (const e of newPoly.edges) {
+                if (e.id != null) addedEdgeIds.add(e.id);
+            }
         }
     }
 
-    // IDs in new but not old → added
-    // IDs in both → modified (conservative: assume geometry changed)
-    for (const id of newIds) {
-        if (!oldIds.has(id)) {
-            addedEdgeIds.add(id);
-        } else {
-            modifiedEdgeIds.add(id);
+    // Old polygons not seen in new geometry → all their edges removed
+    for (const [oldId, oldPoly] of oldPolygonMap) {
+        if (!seenOldPolygonIds.has(oldId)) {
+            for (const e of oldPoly.edges) {
+                if (e.id != null) removedEdgeIds.add(e.id);
+            }
         }
     }
 

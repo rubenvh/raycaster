@@ -5,7 +5,16 @@ import { ILineSegment } from '../math/lineSegment';
 export type IPerformanceStatistics = { drawing: number, casting: number, zbuffering: number, total: number }
 export type IIntersectionStatistics = { stats: CastingStats }
 export type IDetectedEdge = { segment: ILineSegment; depth: number }
-export type IStatsState = { performance: { timing: IPerformanceStatistics, fps: number }, intersections: IIntersectionStatistics, detectedEdges: IDetectedEdge[] }
+/** Edge counts from BSP dirty-edge tracking during rendering. */
+export type IBspRenderStats = {
+    /** Edges skipped in BSP walk because they were stale (removed/modified). */
+    staleEdgesSkipped: number;
+    /** Dirty edges tested via brute-force iteration from current geometry. */
+    dirtyEdgesTested: number;
+    /** Total edges tested (BSP walk + dirty). */
+    edgesTested: number;
+}
+export type IStatsState = { performance: { timing: IPerformanceStatistics, fps: number }, intersections: IIntersectionStatistics, detectedEdges: IDetectedEdge[], bspRendering?: IBspRenderStats }
 const slice = createSlice({
   name: 'stats',
   initialState: {

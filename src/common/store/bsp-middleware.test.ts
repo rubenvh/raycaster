@@ -98,8 +98,8 @@ describe('BSP middleware — edge diff tracking', () => {
             // 4 new edges added, none removed
             expect(bspState.dirtyEdges.addedEdgeIds.size).toBe(4);
             expect(bspState.dirtyEdges.removedEdgeIds.size).toBe(0);
-            // Original edges are now "modified" (conservative tracking)
-            expect(bspState.dirtyEdges.modifiedEdgeIds.size).toBe(4);
+            // Original edges are unchanged (same polygon reference preserved by addPolygon)
+            expect(bspState.dirtyEdges.modifiedEdgeIds.size).toBe(0);
             expect(bspState.status).toBe('stale');
         });
     });
