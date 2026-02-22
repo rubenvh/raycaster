@@ -54,7 +54,7 @@ export class WorldLoader {
             this.wallGeometry = state.walls.geometry;
             this.worldConfig = state.worldConfig;
             this.textureSources = state.textures.sources;
-            this.bspTree = state.bsp.tree;
+            this.bspTree = state.bsp.treeHolder?.node ?? null;
         });
     }
 

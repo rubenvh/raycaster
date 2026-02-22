@@ -53,7 +53,7 @@ export class ZBufferRenderer implements IRenderer {
             if (this.wallGeometry != s.walls.geometry) {
                 this.wallGeometry = s.walls.geometry;
             }
-            this.bspContext = { tree: s.bsp.tree, dirtyEdges: s.bsp.dirtyEdges };
+            this.bspContext = { tree: s.bsp.treeHolder?.node ?? null, dirtyEdges: s.bsp.dirtyEdges };
             this.worldConfig = s.worldConfig;
         });
     }

@@ -1,7 +1,7 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import walls from './walls';
 import bsp from './bsp-state';
-import { bspListenerMiddleware } from './bsp-middleware';
+import { bspListenerMiddleware, patchBspEdgeMaterials } from './bsp-middleware';
 import { createGeometry, IGeometry, storeGeometry, EMPTY_GEOMETRY } from '../geometry/geometry';
 import { loadWalls, updateWalls, createPolygon, clonePolygon, splitEdge, 
     move, remove, expandPolygon, splitPolygon, insetPolygon, mergePolygons,
@@ -10,6 +10,8 @@ import { setBsp, IBspState } from './bsp-state';
 import { buildBspTree } from '../geometry/bsp/creation';
 import { resetTestRandom } from '../testing/factories';
 import { IEntityKey } from '../geometry/entity';
+import { IBSPNode, isLeafNode, isSplitNode } from '../geometry/bsp/model';
+import { IEdge } from '../geometry/edge';
 
 /**
  * Helper: create a fresh store with walls + bsp slices and the middleware.
@@ -46,7 +48,7 @@ describe('BSP middleware — edge diff tracking', () => {
         test('bsp starts with no tree and no dirty edges', () => {
             const store = createTestStore();
             const state = store.getState().bsp;
-            expect(state.tree).toBeNull();
+            expect(state.treeHolder).toBeNull();
             expect(state.status).toBe('none');
             expect(state.dirtyCount).toBe(0);
         });
@@ -59,14 +61,14 @@ describe('BSP middleware — edge diff tracking', () => {
             const geom = createGeometry([[[0, 0], [100, 0], [100, 100], [0, 100]]]);
             store.dispatch(setBsp(buildBspTree(geom.polygons)));
             expect(store.getState().bsp.status).toBe('fresh');
-            const treeBefore = store.getState().bsp.tree;
+            const treeBefore = store.getState().bsp.treeHolder;
 
             // Load new walls — should NOT touch bspState
             const newGeom = createGeometry([[[0, 0], [200, 0], [200, 200]]]);
             store.dispatch(loadWalls(storeGeometry(newGeom)));
             
             // BSP state unchanged — the old tree is still there
-            expect(store.getState().bsp.tree).toBe(treeBefore);
+            expect(store.getState().bsp.treeHolder).toBe(treeBefore);
             expect(store.getState().bsp.status).toBe('fresh');
             expect(store.getState().bsp.dirtyCount).toBe(0);
         });
@@ -367,8 +369,24 @@ describe('BSP middleware — edge diff tracking', () => {
         });
     });
 
-    describe('material-only changes mark edges as dirty', () => {
-        test('adaptEdges with material change marks edges as modified', () => {
+    describe('material-only changes patch BSP in-place (no rebuild)', () => {
+        /** Collect all edges from a BSP tree by walking it. */
+        function collectBspEdges(tree: IBSPNode): IEdge[] {
+            const edges: IEdge[] = [];
+            function walk(node: IBSPNode): void {
+                if (isLeafNode(node)) {
+                    for (const p of node.polygons) edges.push(...p.edges);
+                } else if (isSplitNode(node)) {
+                    walk(node.front);
+                    for (const p of node.coplanar) edges.push(...p.edges);
+                    walk(node.back);
+                }
+            }
+            walk(tree);
+            return edges;
+        }
+
+        test('adaptEdges with material change patches BSP edges, status stays fresh', () => {
             const store = createTestStore();
             store.dispatch(createPolygon([[0, 0], [100, 0], [100, 100], [0, 100]]));
             store.dispatch(setBsp(buildBspTree(store.getState().walls.geometry.polygons)));
@@ -383,14 +401,18 @@ describe('BSP middleware — edge diff tracking', () => {
             store.dispatch(adaptEdges({ edgeMap, transformer }));
 
             const bspState = store.getState().bsp;
-            // Material change should be tracked so the renderer uses current geometry
-            expect(bspState.status).toBe('stale');
-            expect(bspState.dirtyCount).toBeGreaterThan(0);
-            // The edge should be in modifiedEdgeIds (same ID, different material)
-            expect(bspState.dirtyEdges.modifiedEdgeIds.has(edge.id!)).toBe(true);
+            // Material-only change should NOT trigger markDirty or status change
+            expect(bspState.status).toBe('fresh');
+            expect(bspState.dirtyCount).toBe(0);
+
+            // BSP edge should have the new material patched in-place
+            const bspEdges = collectBspEdges(bspState.treeHolder!.node);
+            const patchedEdge = bspEdges.find(e => e.id === edge.id);
+            expect(patchedEdge).toBeDefined();
+            expect((patchedEdge!.material as any).color).toEqual([0, 255, 0, 1]);
         });
 
-        test('adaptEdges changing immateriality marks edges as modified', () => {
+        test('adaptEdges changing immateriality patches BSP edges, status stays fresh', () => {
             const store = createTestStore();
             store.dispatch(createPolygon([[0, 0], [100, 0], [100, 100], [0, 100]]));
             store.dispatch(setBsp(buildBspTree(store.getState().walls.geometry.polygons)));
@@ -402,8 +424,165 @@ describe('BSP middleware — edge diff tracking', () => {
             store.dispatch(adaptEdges({ edgeMap, transformer }));
 
             const bspState = store.getState().bsp;
+            expect(bspState.status).toBe('fresh');
+            expect(bspState.dirtyCount).toBe(0);
+
+            // BSP edge should have immaterial patched in-place
+            const bspEdges = collectBspEdges(bspState.treeHolder!.node);
+            const patchedEdge = bspEdges.find(e => e.id === edge.id);
+            expect(patchedEdge).toBeDefined();
+            expect(patchedEdge!.immaterial).toBe(true);
+        });
+
+        test('material change without BSP tree does not crash', () => {
+            const store = createTestStore();
+            store.dispatch(createPolygon([[0, 0], [100, 0], [100, 100], [0, 100]]));
+            // No BSP set — tree is null
+            expect(store.getState().bsp.treeHolder).toBeNull();
+
+            const poly = store.getState().walls.geometry.polygons[0];
+            const edge = poly.edges[0];
+            const edgeMap = new Map([[poly.id!, [edge]]]);
+            const transformer = (e: any) => ({ ...e, material: { color: [0, 0, 255, 1] } });
+            // Should not throw
+            store.dispatch(adaptEdges({ edgeMap, transformer }));
+            expect(store.getState().bsp.treeHolder).toBeNull();
+        });
+
+        test('mixed changes: vertex move + material change fires both paths', () => {
+            const store = createTestStore();
+            store.dispatch(createPolygon([[0, 0], [100, 0], [100, 100], [0, 100]]));
+            store.dispatch(setBsp(buildBspTree(store.getState().walls.geometry.polygons)));
+            expect(store.getState().bsp.status).toBe('fresh');
+
+            // Move one vertex (spatial change) AND change material on another edge
+            const poly = store.getState().walls.geometry.polygons[0];
+            const movedEdge = poly.edges[0];
+            const materialEdge = poly.edges[2];
+
+            // Move the first vertex — affects edge[0] and edge[3]
+            const vertexMap = new Map([[poly.id!, [poly.vertices[0]]]]);
+            store.dispatch(move({ direction: [10, 10], verticesMap: vertexMap, snap: false }));
+
+            // Now change material on edge[2]
+            const poly2 = store.getState().walls.geometry.polygons[0];
+            const stillEdge = poly2.edges[2]; 
+            const edgeMap = new Map([[poly2.id!, [stillEdge]]]);
+            const transformer = (e: any) => ({ ...e, material: { color: [255, 0, 255, 1] } });
+            store.dispatch(adaptEdges({ edgeMap, transformer }));
+
+            const bspState = store.getState().bsp;
+            // Spatial changes from vertex move should mark status stale
             expect(bspState.status).toBe('stale');
-            expect(bspState.dirtyEdges.modifiedEdgeIds.has(edge.id!)).toBe(true);
+            expect(bspState.dirtyEdges.modifiedEdgeIds.size).toBeGreaterThan(0);
+
+            // BSP edge for the material change should be patched in-place
+            const bspEdges = collectBspEdges(bspState.treeHolder!.node);
+            const patchedEdge = bspEdges.find(e => e.id === materialEdge.id);
+            expect(patchedEdge).toBeDefined();
+            expect((patchedEdge!.material as any).color).toEqual([255, 0, 255, 1]);
+        });
+    });
+
+    describe('patchBspEdgeMaterials unit tests', () => {
+        test('patches matching edges in leaf nodes', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 100], [0, 100]]]);
+            const tree = buildBspTree(geom.polygons);
+            const edge = geom.polygons[0].edges[0];
+            
+            const newEdge = { ...edge, material: { color: [0, 255, 0, 1] as any }, immaterial: true };
+            const patches = new Map<IEntityKey, IEdge>([[edge.id!, newEdge as IEdge]]);
+            
+            patchBspEdgeMaterials(tree, patches);
+            
+            // Find the edge in BSP and verify it was patched
+            const bspEdges: IEdge[] = [];
+            function collectEdges(node: IBSPNode): void {
+                if (isLeafNode(node)) {
+                    for (const p of node.polygons) bspEdges.push(...p.edges);
+                } else if (isSplitNode(node)) {
+                    collectEdges(node.front);
+                    for (const p of node.coplanar) bspEdges.push(...p.edges);
+                    collectEdges(node.back);
+                }
+            }
+            collectEdges(tree);
+            
+            const patched = bspEdges.find(e => e.id === edge.id);
+            expect(patched).toBeDefined();
+            expect((patched!.material as any).color).toEqual([0, 255, 0, 1]);
+            expect(patched!.immaterial).toBe(true);
+        });
+
+        test('empty patches map is a no-op', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 100], [0, 100]]]);
+            const tree = buildBspTree(geom.polygons);
+            const edgeBefore = geom.polygons[0].edges[0];
+            const materialBefore = edgeBefore.material;
+            
+            patchBspEdgeMaterials(tree, new Map());
+            
+            // Edge should be unchanged
+            const bspEdges: IEdge[] = [];
+            function collectEdges(node: IBSPNode): void {
+                if (isLeafNode(node)) {
+                    for (const p of node.polygons) bspEdges.push(...p.edges);
+                } else if (isSplitNode(node)) {
+                    collectEdges(node.front);
+                    for (const p of node.coplanar) bspEdges.push(...p.edges);
+                    collectEdges(node.back);
+                }
+            }
+            collectEdges(tree);
+            
+            const edge = bspEdges.find(e => e.id === edgeBefore.id);
+            expect(edge!.material).toBe(materialBefore);
+        });
+
+        test('patches split edges (same ID appears multiple times in BSP)', () => {
+            // Create geometry with two polygons that share an edge — BSP splitting
+            // may clone edges, but cloned edges keep the same ID.
+            // We use a larger geometry to increase chance of BSP splitting.
+            const geom = createGeometry([
+                [[0, 0], [200, 0], [200, 200], [0, 200]],
+                [[200, 0], [400, 0], [400, 200], [200, 200]],
+            ]);
+            const tree = buildBspTree(geom.polygons);
+            
+            // Pick an edge and patch it
+            const targetEdge = geom.polygons[0].edges[0];
+            const newMaterial = { color: [128, 128, 128, 0.5] as any };
+            const newEdge = { ...targetEdge, material: newMaterial } as IEdge;
+            const patches = new Map<IEntityKey, IEdge>([[targetEdge.id!, newEdge]]);
+            
+            patchBspEdgeMaterials(tree, patches);
+            
+            // Collect ALL edges with this ID from BSP (may be split into multiple fragments)
+            const matchingEdges: IEdge[] = [];
+            function collectEdges(node: IBSPNode): void {
+                if (isLeafNode(node)) {
+                    for (const p of node.polygons) {
+                        for (const e of p.edges) {
+                            if (e.id === targetEdge.id) matchingEdges.push(e);
+                        }
+                    }
+                } else if (isSplitNode(node)) {
+                    collectEdges(node.front);
+                    for (const p of node.coplanar) {
+                        for (const e of p.edges) {
+                            if (e.id === targetEdge.id) matchingEdges.push(e);
+                        }
+                    }
+                    collectEdges(node.back);
+                }
+            }
+            collectEdges(tree);
+            
+            // All fragments should be patched
+            expect(matchingEdges.length).toBeGreaterThanOrEqual(1);
+            for (const e of matchingEdges) {
+                expect((e.material as any).color).toEqual([128, 128, 128, 0.5]);
+            }
         });
     });
 });

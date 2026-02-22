@@ -1,10 +1,11 @@
-import { createListenerMiddleware, isAnyOf } from '@reduxjs/toolkit';
+import { createListenerMiddleware } from '@reduxjs/toolkit';
 import { RootState } from './index';
 import { IGeometry } from '../geometry/geometry';
 import { IEdge } from '../geometry/edge';
 import { IPolygon } from '../geometry/polygon';
 import { IEntityKey } from '../geometry/entity';
 import { IEdgeDiff, EMPTY_DIFF } from '../geometry/bsp/dirty-edge-tracker';
+import { IBSPNode, isLeafNode, isSplitNode } from '../geometry/bsp/model';
 import { markDirty } from './bsp-state';
 
 /**
@@ -60,6 +61,64 @@ function singleMaterialEquals(a: {color: number[], texture?: any, luminosity?: n
 }
 
 /**
+ * Walks the BSP tree and patches material/immaterial properties in-place on BSP edge
+ * objects whose IDs match entries in the materialPatches map.
+ * 
+ * This is a pragmatic Redux immutability violation: we mutate BSP edge objects directly
+ * rather than rebuilding the tree or overlaying a material map. This is safe because:
+ * 1. The BSP tree structure (splitting planes, polygon membership) is unchanged
+ * 2. Material changes only update existing materials (never null→non-null), so
+ *    null-check gates in renderers (`e.material == null`) remain correct
+ * 3. No Redux selector depends on edge material identity within the BSP tree
+ * 
+ * @param tree - The BSP tree root node
+ * @param materialPatches - Map from edge ID to the new geometry edge with updated material/immaterial
+ */
+export function patchBspEdgeMaterials(tree: IBSPNode, materialPatches: Map<IEntityKey, IEdge>): void {
+    if (materialPatches.size === 0) return;
+
+    function patchPolygons(polygons: IPolygon[]): void {
+        for (const poly of polygons) {
+            for (const edge of poly.edges) {
+                if (edge.id == null) continue;
+                const newEdge = materialPatches.get(edge.id);
+                if (newEdge != null) {
+                    edge.material = newEdge.material;
+                    edge.immaterial = newEdge.immaterial;
+                }
+            }
+        }
+    }
+
+    function walkTree(node: IBSPNode): void {
+        if (isLeafNode(node)) {
+            patchPolygons(node.polygons);
+        } else if (isSplitNode(node)) {
+            walkTree(node.front);
+            patchPolygons(node.coplanar);
+            walkTree(node.back);
+        }
+    }
+
+    walkTree(tree);
+}
+
+/**
+ * Result of computing edge diffs, separating spatial changes from material-only changes.
+ */
+export interface IEdgeDiffResult {
+    /** Edges with spatial (vertex) changes, additions, or removals — requires BSP rebuild */
+    spatialDiff: IEdgeDiff;
+    /** Edges with only material/immaterial changes (same vertices) — can be patched in-place */
+    materialOnlyEdges: Map<IEntityKey, IEdge>;
+}
+
+export const EMPTY_DIFF_RESULT: IEdgeDiffResult = {
+    spatialDiff: EMPTY_DIFF,
+    materialOnlyEdges: new Map(),
+};
+
+/**
  * Computes an edge diff between old and new geometry using a two-tier approach:
  * 
  * **Tier 1 — Polygon reference equality:**
@@ -70,16 +129,16 @@ function singleMaterialEquals(a: {color: number[], texture?: any, luminosity?: n
  * **Tier 2 — Edge comparison (within changed polygons only):**
  * For polygons that changed (different reference or different ID set), compare
  * each edge's vertex positions AND non-spatial properties (material, immaterial).
- * Edges whose vertices moved are marked as "modified" for spatial re-indexing.
- * Edges whose vertices are unchanged but whose material/immaterial changed are
- * also marked as "modified" so the renderer uses the current geometry's edge
- * instead of the stale BSP copy. (The BSP tree holds references to old edge
- * objects; without marking these dirty, the renderer would display old materials.)
+ * 
+ * Results are separated into two categories:
+ * - **Spatial changes** (vertex moved, edge added/removed): require BSP rebuild
+ * - **Material-only changes** (same vertices, different material/immaterial): 
+ *   can be patched in-place on BSP edge objects without a rebuild
  */
-function computeEdgeDiff(oldGeometry: IGeometry, newGeometry: IGeometry): IEdgeDiff {
+function computeEdgeDiff(oldGeometry: IGeometry, newGeometry: IGeometry): IEdgeDiffResult {
     // Quick identity check — if the geometry object is the same reference, 
     // no mutation occurred (e.g., undo to same state, or no-op operations).
-    if (oldGeometry === newGeometry) return EMPTY_DIFF;
+    if (oldGeometry === newGeometry) return EMPTY_DIFF_RESULT;
 
     // Tier 1: Build polygon lookup for old geometry
     const oldPolygonMap = new Map<IEntityKey, IPolygon>();
@@ -90,6 +149,7 @@ function computeEdgeDiff(oldGeometry: IGeometry, newGeometry: IGeometry): IEdgeD
     const removedEdgeIds = new Set<IEntityKey>();
     const addedEdgeIds = new Set<IEntityKey>();
     const modifiedEdgeIds = new Set<IEntityKey>();
+    const materialOnlyEdges = new Map<IEntityKey, IEdge>();
     const seenOldPolygonIds = new Set<IEntityKey>();
 
     for (const newPoly of newGeometry.polygons) {
@@ -116,12 +176,12 @@ function computeEdgeDiff(oldGeometry: IGeometry, newGeometry: IGeometry): IEdgeD
                     const oldEdge = oldEdgeMap.get(e.id);
                     if (oldEdge != null) {
                         oldEdgeMap.delete(e.id);
-                        // Mark modified if vertices moved OR non-spatial properties changed.
-                        // Vertex moves invalidate BSP spatial indexing; material/immaterial
-                        // changes require the renderer to use the current edge instead of
-                        // the stale BSP copy.
-                        if (!verticesMatch(oldEdge, e) || nonSpatialPropertiesChanged(oldEdge, e)) {
+                        if (!verticesMatch(oldEdge, e)) {
+                            // Vertices moved → spatial change, requires BSP rebuild
                             modifiedEdgeIds.add(e.id);
+                        } else if (nonSpatialPropertiesChanged(oldEdge, e)) {
+                            // Same vertices, different material/immaterial → patch in-place
+                            materialOnlyEdges.set(e.id, e);
                         }
                     } else {
                         addedEdgeIds.add(e.id);
@@ -150,11 +210,16 @@ function computeEdgeDiff(oldGeometry: IGeometry, newGeometry: IGeometry): IEdgeD
         }
     }
 
-    if (removedEdgeIds.size === 0 && addedEdgeIds.size === 0 && modifiedEdgeIds.size === 0) {
-        return EMPTY_DIFF;
+    const hasSpatialChanges = removedEdgeIds.size > 0 || addedEdgeIds.size > 0 || modifiedEdgeIds.size > 0;
+    const spatialDiff = hasSpatialChanges
+        ? { removedEdgeIds, addedEdgeIds, modifiedEdgeIds }
+        : EMPTY_DIFF;
+
+    if (spatialDiff === EMPTY_DIFF && materialOnlyEdges.size === 0) {
+        return EMPTY_DIFF_RESULT;
     }
 
-    return { removedEdgeIds, addedEdgeIds, modifiedEdgeIds };
+    return { spatialDiff, materialOnlyEdges };
 }
 
 /**
@@ -179,7 +244,16 @@ function isWallsMutationAction(action: { type: string }): boolean {
  * Creates the BSP listener middleware.
  * 
  * Listens for all walls slice mutations and computes edge diffs between
- * old and new geometry. Dispatches markDirty to bspState when edges change.
+ * old and new geometry. Two paths:
+ * 
+ * 1. **Spatial changes** (vertex moved, edge added/removed): dispatches markDirty
+ *    to bspState, which transitions status to 'stale' and triggers an async rebuild.
+ * 
+ * 2. **Material-only changes** (same vertices, different material/immaterial): 
+ *    patches BSP edge objects in-place via patchBspEdgeMaterials. No markDirty,
+ *    no status change, no rebuild needed. The BSP spatial structure is unchanged.
+ * 
+ * Both paths can fire for mixed changes (some edges moved + some material-only).
  * 
  * loadWalls is excluded — it replaces geometry wholesale, and the caller
  * (loadWorld in stateLoader.ts) dispatches setBsp() to set the BSP state
@@ -198,11 +272,21 @@ bspListenerMiddleware.startListening({
         const oldGeometry = originalState.walls.geometry;
         const newGeometry = currentState.walls.geometry;
 
-        const diff = computeEdgeDiff(oldGeometry, newGeometry);
+        const result = computeEdgeDiff(oldGeometry, newGeometry);
 
-        // Only dispatch if there's an actual diff
-        if (diff !== EMPTY_DIFF) {
-            listenerApi.dispatch(markDirty(diff));
+        if (result === EMPTY_DIFF_RESULT) return;
+
+        // Path 1: Spatial changes → dispatch markDirty for BSP rebuild
+        if (result.spatialDiff !== EMPTY_DIFF) {
+            listenerApi.dispatch(markDirty(result.spatialDiff));
+        }
+
+        // Path 2: Material-only changes → patch BSP edges in-place
+        if (result.materialOnlyEdges.size > 0) {
+            const bspTree = currentState.bsp.treeHolder?.node ?? null;
+            if (bspTree != null) {
+                patchBspEdgeMaterials(bspTree, result.materialOnlyEdges);
+            }
         }
     },
 });

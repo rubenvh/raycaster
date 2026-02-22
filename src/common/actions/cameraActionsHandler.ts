@@ -27,7 +27,7 @@ export class CameraActionsHandler implements IActionHandler {
         this.unsubscribe = connect(s => {            
             this.wallGeometry = s.walls.geometry;
             this.camera = s.player.camera;
-            this.bspContext = { tree: s.bsp.tree, dirtyEdges: s.bsp.dirtyEdges };
+            this.bspContext = { tree: s.bsp.treeHolder?.node ?? null, dirtyEdges: s.bsp.dirtyEdges };
         });
     }
 

@@ -371,7 +371,102 @@ Future editor UI for creating/editing animations. Not part of the initial implem
 | **A6** | Chaining and looping | Complex animation sequences work. |
 | **A7** | Editor UI for animation authoring | Users can create animations visually. |
 
-**Dependency:** Phases A3+ require BSP plan Phase 7 (transient partition) to be implemented first.
+**Dependency:** Phases A3+ require the BSP transient partition (below) to be implemented first. This was originally Phase 7 of the BSP plan but has been moved here.
+
+## BSP Transient Partition (from BSP Plan Phase 7)
+
+This section describes the transient dirty tracking infrastructure required by the animation system. It was originally Phase 7 of the Incremental BSP Plan but was moved here because transient tracking is only needed when the animation system is implemented.
+
+### Concept: Two Categories of Geometry Change
+
+| | **Permanent** | **Transient** |
+|---|---|---|
+| **Examples** | Editor operations: move vertex, split edge, extrude, add polygon | In-game mechanics: rotating door, sliding wall, moving platform |
+| **BSP impact** | Old BSP is permanently wrong, must rebuild | Old BSP is temporarily wrong, will become correct again |
+| **Dirty tracking** | Edges go into permanent dirty set, trigger BSP regeneration | Edges go into transient dirty set, do NOT trigger BSP regeneration |
+| **Lifecycle** | Dirty until new BSP is built | Dirty for a bounded duration, then restored |
+| **Initiated by** | User in editor mode | Game logic / player interaction |
+
+The BSP always represents the **resting state** of the world. Before posting polygons to the worker for BSP generation, transient edges are substituted with their stored originals.
+
+### Changes to DirtyEdgeTracker
+
+**File:** `src/common/geometry/bsp/dirty-edge-tracker.ts`
+
+Add transient partition with original edge storage, `updateTransient`/`restoreTransient` operations, and combined views for renderers. The tracker deep-clones the original edges when `markTransientDirty()` is called, allowing `restoreTransient()` to bring edges back to their BSP state without game logic managing original state.
+
+### Changes to bspState Slice
+
+**File:** `src/common/store/bsp-state.ts`
+
+Add transient reducers: `markTransientDirty`, `updateTransient`, `restoreTransient`. Add resting-state build support.
+
+### Changes to BspGenerationService
+
+**File:** `src/common/geometry/bsp/bsp-generation-service.ts`
+
+Before posting polygons to the worker, substitute transient edges with their stored originals:
+
+```
+1. Take current geometry polygons
+2. For each transient-dirty edge (from transientOriginals):
+   a. If original is non-null: substitute the edge with its original
+   b. If original is null: remove the edge (it's transient extra geometry)
+3. Post the resting-state polygons to worker
+```
+
+### Cross-Slice Operation: `restoreTransient` Thunk
+
+`restoreTransient` must atomically update **both** the geometry (in `walls` slice) and the dirty tracker (in `bspState` slice). If these are separate dispatches, there's a frame between them where geometry has the originals but the tracker still lists them as dirty (or vice versa), causing rendering glitches.
+
+**Implementation:** A Redux thunk (not a plain action) that:
+
+```typescript
+function restoreTransient(edgeIds: string[]): AppThunk {
+    return (dispatch, getState) => {
+        const tracker = getState().bspState.dirtyTracker;
+        const originals = edgeIds.map(id => tracker.transientOriginals.get(id));
+
+        // Single batch of dispatches (Redux batches by default in thunks)
+        dispatch(wallActions.restoreEdges({ edgeIds, originals }));
+        dispatch(bspStateActions.restoreTransient(edgeIds));
+    };
+}
+```
+
+This eliminates floating-point drift: instead of the game logic re-computing "original" positions (which may differ by epsilon from the BSP's version), the tracker's stored originals are authoritative and are placed directly back into the geometry.
+
+**File:** `src/common/store/bsp-state.ts` (thunk export alongside the slice)
+
+### Transient Edge Cases
+
+| Case | Handling |
+|------|---------|
+| **BSP built mid-transition** | Cannot happen. The `BspGenerationService` substitutes transient edges with their stored originals before posting to the worker. The BSP always represents the resting state. |
+| **Door closes after BSP rebuild** | Safe. The BSP was built from resting-state polygons (originals substituted). When `restoreTransient()` is called, transient entries are removed, and the BSP's version of those edges is correct. |
+| **Transient extra geometry removed** | `transientOriginals` maps these edge IDs to `null`. On `restoreTransient()`, edges are removed from the dirty set entirely — they don't exist in the BSP or the world. |
+| **completeGeneration during active transient changes** | Only the permanent partition is cleared. Transient entries survive. The new BSP was built from resting-state polygons, so transient edges remain correctly tracked. |
+| **Animation drift on restore** | Animations compute edge positions via transforms each tick, which may accumulate floating-point error. `restoreTransient` uses the tracker's stored originals (deep clones from `markTransientDirty`), not re-computed positions, eliminating drift. The geometry is restored to the exact pre-animation state. |
+
+### Transient Design Decisions
+
+1. **Two-partition dirty tracking** (permanent vs transient): Clean separation between editor changes that invalidate the BSP and game mechanics that temporarily modify geometry. Renderers don't need to know the difference — they use the combined view. Only the `BspGenerationService` cares about the distinction.
+
+2. **Tracker stores originals for transient edges**: The tracker deep-clones the original edges when `markTransientDirty()` is called. This allows `restoreTransient()` to bring edges back to their BSP state without the game logic having to manage original state. The tracker is the single source of truth for "what does the resting world look like."
+
+3. **BSP always represents resting state**: Before posting polygons to the worker, transient edges are substituted with their stored originals. This guarantees that when a transient change ends (e.g., door closes), the BSP is immediately correct for those edges — no rebuild needed.
+
+4. **Transient extra geometry uses `null` originals**: When temporary geometry is spawned into the world (obstacles, entities), `transientOriginals` maps those edge IDs to `null` to indicate "this edge didn't exist in the resting state." On restore, these edges vanish from both the dirty set and the world.
+
+5. **`restoreTransient` is a cross-slice atomic operation**: Implemented as a thunk, not a plain reducer, because it must update both `walls` (geometry) and `bspState` (dirty tracker) atomically. The thunk reads originals from the tracker and dispatches both slice updates in a single batch. This prevents rendering glitches from intermediate states and eliminates floating-point drift by using the tracker's stored originals as the authoritative resting-state edges.
+
+### Files to Modify for Transient Partition
+
+| File | Action |
+|------|--------|
+| `src/common/geometry/bsp/dirty-edge-tracker.ts` | **Modify** — add transient partition, originals storage, restore logic |
+| `src/common/store/bsp-state.ts` | **Modify** — add transient reducers (`markTransientDirty`, `updateTransient`, `restoreTransient`), resting-state build support |
+| `src/common/geometry/bsp/bsp-generation-service.ts` | **Modify** — substitute transient edges with originals before posting to worker |
 
 ## Files to Create/Modify
 

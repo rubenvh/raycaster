@@ -11,38 +11,36 @@ Currently, any geometry mutation nullifies the BSP tree (`bsp: null` in `geometr
 3. **Regenerate BSP asynchronously** in a Web Worker without blocking rendering
 4. **Auto-generate BSP** for maps loaded without one
 5. **Clean up dirty state** once the new BSP is ready
-6. **Support transient geometry changes** (e.g., rotating doors) that should not trigger BSP regeneration
+6. **Support transient geometry changes** (e.g., rotating doors) that should not trigger BSP regeneration — **deferred to Animation System Plan**
 
 ## Core Concept
 
 Instead of setting `bsp: null` on mutation, we keep the old BSP tree and maintain a **dirty edge set** — edges that were added, removed, or modified since the BSP was last built. During rendering, we walk the stale BSP (skipping dirty edges encountered in the tree) and separately test dirty edges against the camera/rays via a spatial index. Once a new BSP is built asynchronously in a Web Worker, the dirty set is cleared.
 
-Dirty edges are partitioned into **permanent** (editor changes that require BSP rebuild) and **transient** (game mechanics like doors that revert to original state). The BSP always represents the **resting state** of the world.
+**Note:** The original plan described a permanent/transient partition for dirty edges (transient = game mechanics like doors that revert to original state). The transient partition has been **deferred to the Animation System Plan** (`docs/ANIMATION_SYSTEM_PLAN.md`), which will implement it alongside the animation scheduler. The current dirty tracking system handles only permanent (editor) changes.
 
 ## Architecture Overview
 
 ```
-  [User edits geometry]          [File loaded / New file]     [Game mechanics]
-        │                               │                          │
-        ▼                               ▼                          ▼
-  ┌─────────────────────┐    ┌────────────────────────┐   ┌──────────────────┐
-  │  Geometry Mutation   │    │  loadWalls / clear     │   │  Game Logic      │
-  │  (walls slice)       │    │  (walls slice)         │   │  (door/platform) │
-  │  No longer clears    │    └───────────┬────────────┘   └────────┬─────────┘
-  │  BSP                 │                │                         │
-  └──────────┬───────────┘                │                         │
-             │                            │                         │
-             │  permanent dirty           │                         │  transient dirty
-             ▼                            ▼                         ▼
+  [User edits geometry]          [File loaded / New file]
+        │                               │
+        ▼                               ▼
+  ┌─────────────────────┐    ┌────────────────────────┐
+  │  Geometry Mutation   │    │  loadWalls / clear     │
+  │  (walls slice)       │    │  (walls slice)         │
+  │  No longer clears    │    └───────────┬────────────┘
+  │  BSP                 │                │
+  └──────────┬───────────┘                │
+             │                            │
+             │  dirty edges               │
+             ▼                            ▼
   ┌──────────────────────────────────────────────────────────────────────────┐
   │  bspState slice                                                          │
   │                                                                          │
-│  staleBsp: IBSPNode | null                                               │
-│  dirtyTracker: IDirtyEdgeTracker                                         │
-│    ├─ permanent partition  ──► triggers BSP regeneration                  │
-│    └─ transient partition  ──► does NOT trigger BSP regeneration          │
-│  isGenerating: boolean                                                   │
-│  generationId: number                                                    │
+│  treeHolder: BspTreeHolder | null    (wraps IBSPNode, Immer-opaque)      │
+│  dirtyEdges: IMutableEdgeDiff                                            │
+│  status: BspStatus                                                       │
+│  dirtyCount: number                                                      │
   └──────────────────┬───────────────────────────────────────────────────────┘
                      │
                      ▼
@@ -50,13 +48,9 @@ Dirty edges are partitioned into **permanent** (editor changes that require BSP 
   │  BspGenerationService                             │
   │                                                   │
   │  Subscribes to bspState. Triggers generation:     │
-  │  • needsFullBuild=true → immediate (no debounce)  │
-  │  • permanentGeneration changed → debounced         │
+  │  • status === 'none' + polygons → immediate       │
+  │  • status === 'stale' → debounced (500ms)         │
   │  • Ctrl+B → force immediate                       │
-  │                                                   │
-  │  Before posting to worker: substitute transient    │
-  │  edges with their stored originals to build the    │
-  │  resting-state BSP.                                │
   │                                                   │
   │  Cancels in-flight worker on new edits.            │
   └──────────────────┬───────────────────────────────┘
@@ -65,11 +59,10 @@ Dirty edges are partitioned into **permanent** (editor changes that require BSP 
   ┌──────────────────────────────────────────────────┐
   │  Rendering Loop                                   │
   │                                                   │
-  │  staleBsp exists?                                 │
+  │  treeHolder exists?                               │
   │  ├─ YES: BSP walk (skip ALL stale edges)          │
-  │  │       + dirty edge spatial index query          │
+  │  │       + dirty edge brute-force iteration       │
   │  │       → merge into ZBuffer / ray hits           │
-  │  │       (renderers don't care permanent/transient)│
   │  │                                                │
   │  └─ NO:  Brute-force raycaster (as today)         │
   │          (only during initial load before first    │
@@ -77,19 +70,11 @@ Dirty edges are partitioned into **permanent** (editor changes that require BSP 
   └──────────────────────────────────────────────────┘
 ```
 
-## Two Categories of Geometry Change
-
-| | **Permanent** | **Transient** |
-|---|---|---|
-| **Examples** | Editor operations: move vertex, split edge, extrude, add polygon | In-game mechanics: rotating door, sliding wall, moving platform |
-| **BSP impact** | Old BSP is permanently wrong, must rebuild | Old BSP is temporarily wrong, will become correct again |
-| **Dirty tracking** | Edges go into permanent dirty set, trigger BSP regeneration | Edges go into transient dirty set, do NOT trigger BSP regeneration |
-| **Lifecycle** | Dirty until new BSP is built | Dirty for a bounded duration, then restored |
-| **Initiated by** | User in editor mode | Game logic / player interaction |
-
-### Texture / Material Changes at Runtime
+### Texture / Material Changes at Runtime — **IMPLEMENTED (Phase 8)**
 
 Changing a texture or material on an edge does **not** require dirty tracking. The BSP structure depends only on edge geometry (vertex positions → splitting planes), not materials. Material changes are applied by **mutating the edge objects in-place** on the polygon references stored inside the BSP tree. Since the BSP holds direct references to `IPolygon` objects (see `model.ts` lines 6-7: `polygons: IPolygon[]`, `coplanar: IPolygon[]`), mutating material properties on those edges is safe and immediately visible to the renderer during the next BSP walk. This avoids any overhead from the dirty tracking system for what is a purely visual change.
+
+**Implementation:** The `computeEdgeDiff()` function in `bsp-middleware.ts` classifies each changed edge as either spatial (vertex positions changed → `spatialDiff`) or material-only (only `material`/`immaterial` changed → `materialOnlyEdges`). The middleware dispatches `markDirty` for spatial changes and calls `patchBspEdgeMaterials()` for material-only changes. The BSP tree is wrapped in a `BspTreeHolder` class marked `static [immerable] = false` to prevent Immer from deep-freezing it, and `thawBspTree()` ensures all edges are mutable even when polygon objects are shared with frozen Redux walls state.
 
 ## Module Breakdown
 
@@ -97,7 +82,7 @@ Changing a texture or material on an edge does **not** require dirty tracking. T
 
 **File:** `src/common/geometry/bsp/dirty-edge-tracker.ts` — **IMPLEMENTED (Phase 1)**
 
-Tracks which edges have been modified since the last BSP rebuild. Three categories: removed, added, modified. Phase 1 implements the permanent partition only; transient partition deferred to Phase 7.
+Tracks which edges have been modified since the last BSP rebuild. Three categories: removed, added, modified.
 
 **Implemented types:**
 
@@ -127,10 +112,10 @@ class DirtyEdgeTracker {
 - The plan described an `IDirtyEdgeTracker` interface with permanent/transient partitions, generation counters, and combined views. The actual implementation is simpler: a `DirtyEdgeTracker` class with three internal Sets (removed/added/modified) and an `IEdgeDiff` snapshot type.
 - Smart cancellation logic handles sequences like added-then-removed (net no-op), removed-then-added (becomes modified), modified-on-added (stays added).
 - The `IEdgeDiff` type uses `ReadonlySet` for external safety. Inside Redux state (`bspState`), a mutable `IMutableEdgeDiff` variant is used to work with Immer drafts.
-- Transient partition, `permanentGeneration` counter, `transientOriginals`, and combined views are deferred to Phase 7.
+- Transient partition, `permanentGeneration` counter, `transientOriginals`, and combined views were originally planned for a Phase 7 but have been moved to the Animation System Plan (`docs/ANIMATION_SYSTEM_PLAN.md`).
 - 21 tests in `dirty-edge-tracker.test.ts`.
 
-**Future (Phase 7):** Add transient partition with original edge storage, `updateTransient`/`restoreTransient` operations, and combined views for renderers.
+**Future:** Transient partition with original edge storage, `updateTransient`/`restoreTransient` operations, and combined views for renderers have been moved to the Animation System Plan (`docs/ANIMATION_SYSTEM_PLAN.md`).
 
 ### Module 2: DirtyEdgeSpatialIndex — Render-time Acceleration
 
@@ -173,10 +158,23 @@ interface IMutableEdgeDiff {
 }
 
 interface IBspState {
-    tree: IBSPNode | null;            // current BSP tree (may be stale), null = no tree
+    treeHolder: BspTreeHolder | null;  // wraps IBSPNode, Immer-opaque (Phase 8)
     status: BspStatus;                 // lifecycle status
     dirtyEdges: IMutableEdgeDiff;      // accumulated dirty edges since last rebuild
     dirtyCount: number;                // convenience total for UI
+}
+
+// BspTreeHolder prevents Immer from deep-freezing the BSP tree,
+// enabling in-place material mutation on BSP edge objects.
+class BspTreeHolder {
+    static [immerable] = false;  // Immer skips non-draftable objects
+    constructor(public node: IBSPNode) {}
+}
+
+// IBspContext is unchanged — consumers see tree: IBSPNode | null
+interface IBspContext {
+    readonly tree: IBSPNode | null;    // extracted from treeHolder?.node
+    readonly dirtyEdges: IMutableEdgeDiff;
 }
 ```
 
@@ -198,33 +196,16 @@ interface IBspState {
 
 **Phase 5 update:** The `clearBsp` reducer was removed as dead code. It was only dispatched by the `loadWalls → clearBsp` middleware listener, which was also removed (see Module 6). `setBsp(null)` produces the same state (`status: 'none'`, empty dirty tracking) and is used instead where needed.
 
+**Phase 8 update:** `IBspState.tree` was replaced with `IBspState.treeHolder: BspTreeHolder | null`. The `BspTreeHolder` class is marked `static [immerable] = false`, preventing Immer from deep-freezing the BSP tree. This enables in-place mutation of edge materials on BSP polygon references. The `setBsp` reducer now thaws frozen edges via `thawBspTree()` before wrapping in `BspTreeHolder`. New helpers: `getBspTree(state)` extracts the raw node, `thawBspTree/thawPolygons/thawEdges` ensure BSP edges are mutable. All consumers updated from `s.bsp.tree` to `s.bsp.treeHolder?.node ?? null`. The `IBspContext` interface is unchanged (still has `tree: IBSPNode | null`).
+
 **Future phases:**
 - Phase 4: Add `generationId`, `isGenerating` semantics, `cancelGeneration`
 - ~~Phase 5: Add `needsFullBuild`, `installInitialBsp`, `requestFullBuild`~~ — Not needed; existing `setBsp` + `BspGenerationService` `status === 'none'` handling covers all file load scenarios
-- Phase 7: Add transient reducers (`markTransientDirty`, `updateTransient`, `restoreTransient`)
+- Transient reducers (`markTransientDirty`, `updateTransient`, `restoreTransient`) moved to Animation System Plan
 
-### Cross-Slice Operation: `restoreTransient` Thunk
+### Cross-Slice Operation: `restoreTransient` Thunk — Deferred
 
-`restoreTransient` is special because it must atomically update **both** the geometry (in `walls` slice) and the dirty tracker (in `bspState` slice). If these are separate dispatches, there's a frame between them where geometry has the originals but the tracker still lists them as dirty (or vice versa), causing rendering glitches.
-
-**Implementation:** A Redux thunk (not a plain action) that:
-
-```typescript
-function restoreTransient(edgeIds: string[]): AppThunk {
-    return (dispatch, getState) => {
-        const tracker = getState().bspState.dirtyTracker;
-        const originals = edgeIds.map(id => tracker.transientOriginals.get(id));
-
-        // Single batch of dispatches (Redux batches by default in thunks)
-        dispatch(wallActions.restoreEdges({ edgeIds, originals }));
-        dispatch(bspStateActions.restoreTransient(edgeIds));
-    };
-}
-```
-
-This eliminates floating-point drift: instead of the game logic re-computing "original" positions (which may differ by epsilon from the BSP's version), the tracker's stored originals are authoritative and are placed directly back into the geometry.
-
-**File:** `src/common/store/bsp-state.ts` (thunk export alongside the slice)
+The `restoreTransient` thunk (atomically restoring both geometry and dirty tracking) has been moved to the Animation System Plan (`docs/ANIMATION_SYSTEM_PLAN.md`), where it will be implemented alongside the transient partition.
 
 ### Module 4: Changes to Geometry Mutations + Edge Diff Middleware
 
@@ -291,8 +272,8 @@ Removing `bsp` from `IGeometry` required threading BSP as a separate parameter t
 - `src/common/rendering/zbuffering/zbuffer-renderer.ts` — reads BSP from `bspState` via `connect()`, stores as `bspContext` field
 - `src/common/rendering/raycasting/renderer3d.ts` — reads BSP from bspState via `connect()`
 - `src/common/actions/cameraActionsHandler.ts` — subscribes to `s.bsp`, stores `bspContext`, dispatches with `bspContext`
-- `src/common/editor/mapEditor.ts` — subscribes to `s.bsp.tree`
-- `src/common/rendering/bspwalking/walker.ts` — subscribes to `s.bsp.tree`, `isActive()` uses `!!this.bspTree`
+- `src/common/editor/mapEditor.ts` — subscribes to `s.bsp.treeHolder?.node`
+- `src/common/rendering/bspwalking/walker.ts` — subscribes to `s.bsp.treeHolder?.node`, `isActive()` uses `!!this.bspTree`
 - `src/common/geometry/bsp/bsp-generation-service.ts` — subscribes to `bspState` via `connect()`, debounces edits, posts to web worker, dispatches `setBsp`; replaces deleted `bspGenerationStarter.ts`
 - `src/common/storage/stateLoader.ts` — BSP save/load from bspState, legacy compatibility
 
@@ -305,6 +286,8 @@ interface IBspContext {
     readonly dirtyEdges: IMutableEdgeDiff;
 }
 ```
+
+Consumers build `IBspContext` by extracting `tree` from `state.bsp.treeHolder?.node ?? null` and `dirtyEdges` from `state.bsp.dirtyEdges`. The `IBspContext` interface is stable — the Phase 8 change from `tree` to `treeHolder` in `IBspState` is invisible to downstream code.
 
 Functions that previously took `(bsp?, dirtyEdges?)` as separate params now take `(bspContext?: IBspContext)` and destructure inside. This affected:
 - `renderer-core.ts` — `IRendererCore.render()` signature
@@ -325,6 +308,25 @@ Functions that ONLY use `bsp` (not `dirtyEdges`) were NOT changed: `castCollisio
 
 **Middleware tests:** 20 tests in `bsp-middleware.test.ts` covering all geometry mutations, undo/redo, no-op detection, accumulation, and cancellation semantics.
 
+**Phase 8 update — In-place material mutation:**
+
+The middleware was extended to separate spatial changes from material-only changes:
+
+```typescript
+interface IEdgeDiffResult {
+    spatialDiff: IEdgeDiff;           // triggers markDirty → BSP rebuild
+    materialOnlyEdges: Map<IEntityKey, IEdge>;  // triggers in-place patch, no rebuild
+}
+```
+
+`computeEdgeDiff()` now returns `IEdgeDiffResult`. For edges where only `material` or `immaterial` changed (vertices unchanged), they go into `materialOnlyEdges` instead of `spatialDiff.modifiedEdgeIds`. The middleware effect has two paths:
+1. **Spatial changes** → `dispatch(markDirty(spatialDiff))` → BSP rebuild via debounce
+2. **Material-only changes** → `patchBspEdgeMaterials(tree, materialOnlyEdges)` → in-place mutation, no rebuild
+
+`patchBspEdgeMaterials(tree, patches)` walks the BSP tree (leaf nodes' polygons + split nodes' coplanar polygons) and mutates matching edges' `material` and `immaterial` properties directly. It handles BSP split edges (multiple edges sharing the same ID via `cloneKey`) by walking the entire tree.
+
+**Middleware tests updated to 28 tests** in `bsp-middleware.test.ts`: original 20 + 3 material-change behavioral tests (immaterial change, no-BSP-tree safety, mixed spatial+material) + 5 `patchBspEdgeMaterials` unit tests (leaf patching, empty patches no-op, split edge patching).
+
 ### Module 5: BspGenerationService — Async Orchestration
 
 **File:** `src/common/geometry/bsp/bsp-generation-service.ts`
@@ -338,18 +340,6 @@ Subscribes to `bspState` and reacts to triggers:
 | `permanentGeneration` changed | Cancel in-flight worker. Start debounce timer (300-500ms). On expiry, post resting-state polygons to worker. |
 | `status === 'none'` with polygons | Cancel in-flight worker. Start generation **immediately** (no debounce). This covers file-load-without-BSP and new file. (Originally planned as `needsFullBuild` flag, but `status === 'none'` is sufficient.) |
 | Ctrl+B (manual) | Cancel in-flight worker + cancel debounce timer. Start generation immediately. |
-
-**Resting-state polygon preparation (before posting to worker):**
-
-```
-1. Take current geometry polygons
-2. For each transient-dirty edge (from transientOriginals):
-   a. If original is non-null: substitute the edge with its original
-   b. If original is null: remove the edge (it's transient extra geometry)
-3. Post the resting-state polygons to worker
-```
-
-This ensures the BSP always represents the world at rest, regardless of active game mechanics.
 
 **Worker protocol:**
 - Post: `{ polygons, generationId }`
@@ -421,7 +411,7 @@ Analysis revealed that Phase 5 was ~90% already done by the existing `BspGenerat
 
 **No new actions needed.** `installInitialBsp` and `requestFullBuild` were NOT created — the existing `setBsp` action and `BspGenerationService`'s `status === 'none'` handling cover all file load scenarios.
 
-On **save**: `storeGeometry` serializes `bspState.staleBsp` (not `geometry.bsp` which no longer exists). Only the latest fully-built BSP is saved — dirty state is transient. (Implemented in Phase 1.)
+On **save**: `storeGeometry` serializes `bspState.treeHolder?.node` (not `geometry.bsp` which no longer exists). Only the latest fully-built BSP is saved — dirty state is transient. (Implemented in Phase 1.)
 
 **Tests added:**
 - `bsp-middleware.test.ts`: Replaced `'loadWalls triggers clearBsp'` test block with `'loadWalls does not affect bspState'` containing 2 tests (BSP state unchanged after loadWalls, loadWalls doesn't trigger markDirty).
@@ -484,7 +474,7 @@ After the BSP walk, `collectDirtyEdges(geometry, dirtyEdges)` collects edges fro
 
 `RaycastCore.render()` now passes the full `bspContext` to `castCollisionRays` instead of extracting only the BSP tree.
 
-`Renderer3d` now stores `bspContext: IBspContext | null` instead of `bspTree: IBSPNode | null`, subscribes to both `s.bsp.tree` and `s.bsp.dirtyEdges` from Redux, and passes the full context to `castCollisionRays`.
+`Renderer3d` now stores `bspContext: IBspContext | null` instead of `bspTree: IBSPNode | null`, subscribes to `s.bsp.treeHolder` and `s.bsp.dirtyEdges` from Redux, and passes the full context to `castCollisionRays`.
 
 Imports `isStaleInBsp` and `collectDirtyEdges` from `../zbuffering/zbuffer-core`.
 
@@ -551,8 +541,8 @@ class BspStatusComponent extends HTMLElement {
 
     connectedCallback() {
         this.unsubscribe = connect((state) => {
-            const { status, tree, dirtyCount } = state.bsp;
-            this.update(status, tree != null, dirtyCount);
+            const { status, treeHolder, dirtyCount } = state.bsp;
+            this.update(status, treeHolder?.node != null, dirtyCount);
         });
     }
 
@@ -566,7 +556,7 @@ window.customElements.define('bsp-status', BspStatusComponent);
 ```
 
 **Implementation notes (deviations from original plan):**
-- The plan read `staleBsp`, `dirtyTracker`, `isGenerating`, `needsFullBuild` from state. The actual implementation reads `status` (BspStatus enum), `tree`, and `dirtyCount` — matching the simplified bspState shape.
+- The plan read `staleBsp`, `dirtyTracker`, `isGenerating`, `needsFullBuild` from state. The actual implementation reads `status` (BspStatus enum), `treeHolder`, and `dirtyCount` — matching the simplified bspState shape.
 - The stale label includes the dirty count (`BSP stale (N)`) for at-a-glance severity assessment, which was not in the original plan.
 - The plan's `permanentGeneration > 0` check is replaced by `status === 'stale'`, which is set by the `markDirty` reducer.
 - Uses a `currentDotClass` field to avoid unnecessary DOM updates when the status hasn't changed.
@@ -653,11 +643,11 @@ The status bar uses the 5% height gap that currently exists below the container.
 | **4** | `BspGenerationService` with web worker, debounce, cancellation | **DONE** | Full async BSP regeneration. Dirty set auto-clears after edits stop. |
 | **5** | File load integration: auto-generate BSP for maps loaded without one. Auto-generate on new file. | **DONE** | No more manual Ctrl+B needed for old maps or fresh starts. |
 | **6** | Raycaster path + collision integration | **DONE** | Both camera movement collision and raycaster rendering path are fully dirty-edge-aware. |
-| **7** | Transient partition — add transient tracking, original storage, `updateTransient`, `restoreTransient`, resting-state BSP build | Pending | Game mechanics (doors, platforms) can temporarily modify geometry without triggering BSP rebuild. |
-| **8** | In-place material mutation — runtime texture/material changes on BSP edge objects | Pending | Texture changes without any dirty tracking overhead. |
+| **7** | ~~Transient partition~~ | **Deferred** → Animation System Plan | Moved to `docs/ANIMATION_SYSTEM_PLAN.md`. Game mechanics (doors, platforms) will be implemented there alongside the animation scheduler. |
+| **8** | In-place material mutation — runtime texture/material changes on BSP edge objects | **DONE** | Texture changes without any dirty tracking overhead. BSP tree wrapped in `BspTreeHolder` to prevent Immer freeze. `thawBspTree()` ensures mutability. `patchBspEdgeMaterials()` walks BSP and patches material/immaterial in-place. `computeEdgeDiff` separates spatial vs material-only changes. |
 | **9** | BSP status indicator — `<bsp-status>` component, status bar layout, `connect()` subscription to `bspState` | **DONE** | Editor shows green/yellow/red dot + label reflecting BSP health. |
 
-Each phase is independently testable and the system stays functional throughout. Phases 1-6 deliver the core feature. Phases 7-8 add game-mechanic support and can be implemented when those features are needed. Phase 9 can be implemented as early as Phase 1 (once `bspState` exists) but is listed last because it's purely cosmetic.
+Each phase is independently testable and the system stays functional throughout. Phases 1-6 deliver the core feature. Phase 7 (transient partition for game mechanics) has been moved to the Animation System Plan. Phase 8 adds efficient in-place material mutation. Phase 9 is purely cosmetic.
 
 ## Files to Create/Modify
 
@@ -682,7 +672,7 @@ Each phase is independently testable and the system stays functional throughout.
 | `src/common/camera.ts` | **Modify** — `move()`/`strafe()`/`constrainedMove()` accept `bspContext?: IBspContext` | 1 | **DONE** |
 | `src/common/store/player.ts` | **Modify** — action payloads use `bspContext?: IBspContext` | 1 | **DONE** |
 | `src/common/actions/cameraActionsHandler.ts` | **Modify** — subscribes to `s.bsp`, stores `bspContext: IBspContext \| null`, dispatches with `bspContext` | 1 | **DONE** |
-| `src/common/editor/mapEditor.ts` | **Modify** — added `bspTree` field, subscribes to `s.bsp.tree` | 1 | **DONE** |
+| `src/common/editor/mapEditor.ts` | **Modify** — added `bspTree` field, subscribes to `s.bsp.treeHolder?.node` | 1 | **DONE** |
 | `src/common/rendering/bspwalking/walker.ts` | **Modify** — added `bspTree` field, `isActive()` uses `!!this.bspTree` | 1 | **DONE** |
 | `src/common/testing/factories/geometry.factory.ts` | **Modify** — `IGeometryWithBsp` type, `withBsp()` returns `{ geometry, bsp, bspContext }` | 1 | **DONE** |
 | `src/common/geometry/geometry.test.ts` | **Modify** — 2 BSP tests rewritten for new structure | 1 | **DONE** |
@@ -717,15 +707,25 @@ Each phase is independently testable and the system stays functional throughout.
 | `src/common/store/bsp-middleware.ts` | **Modify** — removed `loadWalls → clearBsp` listener, removed `clearBsp` import, updated comments | 5 | **DONE** |
 | `src/common/store/bsp-state.ts` | **Modify** — removed `clearBsp` reducer (dead code after middleware change), removed from exports | 5 | **DONE** |
 | `src/common/store/bsp-middleware.test.ts` | **Modify** — replaced `loadWalls/clearBsp` test with `loadWalls does not affect bspState` (2 tests) | 5 | **DONE** |
-| `src/common/geometry/bsp/bsp-generation-service.test.ts` | **Modify** — added `file load scenarios` describe block (3 tests) | 5 | **DONE** |
-| `src/common/rendering/raycasting/raycaster.ts` | **Modify** — `castCollisionRays()` accepts `IBspContext`, two-phase: BSP stale filter + brute-force `collectDirtyEdges` for rendering | 6 | **DONE** |
+| `src/common/geometry/bsp/bsp-generation-service.test.ts` | **Modify** — added `file load scenarios` describe block (3 tests) | 5 | **DONE** || `src/common/rendering/raycasting/raycaster.ts` | **Modify** — `castCollisionRays()` accepts `IBspContext`, two-phase: BSP stale filter + brute-force `collectDirtyEdges` for rendering | 6 | **DONE** |
 | `src/common/rendering/raycasting/raycast-core.ts` | **Modify** — passes full `bspContext` to `castCollisionRays` instead of extracting only `bsp` | 6 | **DONE** |
-| `src/common/rendering/raycasting/renderer3d.ts` | **Modify** — stores `bspContext: IBspContext \| null`, subscribes to `s.bsp.tree` + `s.bsp.dirtyEdges`, `isActive()` uses `!this.bspContext?.tree` | 6 | **DONE** |
+| `src/common/rendering/raycasting/renderer3d.ts` | **Modify** — stores `bspContext: IBspContext \| null`, subscribes to `s.bsp.treeHolder` + `s.bsp.dirtyEdges`, `isActive()` uses `!this.bspContext?.tree` | 6 | **DONE** |
 | `src/common/rendering/raycasting/raycaster.test.ts` | **Modify** — existing `castCollisionRays` tests updated to use `IBspContext`, 4 dirty-edge tests added | 6 | **DONE** |
 | `src/common/rendering/raycasting/raycast-core.test.ts` | **Modify** — 1 dirty-edge passthrough test added | 6 | **DONE** |
-| `src/common/geometry/bsp/dirty-edge-tracker.ts` | **Modify** — add transient partition, originals storage, restore logic | 7 | Pending |
-| `src/common/store/bsp-state.ts` | **Modify** — add transient reducers, resting-state build support | 7 | Pending |
-| `src/common/geometry/bsp/bsp-generation-service.ts` | **Modify** — substitute transient edges with originals before posting to worker | 7 | Pending |
+| `src/common/store/bsp-state.ts` | **Modify** — added `BspTreeHolder` class (Immer-opaque), `getBspTree()`, `thawBspTree()`/`thawPolygons()`/`thawEdges()`. Changed `tree` → `treeHolder` in `IBspState`. Updated `setBsp` reducer to thaw+wrap. | 8 | **DONE** |
+| `src/common/store/bsp-middleware.ts` | **Modify** — added `patchBspEdgeMaterials()`, `IEdgeDiffResult`, `EMPTY_DIFF_RESULT`. Rewrote `computeEdgeDiff()` to separate spatial vs material-only. Updated middleware effect with two paths. | 8 | **DONE** |
+| `src/common/store/bsp-middleware.test.ts` | **Modify** — updated all `.bsp.tree` → `.bsp.treeHolder`, added material-change behavioral tests (3) + `patchBspEdgeMaterials` unit tests (5). Total: 28 tests. | 8 | **DONE** |
+| `src/common/geometry/bsp/bsp-generation-service.test.ts` | **Modify** — updated `simulateStateChange` to use `treeHolder` property | 8 | **DONE** |
+| `src/common/rendering/raycasting/renderer3d.ts` | **Modify** — `s.bsp.tree` → `s.bsp.treeHolder?.node ?? null` | 8 | **DONE** |
+| `src/common/rendering/zbuffering/zbuffer-renderer.ts` | **Modify** — `s.bsp.tree` → `s.bsp.treeHolder?.node ?? null` | 8 | **DONE** |
+| `src/common/actions/cameraActionsHandler.ts` | **Modify** — `s.bsp.tree` → `s.bsp.treeHolder?.node ?? null` | 8 | **DONE** |
+| `src/common/rendering/bspwalking/walker.ts` | **Modify** — `s.bsp.tree` → `s.bsp.treeHolder?.node ?? null` | 8 | **DONE** |
+| `src/common/editor/mapEditor.ts` | **Modify** — `s.bsp.tree` → `s.bsp.treeHolder?.node ?? null` | 8 | **DONE** |
+| `src/common/storage/stateLoader.ts` | **Modify** — `state.bsp.tree` → `state.bsp.treeHolder?.node ?? null` | 8 | **DONE** |
+| `src/renderer/components/bspStatusComponent.ts` | **Modify** — destructuring `tree` → `treeHolder`, access `treeHolder?.node` | 8 | **DONE** |
+| `src/common/geometry/bsp/dirty-edge-tracker.ts` | **Modify** — add transient partition, originals storage, restore logic | ~~7~~ | **Deferred** → Animation System Plan |
+| `src/common/store/bsp-state.ts` | **Modify** — add transient reducers, resting-state build support | ~~7~~ | **Deferred** → Animation System Plan |
+| `src/common/geometry/bsp/bsp-generation-service.ts` | **Modify** — substitute transient edges with originals before posting to worker | ~~7~~ | **Deferred** → Animation System Plan |
 | `src/renderer/components/bspStatusComponent.ts` | **Create** — `<bsp-status>` Web Component with dot + label | 9 | **DONE** |
 | `src/renderer/components/index.ts` | **Modify** — import `bspStatusComponent.ts` to register the custom element | 9 | **DONE** |
 | `src/renderer/index.html` | **Modify** — add `.status-bar` div with `<bsp-status>` below `.tools` | 9 | **DONE** |
@@ -739,18 +739,12 @@ Each phase is independently testable and the system stays functional throughout.
 | **File load with BSP** | `loadWorld` dispatches `loadWalls(geometry)` then `setBsp(loadedBsp)` → `status: 'fresh'`. No generation needed. The middleware does not intercept `loadWalls`. |
 | **File load without BSP** | `loadWorld` dispatches `loadWalls(geometry)` then `setBsp(null)` → `status: 'none'`. `BspGenerationService` sees `'none'` + polygons → spawns immediate worker. Brute-force raycaster fallback renders during the brief wait. |
 | **New file (empty geometry)** | `setBsp(null)` → `status: 'none'`. No polygons → no generation triggered. Trivially empty BSP. |
-| **Save** | Serialize `bspState.staleBsp` (the last fully-built tree). Dirty state is transient and not saved. |
+| **Save** | Serialize `bspState.treeHolder?.node` (the last fully-built tree). Dirty state is transient and not saved. |
 | **Large dirty set** | Worst case: all edges dirty, spatial index covers entire world. Equivalent to brute-force — same perf as current no-BSP fallback. Debounce timer ensures regeneration starts soon. |
 | **Edits during BSP generation** | Worker result carries `generationId`. Mismatched ID → result discarded. Debounce restarts. |
 | **BSP split edges** | Have `material: undefined` and `immaterial: true`. Already skipped during rendering (`material == null` check). No special dirty tracking needed. |
 | **Edges without IDs** | All edges going through `loadPolygon()` / `createPolygon()` get identities via `giveIdentity()`. Mutations go through `adaptPolygons` which calls `loadPolygon`, so all edges in the system have IDs. Raw `makeEdge()` doesn't assign IDs, but those aren't stored in geometry. |
-| **BSP built mid-transition** | Cannot happen. The `BspGenerationService` substitutes transient edges with their stored originals before posting to the worker. The BSP always represents the resting state. |
-| **Door closes after BSP rebuild** | Safe. The BSP was built from resting-state polygons (originals substituted). When `restoreTransient()` is called, transient entries are removed, and the BSP's version of those edges is correct. |
-| **Transient extra geometry removed** | `transientOriginals` maps these edge IDs to `null`. On `restoreTransient()`, edges are removed from the dirty set entirely — they don't exist in the BSP or the world. |
-| **completeGeneration during active transient changes** | Only the permanent partition is cleared. Transient entries survive. The new BSP was built from resting-state polygons, so transient edges remain correctly tracked. |
-| **Texture/material change at runtime** | Mutate edge material in-place on BSP polygon references. No dirty tracking needed. BSP structure depends on geometry (vertex positions), not materials. |
-| **Animation drift on restore** | Animations compute edge positions via transforms each tick, which may accumulate floating-point error. `restoreTransient` uses the tracker's stored originals (deep clones from `markTransientDirty`), not re-computed positions, eliminating drift. The geometry is restored to the exact pre-animation state. |
-| **Animation system compatibility** | The animation system (see `docs/ANIMATION_SYSTEM_PLAN.md`) drives transient changes via the `transientWalls` slice, which calls `markTransientDirty` / `updateTransient` / `restoreTransient` on `bspState`. Animations that complete call the `restoreTransient` thunk for atomic cross-slice restore. Looping animations keep edges in the transient partition indefinitely. The BSP is never rebuilt for animation-only changes. |
+| **Texture/material change at runtime** | `computeEdgeDiff` classifies as material-only → `patchBspEdgeMaterials` mutates BSP edges in-place. No dirty tracking, no BSP rebuild. `BspTreeHolder` prevents Immer freeze. `thawBspTree()` ensures mutability. |
 
 ## Design Decisions & Rationale
 
@@ -766,17 +760,17 @@ Each phase is independently testable and the system stays functional throughout.
 
 6. **`generation` counter on tracker**: Cheap way for renderers to detect dirty set changes without deep comparison. Avoids unnecessary spatial index rebuilds.
 
-7. **Two-partition dirty tracking** (permanent vs transient): Clean separation between editor changes that invalidate the BSP and game mechanics that temporarily modify geometry. Renderers don't need to know the difference — they use the combined view. Only the `BspGenerationService` cares about the distinction.
+7. **Two-partition dirty tracking** (permanent vs transient): **Deferred to Animation System Plan.** Originally planned as a core feature, but the permanent partition alone covers all editor use cases. Transient tracking will be added when the animation system needs it.
 
-8. **Tracker stores originals for transient edges**: The tracker deep-clones the original edges when `markTransientDirty()` is called. This allows `restoreTransient()` to bring edges back to their BSP state without the game logic having to manage original state. The tracker is the single source of truth for "what does the resting world look like."
+8. ~~**Tracker stores originals for transient edges**~~: Deferred to Animation System Plan.
 
-9. **BSP always represents resting state**: Before posting polygons to the worker, transient edges are substituted with their stored originals. This guarantees that when a transient change ends (e.g., door closes), the BSP is immediately correct for those edges — no rebuild needed.
+9. ~~**BSP always represents resting state**~~: Deferred to Animation System Plan. Currently, the BSP represents the world state at last rebuild.
 
-10. **In-place material mutation on BSP edges**: The BSP stores direct references to polygon/edge objects. Mutating material properties (texture, color, alpha) in-place is safe because the BSP structure depends only on spatial geometry (vertex positions → splitting planes). This avoids dirty tracking overhead for purely visual changes.
+10. **In-place material mutation on BSP edges** (Phase 8): The BSP stores direct references to polygon/edge objects. Mutating material properties (texture, color, alpha, immaterial) in-place is safe because the BSP structure depends only on spatial geometry (vertex positions → splitting planes). This avoids dirty tracking overhead for purely visual changes. The BSP tree is wrapped in `BspTreeHolder` (marked `[immerable] = false`) to prevent Immer from deep-freezing it. `thawBspTree()` handles the case where BSP edges are frozen due to shared references with Redux walls state (primarily in tests; in production, the web worker's structured clone creates unfrozen copies).
 
-11. **Transient extra geometry uses `null` originals**: When temporary geometry is spawned into the world (obstacles, entities), `transientOriginals` maps those edge IDs to `null` to indicate "this edge didn't exist in the resting state." On restore, these edges vanish from both the dirty set and the world.
+11. ~~**Transient extra geometry uses `null` originals**~~: Deferred to Animation System Plan.
 
-12. **`restoreTransient` is a cross-slice atomic operation**: Implemented as a thunk, not a plain reducer, because it must update both `walls` (geometry) and `bspState` (dirty tracker) atomically. The thunk reads originals from the tracker and dispatches both slice updates in a single batch. This prevents rendering glitches from intermediate states and eliminates floating-point drift by using the tracker's stored originals as the authoritative resting-state edges.
+12. ~~**`restoreTransient` is a cross-slice atomic operation**~~: Deferred to Animation System Plan.
 
 13. **Three-tier status indicator (green/yellow/red)**: Yellow for stale and generating states because the system is still rendering correctly via dirty edge tracking — the BSP is degraded but functional. Red is reserved for the "no BSP" fallback state where brute-force raycasting is active and performance is impacted. This severity distinction prevents false alarm fatigue from a binary red/green indicator that would show red during every normal edit-regenerate cycle.
 
@@ -800,8 +794,8 @@ For implementors unfamiliar with the codebase, these are the key existing files 
 - **BSP generation service:** `src/common/geometry/bsp/bsp-generation-service.ts` — subscribes to `bspState` via `connect()`, debounces edits (500ms), posts polygons to web worker, dispatches `setBsp` on completion. Handles Ctrl+B via IPC `'bsp_generate'` for immediate generation. Replaces the deleted `BspGenerationStarter`.
 - **Manual BSP trigger:** Ctrl+B menu item (`src/main/mainmenu.ts:303`) → IPC `'bsp_generate'` → `BspGenerationService` cancels debounce and generates immediately.
 - **File loading:** `src/common/storage/stateLoader.ts` — `loadWorld()` dispatches `wallActions.loadWalls()`. BSP is loaded from saved state and dispatched to `bspState` via `setBsp`, with legacy compatibility for old files that stored BSP on geometry.
-- **Geometry type:** `src/common/geometry/geometry.ts` — `IGeometry` no longer has a `bsp` field (removed in Phase 1). BSP lives in the `bspState` Redux slice (`state.bsp.tree`).
-- **Undo skip pattern:** `src/common/store/walls.ts:64-71` — the `move` reducer uses `disableUndo` to suppress undo history for continuous game actions. Transient wall reducers (e.g., `applyTransientEdges`, `restoreEdges`) should use this same pattern since game mechanic state changes should not pollute the undo stack.
+- **Geometry type:** `src/common/geometry/geometry.ts` — `IGeometry` no longer has a `bsp` field (removed in Phase 1). BSP lives in the `bspState` Redux slice (`state.bsp.treeHolder?.node`).
+- **Undo skip pattern:** `src/common/store/walls.ts:64-71` — the `move` reducer uses `disableUndo` to suppress undo history for continuous game actions.
 - **Animation system:** `docs/ANIMATION_SYSTEM_PLAN.md` — the companion plan for the edge animation system that drives transient geometry changes. Animations call into the `transientWalls` slice, which in turn updates `bspState` dirty tracking.
 - **UI components:** `src/renderer/components/` — Web Components with Shadow DOM, registered via `customElements.define()`. All components are imported in `index.ts` `loadComponents()`. State subscriptions use `connect()` from `store-connector.ts`.
 - **Editor layout:** `src/renderer/index.html` — flex column with `.views` (top 2/3, two canvases), `.tools` (bottom 1/3, four component panels). Container uses 95% height, leaving space for a status bar.

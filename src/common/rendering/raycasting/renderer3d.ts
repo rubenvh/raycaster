@@ -55,7 +55,7 @@ export class Renderer3d implements IRenderer {
         connect(s => {
             this.camera = s.player.camera;
             this.worldConfig = s.worldConfig;
-            this.bspContext = { tree: s.bsp.tree, dirtyEdges: s.bsp.dirtyEdges };
+            this.bspContext = { tree: s.bsp.treeHolder?.node ?? null, dirtyEdges: s.bsp.dirtyEdges };
             if (this.wallGeometry != s.walls.geometry) {
                 this.wallGeometry = s.walls.geometry;
                 // this.caster.updateGeometry(this.wallGeometry);

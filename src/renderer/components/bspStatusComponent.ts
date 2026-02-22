@@ -53,8 +53,8 @@ export default class BspStatusComponent extends HTMLElement {
 
     connectedCallback() {
         this.unsubscribe = connect((state) => {
-            const { status, tree, dirtyCount } = state.bsp;
-            this.update(status, tree != null, dirtyCount);
+            const { status, treeHolder, dirtyCount } = state.bsp;
+            this.update(status, treeHolder != null, dirtyCount);
         });
     }
 

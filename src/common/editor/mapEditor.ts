@@ -54,7 +54,7 @@ export class MapEditorRenderer implements ISpaceTranslator {
             this.uiConfig = s.uiConfig;
             this.castingStats = s.stats.intersections.stats;
             this.detectedEdges = s.stats.detectedEdges || [];
-            this.bspTree = s.bsp.tree;
+            this.bspTree = s.bsp.treeHolder?.node ?? null;
 
             if (s.walls.geometry !== this.wallGeometry) {
                 this.wallGeometry = s.walls.geometry;

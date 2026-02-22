@@ -75,7 +75,7 @@ function getConnectCallback(): Function {
 }
 
 // Helper: simulate a state change from the store
-function simulateStateChange(bspState: { status: string; dirtyCount: number; tree?: any; dirtyEdges?: any }, polygonCount: number = 3) {
+function simulateStateChange(bspState: { status: string; dirtyCount: number; treeHolder?: any; dirtyEdges?: any }, polygonCount: number = 3) {
     const state = {
         walls: {
             geometry: {
@@ -85,7 +85,7 @@ function simulateStateChange(bspState: { status: string; dirtyCount: number; tre
             },
         },
         bsp: {
-            tree: bspState.tree ?? null,
+            treeHolder: bspState.treeHolder ?? null,
             status: bspState.status,
             dirtyEdges: bspState.dirtyEdges ?? { removedEdgeIds: new Set(), addedEdgeIds: new Set(), modifiedEdgeIds: new Set() },
             dirtyCount: bspState.dirtyCount,
@@ -261,7 +261,7 @@ describe('BspGenerationService', () => {
         it('does not generate when file loads with stored BSP (setBsp sets fresh)', () => {
             const service = new BspGenerationService();
             // Simulate loadWorld dispatching setBsp(tree) → status becomes 'fresh'
-            simulateStateChange({ status: 'fresh', dirtyCount: 0, tree: NULL_NODE }, 5);
+            simulateStateChange({ status: 'fresh', dirtyCount: 0, treeHolder: { node: NULL_NODE } }, 5);
 
             // No worker should be spawned — loaded BSP is sufficient
             expect(mockWorkerConstructor).not.toHaveBeenCalled();

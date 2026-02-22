@@ -39,7 +39,7 @@ export class BspWalker implements IRenderer {
         connect(s => {
             this.camera = s.player.camera;
             this.worldConfig = s.worldConfig;
-            this.bspTree = s.bsp.tree;
+            this.bspTree = s.bsp.treeHolder?.node ?? null;
             if (this.wallGeometry != s.walls.geometry) {
                 this.wallGeometry = s.walls.geometry;
             }
