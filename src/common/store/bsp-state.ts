@@ -124,16 +124,8 @@ const bspSlice = createSlice({
         setRebuilding: (state) => {
             state.status = 'rebuilding';
         },
-
-        /** Clear the BSP tree entirely (e.g. geometry was replaced wholesale). */
-        clearBsp: (state) => {
-            state.tree = null;
-            state.status = 'none';
-            state.dirtyEdges = emptyMutableDiff();
-            state.dirtyCount = 0;
-        },
     },
 });
 
 export default bspSlice.reducer;
-export const { setBsp, markDirty, setRebuilding, clearBsp } = bspSlice.actions;
+export const { setBsp, markDirty, setRebuilding } = bspSlice.actions;

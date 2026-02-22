@@ -5,7 +5,7 @@ import { IEdge } from '../geometry/edge';
 import { IPolygon } from '../geometry/polygon';
 import { IEntityKey } from '../geometry/entity';
 import { IEdgeDiff, EMPTY_DIFF } from '../geometry/bsp/dirty-edge-tracker';
-import { markDirty, clearBsp } from './bsp-state';
+import { markDirty } from './bsp-state';
 
 /**
  * Returns true if two edges have identical vertex positions.
@@ -119,7 +119,9 @@ function computeEdgeDiff(oldGeometry: IGeometry, newGeometry: IGeometry): IEdgeD
 /**
  * Walls actions that should trigger BSP dirty tracking.
  * We match any action starting with 'walls/' except:
- * - 'walls/loadWalls' — handled separately (full geometry replacement → clearBsp)
+ * - 'walls/loadWalls' — full geometry replacement; the caller (loadWorld)
+ *   dispatches setBsp() directly, which either sets a loaded BSP ('fresh')
+ *   or sets null ('none', triggering BspGenerationService auto-generation).
  */
 const WALLS_PREFIX = 'walls/';
 const LOAD_WALLS_TYPE = 'walls/loadWalls';
@@ -138,20 +140,14 @@ function isWallsMutationAction(action: { type: string }): boolean {
  * Listens for all walls slice mutations and computes edge diffs between
  * old and new geometry. Dispatches markDirty to bspState when edges change.
  * 
- * For loadWalls (complete geometry replacement), dispatches clearBsp
- * to signal a full BSP rebuild is needed.
+ * loadWalls is excluded — it replaces geometry wholesale, and the caller
+ * (loadWorld in stateLoader.ts) dispatches setBsp() to set the BSP state
+ * directly. setBsp(tree) sets status 'fresh'; setBsp(null) sets status
+ * 'none', which triggers BspGenerationService to auto-generate.
  */
 export const bspListenerMiddleware = createListenerMiddleware();
 
-// Handle loadWalls: complete geometry replacement
-bspListenerMiddleware.startListening({
-    predicate: (action) => action.type === LOAD_WALLS_TYPE,
-    effect: async (_action, listenerApi) => {
-        listenerApi.dispatch(clearBsp());
-    },
-});
-
-// Handle all other walls mutations: compute edge diff
+// Handle all walls mutations (except loadWalls): compute edge diff
 bspListenerMiddleware.startListening({
     predicate: isWallsMutationAction,
     effect: async (_action, listenerApi) => {

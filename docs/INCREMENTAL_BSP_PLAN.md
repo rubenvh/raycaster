@@ -37,13 +37,12 @@ Dirty edges are partitioned into **permanent** (editor changes that require BSP 
   ┌──────────────────────────────────────────────────────────────────────────┐
   │  bspState slice                                                          │
   │                                                                          │
-  │  staleBsp: IBSPNode | null                                               │
-  │  dirtyTracker: IDirtyEdgeTracker                                         │
-  │    ├─ permanent partition  ──► triggers BSP regeneration                  │
-  │    └─ transient partition  ──► does NOT trigger BSP regeneration          │
-  │  isGenerating: boolean                                                   │
-  │  generationId: number                                                    │
-  │  needsFullBuild: boolean  ◄── set on load w/o BSP                        │
+│  staleBsp: IBSPNode | null                                               │
+│  dirtyTracker: IDirtyEdgeTracker                                         │
+│    ├─ permanent partition  ──► triggers BSP regeneration                  │
+│    └─ transient partition  ──► does NOT trigger BSP regeneration          │
+│  isGenerating: boolean                                                   │
+│  generationId: number                                                    │
   └──────────────────┬───────────────────────────────────────────────────────┘
                      │
                      ▼
@@ -188,7 +187,6 @@ interface IBspState {
 | `setBsp` | Set BSP tree after build completes or on load. Clears dirty tracking, sets status to `'fresh'` (or `'none'` if null). |
 | `markDirty` | Merge incoming `IEdgeDiff` into accumulated dirty state. Smart merge logic matches `DirtyEdgeTracker` semantics (added-then-removed cancels, removed-then-added becomes modified, etc.). Sets status to `'stale'` if currently `'fresh'`. |
 | `setRebuilding` | Signal that an async rebuild has started. Sets status to `'rebuilding'`. |
-| `clearBsp` | Clear BSP tree entirely (e.g., geometry replaced wholesale via `loadWalls`). Resets to `'none'` status with empty dirty state. |
 
 **Implementation notes (deviations from original plan):**
 - The plan described `staleBsp`, `dirtyTracker: IDirtyEdgeTracker`, `isGenerating`, `generationId`, `needsFullBuild`. The actual implementation uses a simpler `BspStatus` enum (`'none' | 'fresh' | 'stale' | 'rebuilding'`) replacing the boolean flags, and stores dirty edges as `IMutableEdgeDiff` (mutable Sets) instead of an `IDirtyEdgeTracker` object.
@@ -198,9 +196,11 @@ interface IBspState {
 - The logger middleware in `index.ts` filters `bsp` actions (alongside `stats` and `player`) to reduce console noise.
 - `generationId`, `needsFullBuild`, and transient-related reducers (`installInitialBsp`, `requestFullBuild`, `cancelGeneration`, transient reducers) are deferred to later phases.
 
+**Phase 5 update:** The `clearBsp` reducer was removed as dead code. It was only dispatched by the `loadWalls → clearBsp` middleware listener, which was also removed (see Module 6). `setBsp(null)` produces the same state (`status: 'none'`, empty dirty tracking) and is used instead where needed.
+
 **Future phases:**
 - Phase 4: Add `generationId`, `isGenerating` semantics, `cancelGeneration`
-- Phase 5: Add `needsFullBuild`, `installInitialBsp`, `requestFullBuild`
+- ~~Phase 5: Add `needsFullBuild`, `installInitialBsp`, `requestFullBuild`~~ — Not needed; existing `setBsp` + `BspGenerationService` `status === 'none'` handling covers all file load scenarios
 - Phase 7: Add transient reducers (`markTransientDirty`, `updateTransient`, `restoreTransient`)
 
 ### Cross-Slice Operation: `restoreTransient` Thunk
@@ -243,17 +243,11 @@ The plan proposed making mutation functions return `GeometryMutationResult` with
 // src/common/store/bsp-middleware.ts
 const bspListenerMiddleware = createListenerMiddleware();
 
-// loadWalls → complete geometry replacement → clearBsp
+// All walls/* actions (except loadWalls) → compute edge diff → markDirty
+// loadWalls is excluded because the caller (stateLoader) dispatches setBsp() directly,
+// which correctly handles both cases (setBsp(tree) for files with BSP, setBsp(null) for files without).
 bspListenerMiddleware.startListening({
-    predicate: (action) => action.type === 'walls/loadWalls',
-    effect: async (_action, listenerApi) => {
-        listenerApi.dispatch(clearBsp());
-    },
-});
-
-// All other walls/* actions → compute edge diff → markDirty
-bspListenerMiddleware.startListening({
-    predicate: isWallsMutationAction,
+    predicate: isWallsMutationAction,  // excludes loadWalls
     effect: async (_action, listenerApi) => {
         const oldGeometry = (listenerApi.getOriginalState() as RootState).walls.geometry;
         const newGeometry = (listenerApi.getState() as RootState).walls.geometry;
@@ -342,7 +336,7 @@ Subscribes to `bspState` and reacts to triggers:
 | Trigger | Behavior |
 |---------|----------|
 | `permanentGeneration` changed | Cancel in-flight worker. Start debounce timer (300-500ms). On expiry, post resting-state polygons to worker. |
-| `needsFullBuild` becomes `true` | Cancel in-flight worker. Start generation **immediately** (no debounce). This covers file-load-without-BSP and new file. |
+| `status === 'none'` with polygons | Cancel in-flight worker. Start generation **immediately** (no debounce). This covers file-load-without-BSP and new file. (Originally planned as `needsFullBuild` flag, but `status === 'none'` is sufficient.) |
 | Ctrl+B (manual) | Cancel in-flight worker + cancel debounce timer. Start generation immediately. |
 
 **Resting-state polygon preparation (before posting to worker):**
@@ -388,13 +382,15 @@ The actual implementation differs from the plan above in several ways:
 
 9. **22 tests** in `bsp-generation-service.test.ts` covering debounce timing, worker message protocol, dirty re-queue logic, Ctrl+B immediate generation, status transitions, and cleanup.
 
-### Module 6: File Load Integration
+### Module 6: File Load Integration — **IMPLEMENTED (Phase 5)**
 
-**File:** `src/common/storage/stateLoader.ts`
+**Files:**
+- `src/common/store/bsp-middleware.ts` — **Modified**
+- `src/common/store/bsp-state.ts` — **Modified**
+- `src/common/store/bsp-middleware.test.ts` — **Modified**
+- `src/common/geometry/bsp/bsp-generation-service.test.ts` — **Modified**
 
-Currently `loadWorld` dispatches `wallActions.loadWalls(w.geometry || EMPTY_GEOMETRY)`.
-
-**New behavior in `loadWorld`:**
+**Original plan** proposed new actions (`installInitialBsp`, `requestFullBuild`) and modifications to `stateLoader.ts`:
 
 ```typescript
 dispatch(wallActions.loadWalls(geometry));
@@ -407,9 +403,29 @@ if (loadedGeometry.bsp) {
 }
 ```
 
-On **new file** (`clear()`): dispatches `requestFullBuild()`. Empty geometry → trivially fast BSP generation.
+**Actual implementation — much simpler:**
 
-On **save**: `storeGeometry` serializes `bspState.staleBsp` (not `geometry.bsp` which no longer exists). Only the latest fully-built BSP is saved — dirty state is transient.
+Analysis revealed that Phase 5 was ~90% already done by the existing `BspGenerationService`'s `status === 'none'` handling (from Phase 4). The `loadWorld` function already dispatches `setBsp(bsp)` at `stateLoader.ts:153`, which handles both cases:
+- `setBsp(tree)` → `status: 'fresh'` → no worker spawned
+- `setBsp(null)` → `status: 'none'` → service auto-generates
+
+**The only issue was a race condition for files WITH stored BSP:**
+1. `loadWorld()` dispatches `loadWalls(geometry)` → bsp-middleware fired `clearBsp()` → `status: 'none'`
+2. `BspGenerationService.onStateChange()` sees `'none'` + polygons → spawns unnecessary worker
+3. `loadWorld()` then dispatches `setBsp(loadedBsp)` → `status: 'fresh'`
+4. Worker completes later → overwrites the perfectly good loaded BSP
+
+**The fix:** Remove the `loadWalls → clearBsp` middleware listener entirely. Dependency analysis confirmed safe: `loadWalls` is only dispatched from `stateLoader.ts:148`. `clearBsp` was only dispatched from the middleware. `setBsp(null)` produces identical state to `clearBsp`. No other code depends on `clearBsp`.
+
+**Additional cleanup:** The `clearBsp` reducer was removed from `bsp-state.ts` as dead code (no remaining callers after middleware listener removal). Removed from exports.
+
+**No new actions needed.** `installInitialBsp` and `requestFullBuild` were NOT created — the existing `setBsp` action and `BspGenerationService`'s `status === 'none'` handling cover all file load scenarios.
+
+On **save**: `storeGeometry` serializes `bspState.staleBsp` (not `geometry.bsp` which no longer exists). Only the latest fully-built BSP is saved — dirty state is transient. (Implemented in Phase 1.)
+
+**Tests added:**
+- `bsp-middleware.test.ts`: Replaced `'loadWalls triggers clearBsp'` test block with `'loadWalls does not affect bspState'` containing 2 tests (BSP state unchanged after loadWalls, loadWalls doesn't trigger markDirty).
+- `bsp-generation-service.test.ts`: Added `'file load scenarios'` describe block with 3 tests (file with stored BSP, file without BSP, new file/empty geometry).
 
 ### Module 7: Renderer Integration — ZBuffer Path — **IMPLEMENTED (Phase 2)**
 
@@ -625,7 +641,7 @@ The status bar uses the 5% height gap that currently exists below the container.
 | **2** | BSP walk filter (skip stale edges) + brute-force dirty edge iteration (no spatial index yet) + collision dirty edge threading + `castCameraRay` two-phase approach | **DONE** | Correct rendering with stale BSP. Dirty edges tested via simple iteration. Camera movement respects dirty edges (added/modified block, removed pass through). |
 | **3** | `DirtyEdgeSpatialIndex` | Pending | Performance optimization — spatial queries instead of iterating all dirty edges. |
 | **4** | `BspGenerationService` with web worker, debounce, cancellation | **DONE** | Full async BSP regeneration. Dirty set auto-clears after edits stop. |
-| **5** | File load integration: auto-generate BSP for maps loaded without one. Auto-generate on new file. | Pending | No more manual Ctrl+B needed for old maps or fresh starts. |
+| **5** | File load integration: auto-generate BSP for maps loaded without one. Auto-generate on new file. | **DONE** | No more manual Ctrl+B needed for old maps or fresh starts. |
 | **6** | Raycaster path + collision integration | **PARTIAL** — collision done in Phase 2, raycaster rendering path pending | Camera movement fully integrated. Raycaster rendering path (`castCollisionRays`) not yet dirty-edge-aware. |
 | **7** | Transient partition — add transient tracking, original storage, `updateTransient`, `restoreTransient`, resting-state BSP build | Pending | Game mechanics (doors, platforms) can temporarily modify geometry without triggering BSP rebuild. |
 | **8** | In-place material mutation — runtime texture/material changes on BSP edge objects | Pending | Texture changes without any dirty tracking overhead. |
@@ -639,9 +655,9 @@ Each phase is independently testable and the system stays functional throughout.
 |------|--------|-------|--------|
 | `src/common/geometry/bsp/dirty-edge-tracker.ts` | **Create** — `DirtyEdgeTracker` class, `IEdgeDiff`, `EMPTY_DIFF` | 1 | **DONE** |
 | `src/common/geometry/bsp/dirty-edge-tracker.test.ts` | **Create** — 21 tests for DirtyEdgeTracker | 1 | **DONE** |
-| `src/common/store/bsp-state.ts` | **Create** — Redux slice with `setBsp`, `markDirty`, `setRebuilding`, `clearBsp` + `enableMapSet()` | 1 | **DONE** |
-| `src/common/store/bsp-middleware.ts` | **Create** — listener middleware computing edge diffs on `walls/*` actions | 1 | **DONE** |
-| `src/common/store/bsp-middleware.test.ts` | **Create** — 20 tests for bsp middleware | 1 | **DONE** |
+| `src/common/store/bsp-state.ts` | **Create** — Redux slice with `setBsp`, `markDirty`, `setRebuilding` + `enableMapSet()`. (`clearBsp` removed in Phase 5 as dead code.) | 1 | **DONE** |
+| `src/common/store/bsp-middleware.ts` | **Create** — listener middleware computing edge diffs on `walls/*` actions. `loadWalls` excluded (caller dispatches `setBsp` directly). | 1 | **DONE** |
+| `src/common/store/bsp-middleware.test.ts` | **Create** — 20 tests for bsp middleware + 2 tests for loadWalls exclusion (Phase 5) | 1 | **DONE** |
 | `src/common/geometry/geometry.ts` | **Modify** — removed `bsp` from `IGeometry`/`IStoredGeometry`/`EMPTY_GEOMETRY`, removed all 5 `bsp: null` mutation sites | 1 | **DONE** |
 | `src/common/store/walls.ts` | **Modify** — removed `updateBsp` reducer | 1 | **DONE** |
 | `src/common/store/index.ts` | **Modify** — added `bsp` slice + `bspListenerMiddleware`, filtered `bsp` from logger | 1 | **DONE** |
@@ -682,12 +698,16 @@ Each phase is independently testable and the system stays functional throughout.
 | `src/common/camera.test.ts` | **Modify** — 6 dirty edge collision tests in `describe('move/strafe with dirty edges')` | 2 (was 6) | **DONE** |
 | `src/common/geometry/bsp/dirty-edge-index.ts` | **Create** | 3 | Pending |
 | `src/common/geometry/bsp/bsp-generation-service.ts` | **Create** | 4 | **DONE** |
-| `src/common/geometry/bsp/bsp-generation-service.test.ts` | **Create** — 22 tests covering debounce, worker protocol, dirty re-queue, Ctrl+B | 4 | **DONE** |
+| `src/common/geometry/bsp/bsp-generation-service.test.ts` | **Create** — 22 tests covering debounce, worker protocol, dirty re-queue, Ctrl+B + 3 file load scenario tests (Phase 5) | 4 | **DONE** |
 | `src/common/geometry/bsp/bspGenerationStarter.ts` | **Deleted** — replaced by `BspGenerationService` | 4 | **DONE** |
 | `src/workers/bspGenerator.ts` | **Modify** — typed `BspWorkerRequest`/`BspWorkerResponse` with `generationId` | 4 | **DONE** |
 | `src/renderer/renderer.ts` | **Modify** — swapped `BspGenerationStarter` → `BspGenerationService` | 4 | **DONE** |
 | `src/main/mainmenu.ts` | N/A — Ctrl+B IPC unchanged; `BspGenerationService` listens to same `'bsp_generate'` channel | 4 | **DONE** |
-| `src/common/storage/stateLoader.ts` | **Modify** — dispatch BSP actions on load, handle presence/absence of stored BSP | 5 | Pending |
+| `src/common/storage/stateLoader.ts` | N/A — NOT modified in Phase 5. Existing `setBsp(bsp)` dispatch already handles file load correctly. | 5 | **DONE** |
+| `src/common/store/bsp-middleware.ts` | **Modify** — removed `loadWalls → clearBsp` listener, removed `clearBsp` import, updated comments | 5 | **DONE** |
+| `src/common/store/bsp-state.ts` | **Modify** — removed `clearBsp` reducer (dead code after middleware change), removed from exports | 5 | **DONE** |
+| `src/common/store/bsp-middleware.test.ts` | **Modify** — replaced `loadWalls/clearBsp` test with `loadWalls does not affect bspState` (2 tests) | 5 | **DONE** |
+| `src/common/geometry/bsp/bsp-generation-service.test.ts` | **Modify** — added `file load scenarios` describe block (3 tests) | 5 | **DONE** |
 | `src/common/rendering/raycasting/raycaster.ts` | **Modify** — `castCollisionRays()` dirty edge awareness for raycaster rendering | 6 | Pending |
 | `src/common/geometry/bsp/dirty-edge-tracker.ts` | **Modify** — add transient partition, originals storage, restore logic | 7 | Pending |
 | `src/common/store/bsp-state.ts` | **Modify** — add transient reducers, resting-state build support | 7 | Pending |
@@ -702,9 +722,9 @@ Each phase is independently testable and the system stays functional throughout.
 | Case | Handling |
 |------|---------|
 | **Undo/redo** | Replaces entire geometry. Must diff all edges between old and new geometry and update dirty tracker accordingly. Simpler option: mark all BSP edges stale, mark all new geometry edges dirty, rely on debounced regeneration. |
-| **File load with BSP** | `installInitialBsp` — sets `staleBsp` directly with empty dirty tracker. No generation needed. |
-| **File load without BSP** | `requestFullBuild` — `needsFullBuild=true` triggers immediate worker generation. Brute-force raycaster fallback renders during the brief wait. |
-| **New file (empty geometry)** | `requestFullBuild` — trivially fast (empty polygons → `NULL_NODE`). |
+| **File load with BSP** | `loadWorld` dispatches `loadWalls(geometry)` then `setBsp(loadedBsp)` → `status: 'fresh'`. No generation needed. The middleware does not intercept `loadWalls`. |
+| **File load without BSP** | `loadWorld` dispatches `loadWalls(geometry)` then `setBsp(null)` → `status: 'none'`. `BspGenerationService` sees `'none'` + polygons → spawns immediate worker. Brute-force raycaster fallback renders during the brief wait. |
+| **New file (empty geometry)** | `setBsp(null)` → `status: 'none'`. No polygons → no generation triggered. Trivially empty BSP. |
 | **Save** | Serialize `bspState.staleBsp` (the last fully-built tree). Dirty state is transient and not saved. |
 | **Large dirty set** | Worst case: all edges dirty, spatial index covers entire world. Equivalent to brute-force — same perf as current no-BSP fallback. Debounce timer ensures regeneration starts soon. |
 | **Edits during BSP generation** | Worker result carries `generationId`. Mismatched ID → result discarded. Debounce restarts. |
@@ -749,6 +769,8 @@ Each phase is independently testable and the system stays functional throughout.
 14. **Edge diffs via RTK listener middleware** (not `GeometryMutationResult` return types): Instead of modifying all geometry functions to return edge diffs, a `createListenerMiddleware` watches all `walls/*` actions and computes diffs by comparing geometry before and after. This keeps geometry functions pure and unchanged. Diffs are dispatched as `markDirty` actions to `bspState`. The diff uses a two-tier targeted approach: polygon-level reference equality skips unchanged polygons entirely, then vertex position comparison on changed polygons detects actual edge modifications. This replaced the original conservative approach (which treated all surviving IDs as "modified") for better performance.
 
 15. **BSP parameter threading via `IBspContext`** (not global state reads in pure functions): Pure functions like `move()`, `strafe()`, `castCameraRay()`, and `render()` now accept an `IBspContext` (bundling `tree` + `dirtyEdges`) as an explicit parameter rather than reading from Redux. The `IBspContext` type avoids parameter proliferation — functions that need both BSP and dirty edges take a single object. Only the imperative "handler" layer (`cameraActionsHandler`, `walker`, `mapEditor`, renderers) subscribes to `state.bsp` and passes the context down. Functions that only need `bsp` (like `castCollisionRays`) take the raw `IBSPNode` parameter. This preserves function purity and testability.
+
+16. **File load via `setBsp` + status-based auto-generation** (not `installInitialBsp`/`requestFullBuild` actions): The original plan proposed new actions and `stateLoader.ts` modifications. Analysis revealed the existing `BspGenerationService`'s `status === 'none'` handling (from Phase 4) already covered file load scenarios. The only fix needed was removing the `loadWalls → clearBsp` middleware listener that caused a race condition (unnecessary worker spawned before `setBsp(loadedBsp)` could fire). The `clearBsp` reducer was also removed as dead code. This approach is simpler, has fewer moving parts, and required no changes to `stateLoader.ts`.
 
 ## Key Codebase Context
 

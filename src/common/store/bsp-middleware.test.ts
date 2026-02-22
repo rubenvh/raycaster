@@ -52,21 +52,37 @@ describe('BSP middleware — edge diff tracking', () => {
         });
     });
 
-    describe('loadWalls triggers clearBsp', () => {
-        test('loading walls clears BSP tree and resets to none', () => {
+    describe('loadWalls does not affect bspState', () => {
+        test('loading walls leaves BSP state unchanged (caller dispatches setBsp separately)', () => {
             const store = createTestStore();
             // Set a BSP first
             const geom = createGeometry([[[0, 0], [100, 0], [100, 100], [0, 100]]]);
             store.dispatch(setBsp(buildBspTree(geom.polygons)));
             expect(store.getState().bsp.status).toBe('fresh');
+            const treeBefore = store.getState().bsp.tree;
 
-            // Load new walls — should clear BSP
+            // Load new walls — should NOT touch bspState
             const newGeom = createGeometry([[[0, 0], [200, 0], [200, 200]]]);
             store.dispatch(loadWalls(storeGeometry(newGeom)));
             
-            expect(store.getState().bsp.tree).toBeNull();
-            expect(store.getState().bsp.status).toBe('none');
+            // BSP state unchanged — the old tree is still there
+            expect(store.getState().bsp.tree).toBe(treeBefore);
+            expect(store.getState().bsp.status).toBe('fresh');
             expect(store.getState().bsp.dirtyCount).toBe(0);
+        });
+
+        test('loadWalls does not trigger markDirty', () => {
+            const store = createTestStore();
+            store.dispatch(createPolygon([[0, 0], [100, 0], [100, 100], [0, 100]]));
+            store.dispatch(setBsp(buildBspTree(store.getState().walls.geometry.polygons)));
+
+            // Load completely different geometry
+            const newGeom = createGeometry([[[0, 0], [200, 0], [200, 200]]]);
+            store.dispatch(loadWalls(storeGeometry(newGeom)));
+
+            // No dirty edges — loadWalls is excluded from diff computation
+            expect(store.getState().bsp.dirtyCount).toBe(0);
+            expect(store.getState().bsp.status).toBe('fresh');
         });
     });
 

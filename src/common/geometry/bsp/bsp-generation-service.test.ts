@@ -257,6 +257,39 @@ describe('BspGenerationService', () => {
         });
     });
 
+    describe('file load scenarios', () => {
+        it('does not generate when file loads with stored BSP (setBsp sets fresh)', () => {
+            const service = new BspGenerationService();
+            // Simulate loadWorld dispatching setBsp(tree) → status becomes 'fresh'
+            simulateStateChange({ status: 'fresh', dirtyCount: 0, tree: NULL_NODE }, 5);
+
+            // No worker should be spawned — loaded BSP is sufficient
+            expect(mockWorkerConstructor).not.toHaveBeenCalled();
+            service.dispose();
+        });
+
+        it('generates immediately when file loads without BSP (setBsp(null) sets none)', () => {
+            const service = new BspGenerationService();
+            // Simulate loadWorld dispatching setBsp(null) → status becomes 'none'
+            simulateStateChange({ status: 'none', dirtyCount: 0 }, 5);
+
+            // Worker should be spawned immediately (no debounce)
+            expect(mockWorkerConstructor).toHaveBeenCalledTimes(1);
+            expect(mockDispatch).toHaveBeenCalledWith(setRebuilding());
+            service.dispose();
+        });
+
+        it('does not generate on new file (empty geometry, status none)', () => {
+            const service = new BspGenerationService();
+            // Simulate clear() → loadWorld({}) → setBsp(null) with empty geometry
+            simulateStateChange({ status: 'none', dirtyCount: 0 }, 0);
+
+            // No worker — nothing to generate
+            expect(mockWorkerConstructor).not.toHaveBeenCalled();
+            service.dispose();
+        });
+    });
+
     describe('Ctrl+B force immediate', () => {
         it('triggers immediate generation via IPC', () => {
             const service = new BspGenerationService(500);
