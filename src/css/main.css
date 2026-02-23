@@ -78,11 +78,11 @@ html, body {
     overflow-y: auto;
 }
 #geometry-editor {
-    flex: 4;
+    flex: 3;
     overflow-y: auto;
 }
 #texture-library {
-    flex: 1;
+    flex: 2;
     overflow-y: auto;
     overflow-x: hidden;
 }

@@ -1,4 +1,4 @@
-import { SelectableElement } from '../../common/selection/selectable';
+import { SelectableElement, isGroup } from '../../common/selection/selectable';
 import { ISelectionTreeNode } from '../../common/selection/selection-tree';
 import { selectedId } from '../../common/selection/selectable';
 
@@ -87,13 +87,27 @@ export default class SelectionTreeNodeComponent extends HTMLElement {
     }
     
     set isRoot(value) {
-        this.titleElement.hidden = value;
+        this._isRoot = value;
+        this.updateRootDisplay();
         if (value) {
           this.listElement.classList.add('root');          
         } else {          
           this.listElement.classList.remove('root');
           this.listElement.classList.add('nested');          
         }        
+    }
+
+    private updateRootDisplay() {
+        // Root node is hidden unless it has a group element (multi-selection)
+        const hasGroupElement = this._isRoot && this._node?.element && isGroup(this._node.element);
+        this.titleElement.hidden = this._isRoot && !hasGroupElement;
+        this.expanderElement.hidden = this._isRoot && !hasGroupElement;
+        if (hasGroupElement) {
+            // Switch from root (always visible) to nested+active (collapsible)
+            this.listElement.classList.remove('root');
+            this.listElement.classList.add('nested', 'active');
+            this.expanderElement.classList.add('caret', 'caret-down');
+        }
     }
 
     set data(value) {
@@ -132,8 +146,11 @@ export default class SelectionTreeNodeComponent extends HTMLElement {
     private render() {    
 
         if (this._node.element) {            
-            this.titleElement.innerHTML = this._node.element.kind;            
+            this.titleElement.innerHTML = isGroup(this._node.element) 
+                ? `selection (${this._node.element.elements.length})`
+                : this._node.element.kind;            
         }
+        this.updateRootDisplay();
 
         let children = this._node.children;            
         if (this._isRoot) {

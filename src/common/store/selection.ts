@@ -1,9 +1,9 @@
 import { IGeometry } from './../geometry/geometry';
 import { buildSelectionTree, ISelectionTreeNode } from './../selection/selection-tree';
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { findSelectedIndex, isEdge, isPolygon, isSelected, isVertex, SelectableElement } from '../selection/selectable';
+import { findSelectedIndex, isSelected, SelectableElement, SingleSelectableElement } from '../selection/selectable';
 
-export type ISelectionState = {elements: SelectableElement[], tree: ISelectionTreeNode, treeSelection?: SelectableElement }
+export type ISelectionState = {elements: SingleSelectableElement[], tree: ISelectionTreeNode, treeSelection?: SelectableElement }
 
 const slice = createSlice({
   name: 'selection',
@@ -12,9 +12,9 @@ const slice = createSlice({
       tree: {element: undefined, children:[]}
   } as ISelectionState,
   reducers: {
-    addSelectedElement: (state, action: PayloadAction<{elements: SelectableElement[], geometry: IGeometry}>) => {        
+    addSelectedElement: (state, action: PayloadAction<{elements: SingleSelectableElement[], geometry: IGeometry}>) => {        
         const {elements, geometry } = action.payload;        
-        let treeSelection = state.treeSelection;
+        let treeSelection: SelectableElement = state.treeSelection;
         elements.forEach(s => {                                    
             let i = findSelectedIndex(s, state.elements);
         
@@ -25,14 +25,14 @@ const slice = createSlice({
                 state.elements.splice(i, 1);
             }    
         });  
-        state.tree = buildSelectionTree(state.elements, geometry );   
-        state.treeSelection = isSelected(treeSelection, state.elements) ? treeSelection : undefined;
+        state.tree = buildSelectionTree(state.elements, geometry);
+        state.treeSelection = state.tree.element ?? (isSelected(treeSelection, state.elements) ? treeSelection : undefined);
     },
-    startNewSelection: (state, action: PayloadAction<{elements: SelectableElement[], geometry: IGeometry}>) => {
+    startNewSelection: (state, action: PayloadAction<{elements: SingleSelectableElement[], geometry: IGeometry}>) => {
         const {elements, geometry} = action.payload;
         state.elements = elements;
-        state.tree = buildSelectionTree(elements, geometry );
-        state.treeSelection = elements.length > 0 ? elements[0] : undefined;
+        state.tree = buildSelectionTree(elements, geometry);
+        state.treeSelection = state.tree.element ?? (elements.length > 0 ? elements[0] : undefined);
     },    
     clearSelection: (state) => {
         state.elements = [];

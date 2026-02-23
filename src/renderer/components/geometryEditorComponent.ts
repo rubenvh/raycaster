@@ -1,8 +1,9 @@
 import { connect } from '../../common/store/store-connector';
 import VertexEditorComponent from './vertexEditorComponent';
-import { SelectableElement, isVertex, isEdge, isPolygon } from '../../common/selection/selectable';
+import { SelectableElement, isVertex, isEdge, isPolygon, isGroup } from '../../common/selection/selectable';
 import EdgeEditorComponent from './edgeEditorComponent';
 import PolygonEditorComponent from './polygonEditorComponent';
+import GroupEditorComponent from './groupEditorComponent';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
@@ -34,11 +35,13 @@ h3 {
 <vertex-editor id="vertex"></vertex-editor>
 <edge-editor id="edge"></edge-editor>
 <polygon-editor id="polygon"></polygon-editor>
+<group-editor id="group"></group-editor>
 `;
 export default class GeometryEditorComponent extends HTMLElement {
     private vertexEditor: VertexEditorComponent;
     private edgeEditor: EdgeEditorComponent;
     private polygonEditor: PolygonEditorComponent;    
+    private groupEditor: GroupEditorComponent;
     private _selectedElement: SelectableElement;
 
     constructor() {
@@ -52,6 +55,8 @@ export default class GeometryEditorComponent extends HTMLElement {
         this.edgeEditor.hidden = true;
         this.polygonEditor = shadowRoot.getElementById('polygon') as PolygonEditorComponent;
         this.polygonEditor.hidden = true;
+        this.groupEditor = shadowRoot.getElementById('group') as GroupEditorComponent;
+        this.groupEditor.hidden = true;
 
         connect(state => {
             if (this._selectedElement !== state.selection.treeSelection) {
@@ -59,6 +64,7 @@ export default class GeometryEditorComponent extends HTMLElement {
                 this.vertexEditor.hidden = !isVertex(state.selection.treeSelection);
                 this.edgeEditor.hidden = !isEdge(state.selection.treeSelection);
                 this.polygonEditor.hidden = !isPolygon(state.selection.treeSelection);
+                this.groupEditor.hidden = !isGroup(state.selection.treeSelection);
             }     
         });
     }     

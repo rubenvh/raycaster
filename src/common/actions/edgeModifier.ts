@@ -5,7 +5,7 @@ import { getMaterial, setTexture } from './../geometry/properties';
 import { ITextureReference } from './../textures/model';
 import { IActionHandler } from "./actions";
 import { IEdge } from '../geometry/edge';
-import { isEdge, isPolygon, SelectableElement } from "../selection/selectable";
+import { isEdge, isPolygon, flattenElements, SelectableElement } from "../selection/selectable";
 import { applyTexture, Face, toggleTexture } from '../geometry/properties';
 import { connect } from '../store/store-connector';
 import { adaptEdges } from '../store/walls';
@@ -28,7 +28,7 @@ export class EdgeModifier implements IActionHandler {
     }
    
     private get selectedEdges(): Map<IEntityKey, IEdge[]> {
-        return this.selectedElements.reduce((acc, s) => 
+        return flattenElements(this.selectedElements).reduce((acc, s) => 
             acc.set(s.polygon.id, Array.from(new Set<IEdge>([...(acc.get(s.polygon.id)||[]).concat(
             isEdge(s)
                 ? [s.edge]

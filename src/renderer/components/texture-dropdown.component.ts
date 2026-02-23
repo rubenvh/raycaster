@@ -108,7 +108,7 @@ export default class TextureDropdownComponent extends HTMLElement {
         img.classList.add('image');                    
         if (this.value) {        
             const t = textureLib.getTexture(this.value.id);            
-            img.src = t.getTextureAsImage(this.value);                        
+            img.src = t ? t.getTextureAsImage(this.value) : textureIcon;                        
         } else {
             img.src = textureIcon;
         }   

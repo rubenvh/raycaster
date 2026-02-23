@@ -12,6 +12,7 @@ import TextureSelectorComponent from './texture-selector.component';
 import TextureDropdownComponent from './texture-dropdown.component';
 import DirectedMaterialEditorComponent from './directed-material.component';
 import PolygonEditorComponent from './polygonEditorComponent';
+import GroupEditorComponent from './groupEditorComponent';
 import BspStatusComponent from './bspStatusComponent';
 
 export function loadComponents() {
@@ -22,6 +23,7 @@ export function loadComponents() {
     MaterialEditorComponent;
     DirectedMaterialEditorComponent;
     PolygonEditorComponent;
+    GroupEditorComponent;
     SelectionTreeNodeComponent;
     VertexEditorComponent;
     StatsElement;

@@ -4,7 +4,7 @@ import { detectCollisionAt, EMPTY_GEOMETRY, selectRegion } from '../geometry/geo
 import { Vector } from '../math/vector';
 import { BoundingBox } from '../geometry/polygon';
 import { drawBoundingBox } from '../drawing/drawing';
-import { SelectableElement } from '../selection/selectable';
+import { SelectableElement, SingleSelectableElement } from '../selection/selectable';
 import { useAppDispatch } from '../store';
 import { addSelectedElement, clearSelection, startNewSelection } from '../store/selection';
 import { connect } from '../store/store-connector';
@@ -94,7 +94,7 @@ export class GeometrySelector implements IActionHandler {
         return true;
     };
 
-    private performSelection = (event: MouseEvent, ss: SelectableElement[]) => {        
+    private performSelection = (event: MouseEvent, ss: SingleSelectableElement[]) => {        
         if (!event.ctrlKey) dispatch(clearSelection());
         if (!ss || ss.length === 0) return;         
         dispatch(!event.ctrlKey ? startNewSelection({elements: ss, geometry: this.wallGeometry}) : addSelectedElement({elements: ss, geometry: this.wallGeometry}));
