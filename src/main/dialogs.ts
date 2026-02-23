@@ -26,3 +26,13 @@ export const importTexture = (dialog: Dialog, window: BrowserWindow) => {
         }
     );
 }
+
+export const importSkybox = (dialog: Dialog, window: BrowserWindow) => {
+    dialog.showOpenDialog(window, { filters: [{name: "images", extensions: ["png","jpg"]}], properties: ['openFile']})
+        .then((files) => {
+            if (files !== undefined && !files.canceled) {
+                window.webContents.send('importSkybox', files);                            
+            }
+        }
+    );
+}

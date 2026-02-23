@@ -1,4 +1,4 @@
-import { importTexture, openFile, saveFile } from './dialogs';
+import { importSkybox, importTexture, openFile, saveFile } from './dialogs';
 import { dialog, Menu, BrowserWindow } from 'electron';
 import getIcons from './menu-icons';
 import tooltips, { SelectionType } from './menu-tooltips-data';
@@ -185,6 +185,10 @@ export function buildMenu(sel: SelectionState = NO_SELECTION): Electron.Menu {
         {
           label: 'Import',
           click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) importTexture(dialog, win); }
+        },
+        {
+          label: 'Import Skybox',
+          click: (_, focusedWindow) => { const win = asBrowserWindow(focusedWindow); if (win) importSkybox(dialog, win); }
         },
         {
           label: 'Library',

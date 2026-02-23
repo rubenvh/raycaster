@@ -1,15 +1,32 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+import { ISkyboxSource } from '../skybox/model';
 
 // Slice
-export type IWorldConfigState = {fadeOn?: number, horizonDistance?: number};
+export type IWorldConfigState = {
+  fadeOn?: number,
+  horizonDistance?: number,
+  skybox?: ISkyboxSource,
+  skyboxEnabled?: boolean,
+};
 const slice = createSlice({
   name: 'worldConfig',
   initialState: {      
       fadeOn: undefined,  
-      horizonDistance: 300
+      horizonDistance: 300,
+      skyboxEnabled: false
   } as IWorldConfigState,
   reducers: {    
     initialize: (_, action: PayloadAction<IWorldConfigState>) => action.payload,
+    setSkybox: (state, action: PayloadAction<ISkyboxSource | null>) => {
+        const source = action.payload;
+        if (source) {
+            state.skybox = source;
+            state.skyboxEnabled = true;
+        } else {
+            state.skybox = undefined;
+            state.skyboxEnabled = false;
+        }
+    },
     toggleFadingStrategy: (state) => {
         if (state.fadeOn == null) {
             state.fadeOn = 0;
@@ -23,4 +40,4 @@ const slice = createSlice({
 });
 export default slice.reducer
 // Actions
-export const { initialize, toggleFadingStrategy } = slice.actions
+export const { initialize, setSkybox, toggleFadingStrategy } = slice.actions

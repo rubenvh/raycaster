@@ -1,16 +1,12 @@
-- have BSP be regenerated automatically when geometry changes. BSP generation should not block the rendering process. Keep list of modified edges. This list gets cleaned when BSP is completely generated. The list of changed edges have to be checked against the rays (either always or in a smarter way than just calculating intersections) and added to the candidates coming out of the bsp walk. Until the BSP is regenerated, the edges that were modified are still in the tree, but should not be rendered as they were when added to the tree.
-- GEOMETRY: create edit polygon component => mostly a batch edit of its edges
-- GEOMETRY: allow batch edit multiple edges (via tree view checkboxes)
-- IMPROVE: bsp representation should only be removed when physically changing the geometry (moving, adding, deleting elements)
 - GENERAL: style edit edge component
-- BUG: completely translucent (invisible) edge is being drawn as fading shadow
-- BUG: when selecting multiple adjacent polygons, the highlighted edge (green) might be overdrawn by 1 of the polygon's edges
+- SELECTION: when clicking anywhere in the 3d rendering panel, the system should select the edge that was used to draw the wall that was clicked
 
 - RENDERING: implement sprites: represent as directed (short) line segments
 - RENDERING: implement doors
 - RENDERING: luminosity on edge as a function of time to implement flickering 
-- RENDERING: implement mirror walls
-
+- RENDERING: implement mirror texture (mirroring surrounding geometry)
+- RENDERING: draw skybox
+- RENDERING: overlay world with a surface of coloured mist gradient. Rays passing this gradient should colour/make fuzzy the geometry behind it. This should replace the fading strategy
 
  WOULD BE NICE
 -=============-

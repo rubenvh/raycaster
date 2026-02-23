@@ -8,6 +8,7 @@ const validReceiveChannels = [
   'saveFile',
   'newFile',
   'importTexture',
+  'importSkybox',
   // Edit operations
   'undo',
   'redo',
@@ -50,6 +51,7 @@ const validReceiveChannels = [
   // BSP operations
   'bsp_generate',
   'bsp_cancel',
+  // Skybox operations
 ];
 
 // Whitelist of valid channels for sending messages to main process

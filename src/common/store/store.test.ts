@@ -688,19 +688,21 @@ describe('player slice', () => {
 // ─── World Config Slice ──────────────────────────────────────────
 
 describe('world-config slice', () => {
-    const initialState: IWorldConfigState = { fadeOn: undefined, horizonDistance: 300 };
+    const initialState: IWorldConfigState = { fadeOn: undefined, horizonDistance: 300, skyboxEnabled: false };
 
     test('initial state has no fading', () => {
         const state = worldConfigReducer(undefined, { type: 'unknown' });
         expect(state.fadeOn).toBeUndefined();
         expect(state.horizonDistance).toBe(300);
+        expect(state.skyboxEnabled).toBeUndefined();
     });
 
     describe('initialize', () => {
         test('sets world config', () => {
-            const state = worldConfigReducer(initialState, initWorldConfig({ fadeOn: 128, horizonDistance: 500 }));
+            const state = worldConfigReducer(initialState, initWorldConfig({ fadeOn: 128, horizonDistance: 500, skyboxEnabled: true }));
             expect(state.fadeOn).toBe(128);
             expect(state.horizonDistance).toBe(500);
+            expect(state.skyboxEnabled).toBe(true);
         });
     });
 

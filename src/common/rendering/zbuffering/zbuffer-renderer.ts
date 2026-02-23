@@ -19,6 +19,7 @@ import { IWorldConfigState } from '../../store/world-config';
 import { statisticsUpdated } from '../../store/stats';
 import { IMutableEdgeDiff, IBspContext } from '../../store/bsp-state';
 import { isStaleInBsp, collectDirtyEdges } from './zbuffer-core';
+import { SkyboxRenderer } from '../../skybox/skybox-renderer';
 // T3.8: Removed PriorityDeque import — replaced with sorted array for small collections
 
 const dispatch = useAppDispatch();
@@ -36,6 +37,7 @@ export class ZBufferRenderer implements IRenderer {
     private worldConfig: IWorldConfigState;
     private lastUpdated;
     private buffer: ZBuffer;  // Persistent buffer
+    private skyboxRenderer = new SkyboxRenderer();
     
     constructor(private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');        
@@ -55,6 +57,7 @@ export class ZBufferRenderer implements IRenderer {
             }
             this.bspContext = { tree: s.bsp.treeHolder?.node ?? null, dirtyEdges: s.bsp.dirtyEdges };
             this.worldConfig = s.worldConfig;
+            this.skyboxRenderer.update(this.worldConfig);
         });
     }
 
@@ -159,7 +162,12 @@ export class ZBufferRenderer implements IRenderer {
 
     }
 
-    private drawSky = () => this.drawBackground('rgb(200,200,200)', 0, this.canvas.height / 2);
+    private drawSky = () => {
+        if (this.skyboxRenderer.draw(this.context, this.camera, this.worldConfig, this.canvas.width, this.canvas.height)) {
+            return;
+        }
+        this.drawBackground('rgb(200,200,200)', 0, this.canvas.height / 2);
+    };
     private drawFloor = () => this.drawBackground('rgb(50,80,80)', this.canvas.height / 2, this.canvas.height);
     private drawBackground = (color: string, startRow: number, endRow: number) => {
         let c: string | CanvasGradient = color;

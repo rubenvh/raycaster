@@ -14,6 +14,7 @@ import { textureLib, TextureLibrary } from '../../textures/textureLibrary';
 import { Texture } from '../../textures/texture';
 import { IRenderer } from '../renderer';
 import { IBSPNode } from '../../geometry/bsp/model';
+import { SkyboxRenderer } from '../../skybox/skybox-renderer';
 
 const dispatch = useAppDispatch();
 
@@ -28,6 +29,7 @@ export class BspWalker implements IRenderer {
     private worldConfig: IWorldConfigState = {};
     private bspTree: IBSPNode | null = null;
     private textureLibrary: TextureLibrary = textureLib;
+    private skyboxRenderer = new SkyboxRenderer();
     constructor(private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');
         this.context.imageSmoothingEnabled = false;
@@ -39,6 +41,7 @@ export class BspWalker implements IRenderer {
         connect(s => {
             this.camera = s.player.camera;
             this.worldConfig = s.worldConfig;
+            this.skyboxRenderer.update(this.worldConfig);
             this.bspTree = s.bsp.treeHolder?.node ?? null;
             if (this.wallGeometry != s.walls.geometry) {
                 this.wallGeometry = s.walls.geometry;
@@ -97,7 +100,12 @@ export class BspWalker implements IRenderer {
     private convertDistanceToWallHeight = (d: number) => Math.round(10 * this.height / d);
     private mapToColumn = (column: number) => Math.floor(this.width - column * this.width / this.resolution);
 
-    private drawSky = () => this.drawBackground('rgb(200,200,200)', 0, this.canvas.height / 2);
+    private drawSky = () => {
+        if (this.skyboxRenderer.draw(this.context, this.camera, this.worldConfig, this.canvas.width, this.canvas.height)) {
+            return;
+        }
+        this.drawBackground('rgb(200,200,200)', 0, this.canvas.height / 2);
+    };
     private drawFloor = () => this.drawBackground('rgb(50,80,80)', this.canvas.height / 2, this.canvas.height);
     private drawBackground = (color: string, startRow: number, endRow: number) => {
         let c: string | CanvasGradient = color;

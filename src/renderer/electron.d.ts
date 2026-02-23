@@ -45,6 +45,7 @@ export interface ElectronAPI {
    * @param channel - The IPC channel name
    * @param callback - Function to call when message is received
    */
+  on(channel: 'importSkybox', callback: (args: { filePaths: string[] }) => void): void;
   on(channel: string, callback: (...args: any[]) => void): void;
 
   /**

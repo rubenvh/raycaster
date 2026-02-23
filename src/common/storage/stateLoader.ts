@@ -34,6 +34,7 @@ export class WorldLoader {
     private saveFileHandler = () => this.save();
     private newFileHandler = () => this.clear();
     private importTextureHandler = (arg: { filePaths: string[] }) => this.importTexture(arg.filePaths[0]);
+    private importSkyboxHandler = (arg: { filePaths: string[] }) => this.importSkybox(arg.filePaths[0]);
 
     constructor() {
         window.electronAPI.on('openFile', this.openFileHandler);
@@ -41,6 +42,7 @@ export class WorldLoader {
         window.electronAPI.on('saveFile', this.saveFileHandler);
         window.electronAPI.on('newFile', this.newFileHandler);
         window.electronAPI.on('importTexture', this.importTextureHandler);
+        window.electronAPI.on('importSkybox', this.importSkyboxHandler);
 
         const loadedFile = localStorage.getItem('loadedFile');
         if (loadedFile) {
@@ -65,6 +67,7 @@ export class WorldLoader {
         window.electronAPI.off('saveFile', this.saveFileHandler);
         window.electronAPI.off('newFile', this.newFileHandler);
         window.electronAPI.off('importTexture', this.importTextureHandler);
+        window.electronAPI.off('importSkybox', this.importSkyboxHandler);
     }
 
     private importTexture = async (path: string): Promise<void> => {
@@ -84,6 +87,40 @@ export class WorldLoader {
         } catch (error) {
             console.error('Failed to import texture:', error);
             this.showError('Import Texture Failed', `Could not import texture from: ${path}`);
+        }
+    };
+
+    private importSkybox = async (path: string): Promise<void> => {
+        try {
+            const [imageBuffer, dimensions] = await Promise.all([
+                window.electronAPI.readFileAsBuffer(path),
+                window.electronAPI.getImageSize(path)
+            ]);
+            const fileName = path.split('\\').pop()?.split('/').pop() || 'unknown';
+            const uint8Array = imageBuffer instanceof Uint8Array ? imageBuffer : new Uint8Array(imageBuffer);
+            const CHUNK_SIZE = 8192;
+            const chunks: string[] = [];
+            for (let i = 0; i < uint8Array.length; i += CHUNK_SIZE) {
+                const chunk = uint8Array.subarray(i, Math.min(i + CHUNK_SIZE, uint8Array.length));
+                chunks.push(String.fromCharCode.apply(null, chunk as any));
+            }
+            const base64 = btoa(chunks.join(''));
+            const extension = fileName.split('.').pop()?.toLowerCase();
+            const mimeType = extension === 'jpg' || extension === 'jpeg'
+                ? 'image/jpeg'
+                : extension === 'gif'
+                    ? 'image/gif'
+                    : 'image/png';
+            dispatch(worldActions.setSkybox({
+                id: fileName,
+                data: base64,
+                mimeType,
+                width: dimensions.width,
+                height: dimensions.height
+            }));
+        } catch (error) {
+            console.error('Failed to import skybox:', error);
+            this.showError('Import Skybox Failed', `Could not import skybox from: ${path}`);
         }
     };
 
@@ -146,7 +183,11 @@ export class WorldLoader {
         dispatch(textureActions.initialize(textureSources));
         dispatch(cameraActions.initializeCamera(w.camera ? makeCamera(w.camera): DEFAULT_CAMERA));
         dispatch(wallActions.loadWalls(w.geometry || EMPTY_GEOMETRY));
-        dispatch(worldActions.initialize(w.config || {fadeOn: null}));
+        const config = w.config || {fadeOn: null};
+        if (config.skybox && config.skyboxEnabled == null) {
+            config.skyboxEnabled = true;
+        }
+        dispatch(worldActions.initialize(config));
         // Restore BSP: prefer top-level bsp field, fall back to legacy geometry.bsp
         const savedBsp = w.bsp || (w.geometry && w.geometry.bsp) || null;
         const bsp = savedBsp ? recomputeBspBounds(savedBsp) : null;
