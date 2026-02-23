@@ -6,7 +6,7 @@ import { IEdge, cloneEdge, duplicateEdge, makeEdge, createEdges, loadEdge } from
 import { IEntity, giveIdentity, IEntityKey, createEntityKey, cloneKey } from './entity';
 import { BoundingBox, createPolygon, IPolygon, IStoredPolygon, loadPolygon, contains, containsVertex, containsEdge, centerOf, merge, storePolygon, signedArea } from './polygon';
 import { lineIntersect, distanceTo, segmentLength } from '../math/lineSegment';
-import { SelectableElement, selectEdge, selectVertex } from '../selection/selectable';
+import { SingleSelectableElement, selectEdge, selectVertex } from '../selection/selectable';
 import { areEqual, areClose, IVertex, IVertexMap, makeVertex } from './vertex';
 import { cloneMaterial } from './properties';
 
@@ -115,7 +115,7 @@ export const removeVertex = (vertex: IVertex, poligon: IEntityKey, geometry: IGe
     return {...result, polygons: result.polygons.filter(_=>_.edgeCount > 0) };
 };
 
-export const selectRegion = (region: BoundingBox, geometry: IGeometry): SelectableElement[] => {
+export const selectRegion = (region: BoundingBox, geometry: IGeometry): SingleSelectableElement[] => {
     const ps = geometry.polygons.filter(p => contains(region, p.boundingBox));
     const [vs, es] = geometry.polygons.filter(p => !ps.includes(p)).reduce((acc, p) => ([
         [...acc[0], ...p.vertices.filter(v => containsVertex(v, region)).map(v => selectVertex(v, p))],
@@ -232,18 +232,20 @@ export const expandPolygon = (edge: IEdge | null, poligonId: IEntityKey, target:
     return [result.polygons.find(p => p.id === poligonId), result];    
 }
 
-export const rotatePolygon = (polygonIds: IEntityKey[], target: vector.Vector, geometry: IGeometry): IGeometry => {
+export const rotatePolygon = (polygonIds: IEntityKey[], target: vector.Vector, geometry: IGeometry, center?: vector.Vector): IGeometry => {
     const polygons = geometry.polygons.filter(x => polygonIds.includes(x.id));
-    const mergedBoundedBox = polygons.slice(1).reduce((acc, p) => merge(acc, p.boundingBox), polygons[0].boundingBox);
-    const center = centerOf(mergedBoundedBox);     
-    const reference = polygons[0].edges[0].start.vector;
+    const rotationCenter = center ?? centerOf(polygons.slice(1).reduce((acc, p) => merge(acc, p.boundingBox), polygons[0].boundingBox));
+    // Find a reference vertex that is not coincident with the rotation center.
+    // If all vertices coincide with the center (degenerate), fall back to the first vertex.
+    const allVertices = polygons.flatMap(p => p.vertices);
+    const reference = (allVertices.find(v => vector.distance(v.vector, rotationCenter) > 0.001) ?? allVertices[0]).vector;
     return adaptPolygons(polygonIds, geometry, p => {        
-        const centerToTarget = vector.subtract(target, center);
-        const centerToReference = vector.subtract(reference, center);
+        const centerToTarget = vector.subtract(target, rotationCenter);
+        const centerToReference = vector.subtract(reference, rotationCenter);
         const angle = -1 * vector.angleBetween(centerToTarget, centerToReference);
         const edges = createEdges(p.vertices
-                .map(v => vector.subtract(v.vector, center))
-                .map(u => vector.add(center, vector.rotate(angle, u))));
+                .map(v => vector.subtract(v.vector, rotationCenter))
+                .map(u => vector.add(rotationCenter, vector.rotate(angle, u))));
         return edges
             .map((e, i) => ({newEdge: e, basedOn: p.edges[i] }))
             .map(_ => ({..._.newEdge, immaterial: _.basedOn?.immaterial ?? false, material: _.basedOn && cloneMaterial(_.basedOn.material) || _.newEdge.material }));;

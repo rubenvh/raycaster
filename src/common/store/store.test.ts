@@ -281,6 +281,22 @@ describe('walls slice', () => {
             // Vertices should have changed position
             expect(rotatedPoly.vertices[0].vector).not.toEqual(originalStart);
         });
+
+        test('rotates polygon around an explicit center', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 100], [0, 100]]]);
+            let state = wallsReducer(initialState, updateWalls(geom));
+            const poly = state.geometry.polygons[0];
+            const originalStart = poly.edges[0].start.vector;
+            state = wallsReducer(state, rotatePolygon({
+                polygons: [poly.id!],
+                rotation: [1, 0],
+                center: [0, 0], // rotate around the origin vertex
+            }));
+            const rotatedPoly = state.geometry.polygons[0];
+            // The vertex at origin should stay near origin since it's the center
+            expect(rotatedPoly.vertices[0].vector[0]).toBeCloseTo(0, 0);
+            expect(rotatedPoly.vertices[0].vector[1]).toBeCloseTo(0, 0);
+        });
     });
 
     describe('editVertex', () => {
@@ -545,6 +561,14 @@ describe('selection slice', () => {
             const v2 = selectVertex(geom.polygons[0].vertices[1], geom.polygons[0]);
             const state = selectionReducer(initialState, startNewSelection({ elements: [v1, v2], geometry: geom }));
             expect(state.elements.length).toBe(2);
+            expect(state.treeSelection).toEqual(expect.objectContaining({ kind: 'group', elements: [v1, v2] }));
+        });
+
+        test('sets treeSelection to single element when only one selected', () => {
+            const geom = createGeometry([[[0, 0], [50, 0], [50, 50]]]);
+            const v1 = selectVertex(geom.polygons[0].vertices[0], geom.polygons[0]);
+            const state = selectionReducer(initialState, startNewSelection({ elements: [v1], geometry: geom }));
+            expect(state.elements.length).toBe(1);
             expect(state.treeSelection).toBe(v1);
         });
 

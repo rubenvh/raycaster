@@ -76,12 +76,18 @@ to split polygon along a line:
     requires: 'polygon',
     requiresDescription: 'Select one or more polygons',
     ascii:
-`Drag to rotate around center:
+`1. Click to set rotation center
+   (snaps to vertices and center)
+
+2. Move mouse to rotate, click
+   to apply:
 
       ╱╲              ┌──┐
      ╱  ╲    ──►      │  │
     ╱    ╲            └──┘
-   ╱──────╲    (45° rotation)`
+   ╱──────╲    (45° rotation)
+
+   Hold Ctrl for 15° snap`
   },
 
   reversePolygon: {

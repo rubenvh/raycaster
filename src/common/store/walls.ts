@@ -97,10 +97,10 @@ const slice = createSlice({
       const {polygon, start, end} = action.payload;
       undoableUpdate(state, doSplitPolygon(start, end, polygon, state.geometry));
     },
-    rotatePolygon: (state, action: PayloadAction<{polygons: IEntityKey[], rotation: Vector}>) => {
-      const {polygons, rotation} = action.payload;
-      undoableUpdate(state, doRotatePolygon(polygons, rotation, state.geometry));
-    },    
+    rotatePolygon: (state, action: PayloadAction<{polygons: IEntityKey[], rotation: Vector, center?: Vector}>) => {
+      const {polygons, rotation, center} = action.payload;
+      undoableUpdate(state, doRotatePolygon(polygons, rotation, state.geometry, center));
+    },
     editVertex: (state, action: PayloadAction<{direction: Vector, vertex: IVertex, polygonId: IEntityKey}>) => {
       const {vertex, polygonId, direction} = action.payload;
       const vertexMap = new Map<string, IVertex[]>([[polygonId, [vertex]]]);
