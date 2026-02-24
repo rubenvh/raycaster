@@ -73,7 +73,10 @@ export default class TextureDropdownComponent extends HTMLElement {
 
         this.selectorElement.addEventListener('change', this.onTextureSelected);
         this.selectedImageElement.addEventListener('click', () => this.colapsed = !this._colapsed);        
-        this.clearButton.addEventListener('click', () => this.value = undefined);
+        this.clearButton.addEventListener('click', () => {
+            this.value = undefined;
+            this.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+        });
     }
     
     set textures (textures: ITextureSource[]) {
@@ -96,6 +99,7 @@ export default class TextureDropdownComponent extends HTMLElement {
      
     private onTextureSelected = (_: Event) => {
         this.colapsed = true;
+        this.render();
         // bubble up
     }
 

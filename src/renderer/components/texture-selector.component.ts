@@ -76,7 +76,6 @@ export default class TextureSelectorComponent extends HTMLElement {
             this._value = ref;
             this.selectImage();
             this.render();
-            this.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
         }        
     }
 
@@ -109,7 +108,8 @@ export default class TextureSelectorComponent extends HTMLElement {
                 img.classList.add('image');
                 img.addEventListener('click', (e) => {
                     e.stopPropagation();
-                    this.value = _.texture;                        
+                    this.value = _.texture;
+                    this.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
                 });
                 return img;
             });
