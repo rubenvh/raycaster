@@ -6,7 +6,7 @@ import * as url from "url";
 import * as fs from "fs";
 import { imageSize } from 'image-size';
 import __basedir from '../basepath';
-import { saveFile } from './dialogs';
+import { importSkybox, saveFile } from './dialogs';
 // import installExtension, { REDUX_DEVTOOLS } from 'electron-devtools-installer';
 
 // Keep a global reference of the window object, if you don't, the window will
@@ -90,6 +90,61 @@ function createWindow () {
     } catch (error) {
       console.error('Error getting image size:', filePath, error);
       throw error;
+    }
+  });
+
+  // Handle skybox import request from renderer (world editor import button)
+  ipcMain.on('importSkybox-request', () => {
+    importSkybox(dialog, mainWindow);
+  });
+
+  // Skybox operations: list bundled skyboxes
+  ipcMain.handle('skybox:list', async () => {
+    try {
+      const skyboxDir = path.join(__basedir, 'assets', 'skyboxes');
+      const files = await fs.promises.readdir(skyboxDir);
+      return files.filter(f => /\.(png|jpg|jpeg|gif)$/i.test(f));
+    } catch (error) {
+      console.error('Error listing skyboxes:', error);
+      return [];
+    }
+  });
+
+  // Skybox operations: load a bundled skybox by filename
+  ipcMain.handle('skybox:load', async (_event, filename: string) => {
+    try {
+      const skyboxDir = path.join(__basedir, 'assets', 'skyboxes');
+      const filePath = path.join(skyboxDir, filename);
+      // Security: ensure the resolved path is still within skyboxDir
+      if (!filePath.startsWith(skyboxDir)) {
+        throw new Error('Invalid skybox path');
+      }
+      const data = await fs.promises.readFile(filePath);
+      const dimensions = imageSize(data);
+      const uint8Array = new Uint8Array(data);
+      const CHUNK_SIZE = 8192;
+      const chunks: string[] = [];
+      for (let i = 0; i < uint8Array.length; i += CHUNK_SIZE) {
+        const chunk = uint8Array.subarray(i, Math.min(i + CHUNK_SIZE, uint8Array.length));
+        chunks.push(String.fromCharCode.apply(null, chunk as any));
+      }
+      const base64 = Buffer.from(data).toString('base64');
+      const extension = filename.split('.').pop()?.toLowerCase();
+      const mimeType = extension === 'jpg' || extension === 'jpeg'
+        ? 'image/jpeg'
+        : extension === 'gif'
+          ? 'image/gif'
+          : 'image/png';
+      return {
+        id: filename,
+        data: base64,
+        mimeType,
+        width: dimensions.width || 0,
+        height: dimensions.height || 0
+      };
+    } catch (error) {
+      console.error('Error loading bundled skybox:', error);
+      return null;
     }
   });
 

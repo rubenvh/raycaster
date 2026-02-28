@@ -67,6 +67,14 @@ export interface ElectronAPI {
    * @param callback - The callback function to remove
    */
   off(channel: string, callback: (...args: any[]) => void): void;
+
+  /**
+   * Invoke an IPC handler on the main process and await the response.
+   * @param channel - The IPC channel name
+   * @param args - Arguments to send
+   * @returns Promise resolving to the handler's return value
+   */
+  invoke(channel: string, ...args: unknown[]): Promise<any>;
 }
 
 declare global {

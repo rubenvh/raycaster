@@ -1,6 +1,6 @@
 import { EMPTY_GEOMETRY, expandPolygon } from './../geometry/geometry';
 import { IPolygon } from './../geometry/polygon';
-import { isEdge, isGroup, isPolygon, isVertex, SelectableElement } from "../selection/selectable";
+import { isEdge, isGroup, isPolygon, isVertex, isWorld, SelectableElement } from "../selection/selectable";
 import { IActionHandler } from "./actions";
 import { ISpaceTranslator } from "./geometrySelector";
 import { drawSegment, drawVector } from '../drawing/drawing';
@@ -38,7 +38,7 @@ export class PolygonExpander implements IActionHandler {
 
     private get selectedPolygonId(): IEntityKey | null {
         const el = this.selectedElement;
-        if (!el || isGroup(el)) return null;
+        if (!el || isGroup(el) || isWorld(el)) return null;
         return el.polygon.id;
     }
 

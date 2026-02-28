@@ -1,9 +1,10 @@
 import { connect } from '../../common/store/store-connector';
 import VertexEditorComponent from './vertexEditorComponent';
-import { SelectableElement, isVertex, isEdge, isPolygon, isGroup } from '../../common/selection/selectable';
+import { SelectableElement, isVertex, isEdge, isPolygon, isGroup, isWorld } from '../../common/selection/selectable';
 import EdgeEditorComponent from './edgeEditorComponent';
 import PolygonEditorComponent from './polygonEditorComponent';
 import GroupEditorComponent from './groupEditorComponent';
+import WorldEditorComponent from './worldEditorComponent';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
@@ -32,12 +33,14 @@ h3 {
 }
 </style>
 <h3>Editor</h3>
+<world-editor id="world"></world-editor>
 <vertex-editor id="vertex"></vertex-editor>
 <edge-editor id="edge"></edge-editor>
 <polygon-editor id="polygon"></polygon-editor>
 <group-editor id="group"></group-editor>
 `;
 export default class GeometryEditorComponent extends HTMLElement {
+    private worldEditor: WorldEditorComponent;
     private vertexEditor: VertexEditorComponent;
     private edgeEditor: EdgeEditorComponent;
     private polygonEditor: PolygonEditorComponent;    
@@ -49,6 +52,8 @@ export default class GeometryEditorComponent extends HTMLElement {
         const shadowRoot = this.attachShadow({mode: 'closed'});        
         shadowRoot.appendChild(template.content.cloneNode(true));        
 
+        this.worldEditor = shadowRoot.getElementById('world') as WorldEditorComponent;
+        this.worldEditor.hidden = true;
         this.vertexEditor = shadowRoot.getElementById('vertex') as VertexEditorComponent;
         this.vertexEditor.hidden = true;
         this.edgeEditor = shadowRoot.getElementById('edge') as EdgeEditorComponent;
@@ -61,6 +66,7 @@ export default class GeometryEditorComponent extends HTMLElement {
         connect(state => {
             if (this._selectedElement !== state.selection.treeSelection) {
                 this._selectedElement = state.selection.treeSelection;
+                this.worldEditor.hidden = !isWorld(state.selection.treeSelection);
                 this.vertexEditor.hidden = !isVertex(state.selection.treeSelection);
                 this.edgeEditor.hidden = !isEdge(state.selection.treeSelection);
                 this.polygonEditor.hidden = !isPolygon(state.selection.treeSelection);

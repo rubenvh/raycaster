@@ -14,6 +14,7 @@ import DirectedMaterialEditorComponent from './directed-material.component';
 import PolygonEditorComponent from './polygonEditorComponent';
 import GroupEditorComponent from './groupEditorComponent';
 import BspStatusComponent from './bspStatusComponent';
+import WorldEditorComponent from './worldEditorComponent';
 
 export function loadComponents() {
     EdgeEditorComponent;
@@ -32,6 +33,7 @@ export function loadComponents() {
     TextureSelectorComponent;
     TextureDropdownComponent;
     BspStatusComponent;
+    WorldEditorComponent;
 }
 
 

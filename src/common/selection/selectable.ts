@@ -10,17 +10,20 @@ export type SelectedVertex = {kind: 'vertex', vertex: IVertex, polygon: IPolygon
 export type SelectedEdge = {kind: 'edge', edge: IEdge, polygon: IPolygon};
 export type SelectedPolygon = {kind: 'polygon', polygon: IPolygon};
 export type SelectedGroup = {kind: 'group', elements: SingleSelectableElement[]};
+export type SelectedWorld = {kind: 'world'};
 export type SingleSelectableElement = SelectedVertex | SelectedEdge | SelectedPolygon;
-export type SelectableElement = SingleSelectableElement | SelectedGroup;
+export type SelectableElement = SingleSelectableElement | SelectedGroup | SelectedWorld;
 export const isVertex = (_: SelectableElement): _ is SelectedVertex => _?.kind === 'vertex';
 export const isEdge = (_: SelectableElement): _ is SelectedEdge => _?.kind === 'edge';
 export const isPolygon = (_: SelectableElement): _ is SelectedPolygon => _?.kind === 'polygon';
 export const isGroup = (_: SelectableElement): _ is SelectedGroup => _?.kind === 'group';
+export const isWorld = (_: SelectableElement): _ is SelectedWorld => _?.kind === 'world';
 export const selectedId = (_ : SelectableElement) => isVertex(_) ? _.vertex.id : isEdge(_) ? _.edge.id : isPolygon(_) ? _.polygon.id : undefined;
 export const selectVertex = (vertex: IVertex, polygon: IPolygon): SelectedVertex => ({kind: 'vertex', vertex, polygon});
 export const selectEdge = (edge: IEdge, polygon: IPolygon): SelectedEdge => ({kind: 'edge', edge, polygon});
 export const selectPolygon = (polygon: IPolygon): SelectedPolygon => ({kind: 'polygon', polygon});
 export const selectGroup = (elements: SingleSelectableElement[]): SelectedGroup => ({kind: 'group', elements});
+export const selectWorld = (): SelectedWorld => ({kind: 'world'});
 
 export const isSelectedPolygon = (id: IEntityKey, selection: SelectableElement[]): boolean => {
     return selection.some(_=>_.kind === 'polygon' && _.polygon.id === id);
@@ -46,7 +49,9 @@ export const isCloseToSelected = (v: Vector, element: SelectableElement) => {
         ? distanceTo(v, element.edge.segment) < epsilon
         : isPolygon(element)
         ? element.polygon.edges.map(e => distanceTo(v, e.segment) < epsilon).some(x => x)
-        : element.elements.some(e => isCloseToSelected(v, e));
+        : isGroup(element)
+        ? element.elements.some(e => isCloseToSelected(v, e))
+        : false;
 }
 
 export const selectedElement = (collision : VertexCollision|EdgeCollision, selectPolygon: boolean): SingleSelectableElement => {
@@ -67,4 +72,4 @@ export const createVertexMap = (elements: SelectableElement[]) => flattenElement
 }, new Map());
 
 export const flattenElements = (elements: SelectableElement[]): SingleSelectableElement[] =>
-    elements.reduce((acc, s) => isGroup(s) ? acc.concat(s.elements) : acc.concat(s), [] as SingleSelectableElement[]);
+    elements.reduce((acc, s) => isGroup(s) ? acc.concat(s.elements) : isWorld(s) ? acc : acc.concat(s), [] as SingleSelectableElement[]);

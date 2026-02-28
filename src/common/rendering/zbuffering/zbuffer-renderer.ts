@@ -15,7 +15,7 @@ import { Heap } from '../../datastructures/heap';
 import { drawRect } from '../../drawing/drawing';
 import { createPlane } from '../../math/plane';
 import { getMaterial, isTranslucent } from '../../geometry/properties';
-import { IWorldConfigState } from '../../store/world-config';
+import { DEFAULT_FLOOR_COLOR, DEFAULT_SKY_COLOR, IWorldConfigState } from '../../store/world-config';
 import { statisticsUpdated } from '../../store/stats';
 import { IMutableEdgeDiff, IBspContext } from '../../store/bsp-state';
 import { isStaleInBsp, collectDirtyEdges } from './zbuffer-core';
@@ -166,9 +166,13 @@ export class ZBufferRenderer implements IRenderer {
         if (this.skyboxRenderer.draw(this.context, this.camera, this.worldConfig, this.canvas.width, this.canvas.height)) {
             return;
         }
-        this.drawBackground('rgb(200,200,200)', 0, this.canvas.height / 2);
+        const [r, g, b] = this.worldConfig.skyColor ?? DEFAULT_SKY_COLOR;
+        this.drawBackground(`rgb(${r},${g},${b})`, 0, this.canvas.height / 2);
     };
-    private drawFloor = () => this.drawBackground('rgb(50,80,80)', this.canvas.height / 2, this.canvas.height);
+    private drawFloor = () => {
+        const [r, g, b] = this.worldConfig.floorColor ?? DEFAULT_FLOOR_COLOR;
+        this.drawBackground(`rgb(${r},${g},${b})`, this.canvas.height / 2, this.canvas.height);
+    };
     private drawBackground = (color: string, startRow: number, endRow: number) => {
         let c: string | CanvasGradient = color;
         const shade = this.worldConfig.fadeOn;

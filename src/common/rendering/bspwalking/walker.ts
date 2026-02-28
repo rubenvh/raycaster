@@ -9,7 +9,7 @@ import { IMaterial } from '../../geometry/properties';
 import { statisticsUpdated } from '../../store/stats';
 import { useAppDispatch } from '../../store';
 import { connect } from '../../store/store-connector';
-import { IWorldConfigState } from '../../store/world-config';
+import { DEFAULT_FLOOR_COLOR, DEFAULT_SKY_COLOR, IWorldConfigState } from '../../store/world-config';
 import { textureLib, TextureLibrary } from '../../textures/textureLibrary';
 import { Texture } from '../../textures/texture';
 import { IRenderer } from '../renderer';
@@ -104,9 +104,13 @@ export class BspWalker implements IRenderer {
         if (this.skyboxRenderer.draw(this.context, this.camera, this.worldConfig, this.canvas.width, this.canvas.height)) {
             return;
         }
-        this.drawBackground('rgb(200,200,200)', 0, this.canvas.height / 2);
+        const [r, g, b] = this.worldConfig.skyColor ?? DEFAULT_SKY_COLOR;
+        this.drawBackground(`rgb(${r},${g},${b})`, 0, this.canvas.height / 2);
     };
-    private drawFloor = () => this.drawBackground('rgb(50,80,80)', this.canvas.height / 2, this.canvas.height);
+    private drawFloor = () => {
+        const [r, g, b] = this.worldConfig.floorColor ?? DEFAULT_FLOOR_COLOR;
+        this.drawBackground(`rgb(${r},${g},${b})`, this.canvas.height / 2, this.canvas.height);
+    };
     private drawBackground = (color: string, startRow: number, endRow: number) => {
         let c: string | CanvasGradient = color;
         const shade = this.worldConfig.fadeOn;

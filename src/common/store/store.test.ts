@@ -550,7 +550,7 @@ describe('selection slice', () => {
             expect(state.elements.length).toBe(1);
             state = selectionReducer(state, clearSelection());
             expect(state.elements.length).toBe(0);
-            expect(state.treeSelection).toBeUndefined();
+            expect(state.treeSelection).toEqual({ kind: 'world' });
         });
     });
 
@@ -572,11 +572,11 @@ describe('selection slice', () => {
             expect(state.treeSelection).toBe(v1);
         });
 
-        test('empty selection clears treeSelection', () => {
+        test('empty selection falls back to world treeSelection', () => {
             const geom = createGeometry([[[0, 0], [50, 0], [50, 50]]]);
             const state = selectionReducer(initialState, startNewSelection({ elements: [], geometry: geom }));
             expect(state.elements.length).toBe(0);
-            expect(state.treeSelection).toBeUndefined();
+            expect(state.treeSelection).toEqual({ kind: 'world' });
         });
     });
 
@@ -694,7 +694,7 @@ describe('world-config slice', () => {
         const state = worldConfigReducer(undefined, { type: 'unknown' });
         expect(state.fadeOn).toBeUndefined();
         expect(state.horizonDistance).toBe(300);
-        expect(state.skyboxEnabled).toBeUndefined();
+        expect(state.skyboxEnabled).toBe(false);
     });
 
     describe('initialize', () => {

@@ -58,6 +58,7 @@ const validReceiveChannels = [
 const validSendChannels = [
   'saveNew',
   'selection-state',
+  'importSkybox-request',
 ];
 
 // Type for the callback function
@@ -134,5 +135,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
         callbackMap.delete(callback);
       }
     }
+  },
+
+  // Invoke an IPC handler on the main process (async request/response)
+  invoke: (channel: string, ...args: any[]): Promise<any> => {
+    return ipcRenderer.invoke(channel, ...args);
   }
 });

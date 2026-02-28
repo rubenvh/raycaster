@@ -1,6 +1,6 @@
 
 import { IGeometry } from './../geometry/geometry';
-import { SelectableElement, isPolygon, selectEdge, isEdge, selectVertex, SelectedEdge, selectPolygon, isVertex, selectGroup, SingleSelectableElement } from './selectable';
+import { SelectableElement, isPolygon, selectEdge, isEdge, selectVertex, SelectedEdge, selectPolygon, isVertex, isGroup, selectGroup, SingleSelectableElement } from './selectable';
 
 export interface ISelectionTree {
     children: ISelectionTreeNode[];
@@ -57,8 +57,10 @@ const buildBottomUpBranch = (selection: SelectableElement, geometry: IGeometry):
             buildBottomUpBranch(selectPolygon(polygon), geometry),
             ...edges.map(e => buildBottomUpBranch(selectEdge(e, polygon), geometry))
         ]});
-    } else {
+    } else if (isGroup(selection)) {
         return ({element: selection, children: selection.elements.map(_ => buildSelectionBranch(_, geometry))});
+    } else {
+        return ({element: selection, children: []});
     }
 }
 

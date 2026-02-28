@@ -1,6 +1,7 @@
 import { useAppDispatch } from '../../common/store';
 import { selectTreeNode } from '../../common/store/selection';
 import { connect } from '../../common/store/store-connector';
+import { isWorld, selectWorld } from '../../common/selection/selectable';
 import SelectionTreeNodeComponent from './selectionTreeNodeComponent';
 
 const template = document.createElement('template');
@@ -28,8 +29,24 @@ h3 {
     z-index: 1;
     background: #2d2d2d;
 }
+#world-node {
+    cursor: pointer;
+    padding: 1px 4px;
+    border-radius: 2px;
+    transition: background 0.1s;
+    margin-bottom: 4px;
+    display: block;
+}
+#world-node:hover {
+    background: #333;
+}
+#world-node.selected {
+    background-color: #42a5f5;
+    color: #fff;
+}
 </style>
 <h3>Selection</h3>
+<span id="world-node">World</span>
 <selection-tree-node id="tree"></selection-tree-node>
 `;
 
@@ -39,6 +56,7 @@ export default class GeometrySelectionComponent extends HTMLElement {
     
     
     private tree: SelectionTreeNodeComponent;
+    private worldNode: HTMLSpanElement;
     
     constructor() {
         super();
@@ -46,6 +64,13 @@ export default class GeometrySelectionComponent extends HTMLElement {
         shadowRoot.appendChild(template.content.cloneNode(true));        
         
         this.tree = shadowRoot.getElementById('tree') as SelectionTreeNodeComponent;
+        this.worldNode = shadowRoot.getElementById('world-node') as HTMLSpanElement;
+
+        // World node click handler
+        this.worldNode.addEventListener('click', () => {
+            dispatch(selectTreeNode(selectWorld()));
+        });
+
         this.tree.addEventListener('selected', (event: CustomEvent) => {                    
           event.stopPropagation();                                              
           // dispatch tree selection changed (to highlight selection in 2d view)       
@@ -55,6 +80,8 @@ export default class GeometrySelectionComponent extends HTMLElement {
         connect(state => {
             this.tree.data = state.selection.tree;
             this.tree.select(state.selection.treeSelection);
+            // Highlight world node when world is selected
+            this.worldNode.classList.toggle('selected', isWorld(state.selection.treeSelection));
         });
     }     
 }
