@@ -1,12 +1,15 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import walls from './walls';
 import bsp from './bsp-state';
+import selection from './selection';
 import { bspListenerMiddleware, patchBspEdgeMaterials } from './bsp-middleware';
 import { createGeometry, IGeometry, storeGeometry, EMPTY_GEOMETRY } from '../geometry/geometry';
 import { loadWalls, updateWalls, createPolygon, clonePolygon, splitEdge, 
     move, remove, expandPolygon, splitPolygon, insetPolygon, mergePolygons,
     reversePolygon, subdivideEdge, extrudeEdge, adaptEdges, undo, redo } from './walls';
 import { setBsp, IBspState } from './bsp-state';
+import { startNewSelection } from './selection';
+import { selectEdge, selectPolygon } from '../selection/selectable';
 import { buildBspTree } from '../geometry/bsp/creation';
 import { resetTestRandom } from '../testing/factories';
 import { IEntityKey } from '../geometry/entity';
@@ -18,7 +21,7 @@ import { IEdge } from '../geometry/edge';
  */
 function createTestStore() {
     return configureStore({
-        reducer: combineReducers({ walls, bsp }),
+        reducer: combineReducers({ walls, bsp, selection }),
         middleware: (getDefaultMiddleware) => 
             getDefaultMiddleware({ serializableCheck: false })
                 .prepend(bspListenerMiddleware.middleware),
@@ -481,6 +484,89 @@ describe('BSP middleware — edge diff tracking', () => {
             const patchedEdge = bspEdges.find(e => e.id === materialEdge.id);
             expect(patchedEdge).toBeDefined();
             expect((patchedEdge!.material as any).color).toEqual([255, 0, 255, 1]);
+        });
+    });
+
+    describe('material patching after 3D panel selection (BSP edge refs in selection state)', () => {
+        /** Collect all edges from a BSP tree by walking it. */
+        function collectBspEdges(tree: IBSPNode): IEdge[] {
+            const edges: IEdge[] = [];
+            function walk(node: IBSPNode): void {
+                if (isLeafNode(node)) {
+                    for (const p of node.polygons) edges.push(...p.edges);
+                } else if (isSplitNode(node)) {
+                    walk(node.front);
+                    for (const p of node.coplanar) edges.push(...p.edges);
+                    walk(node.back);
+                }
+            }
+            walk(tree);
+            return edges;
+        }
+
+        test('patching BSP edges works even when BSP edge references are stored in selection state', () => {
+            // Regression test: when selecting an edge via the 3D panel, BSP tree
+            // edge/polygon objects were placed directly into the selection slice.
+            // Immer (used by createSlice) deep-freezes the selection state, which
+            // follows object references and freezes the BSP edge objects too. Later,
+            // patchBspEdgeMaterials would throw "Cannot assign to read only property
+            // 'material'" when trying to mutate the frozen BSP edges in-place.
+            //
+            // The fix is two-layered:
+            // 1. view3dSelector.ts resolves BSP refs to geometry refs before dispatch
+            // 2. patchBspEdgeMaterials thaws frozen edges/polygons on demand
+            const store = createTestStore();
+            store.dispatch(createPolygon([[0, 0], [100, 0], [100, 100], [0, 100]]));
+            store.dispatch(setBsp(buildBspTree(store.getState().walls.geometry.polygons)));
+            expect(store.getState().bsp.status).toBe('fresh');
+
+            // Simulate 3D panel selection: get edge/polygon from BSP tree (not geometry)
+            const bspTree = store.getState().bsp.treeHolder!.node;
+            const bspEdges = collectBspEdges(bspTree);
+            const bspEdge = bspEdges.find(e => e.id != null)!;
+            // Find the polygon containing this edge in the BSP tree
+            let bspPolygon: ReturnType<typeof collectBspEdges> extends (infer _)[] ? any : never;
+            function findPolygon(node: IBSPNode): void {
+                if (isLeafNode(node)) {
+                    for (const p of node.polygons) {
+                        if (p.edges.includes(bspEdge)) bspPolygon = p;
+                    }
+                } else if (isSplitNode(node)) {
+                    findPolygon(node.front);
+                    for (const p of node.coplanar) {
+                        if (p.edges.includes(bspEdge)) bspPolygon = p;
+                    }
+                    findPolygon(node.back);
+                }
+            }
+            findPolygon(bspTree);
+
+            // Store BSP edge/polygon references in selection state (as 3D panel does)
+            const element = selectEdge(bspEdge, bspPolygon);
+            const geometry = store.getState().walls.geometry;
+            store.dispatch(startNewSelection({ elements: [element], geometry }));
+
+            // Now change material — this triggers patchBspEdgeMaterials which mutates
+            // BSP edges in-place. With the bug, the BSP edge is frozen by Immer
+            // (through the selection state) and this throws.
+            const geomPoly = store.getState().walls.geometry.polygons[0];
+            const geomEdge = geomPoly.edges.find(e => e.id === bspEdge.id)!;
+            const edgeMap = new Map([[geomPoly.id!, [geomEdge]]]);
+            const transformer = (e: any) => ({ ...e, material: { color: [0, 255, 0, 1] } });
+
+            // This should NOT throw
+            expect(() => {
+                store.dispatch(adaptEdges({ edgeMap, transformer }));
+            }).not.toThrow();
+
+            // BSP should remain fresh (material-only change, no rebuild needed)
+            expect(store.getState().bsp.status).toBe('fresh');
+
+            // The BSP edge should have the new material
+            const updatedBspEdges = collectBspEdges(store.getState().bsp.treeHolder!.node);
+            const patchedEdge = updatedBspEdges.find(e => e.id === bspEdge.id);
+            expect(patchedEdge).toBeDefined();
+            expect((patchedEdge!.material as any).color).toEqual([0, 255, 0, 1]);
         });
     });
 

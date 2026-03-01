@@ -77,25 +77,61 @@ function singleMaterialEquals(a: {color: number[], texture?: any, luminosity?: n
 export function patchBspEdgeMaterials(tree: IBSPNode, materialPatches: Map<IEntityKey, IEdge>): void {
     if (materialPatches.size === 0) return;
 
-    function patchPolygons(polygons: IPolygon[]): void {
-        for (const poly of polygons) {
-            for (const edge of poly.edges) {
+    /**
+     * Patch edges within a polygons array. If any polygon or edge is frozen
+     * (e.g., because a BSP reference was stored in an Immer-managed slice like
+     * selection), creates mutable shallow copies as needed.
+     * Returns the same array if no patches were needed, or a new array with
+     * patched polygons substituted.
+     */
+    function patchPolygons(polygons: IPolygon[]): IPolygon[] {
+        let result = polygons;
+        for (let pi = 0; pi < result.length; pi++) {
+            let poly = result[pi];
+            let edges = poly.edges;
+            let polyThawed = false;
+            for (let ei = 0; ei < edges.length; ei++) {
+                const edge = edges[ei];
                 if (edge.id == null) continue;
                 const newEdge = materialPatches.get(edge.id);
                 if (newEdge != null) {
-                    edge.material = newEdge.material;
-                    edge.immaterial = newEdge.immaterial;
+                    // Thaw frozen containers on demand (outermost first).
+                    // This handles the case where a BSP edge/polygon reference was
+                    // stored in an Immer-managed slice (e.g., selection), causing
+                    // Immer to deep-freeze the object graph through the shared ref.
+                    if (!polyThawed && (Object.isFrozen(poly) || Object.isFrozen(edges))) {
+                        if (Object.isFrozen(result)) {
+                            result = [...result];
+                        }
+                        edges = [...edges];
+                        poly = { ...poly, edges } as IPolygon;
+                        result[pi] = poly;
+                        polyThawed = true;
+                    }
+                    if (Object.isFrozen(edge)) {
+                        edges[ei] = { ...edge, material: newEdge.material, immaterial: newEdge.immaterial };
+                    } else {
+                        edge.material = newEdge.material;
+                        edge.immaterial = newEdge.immaterial;
+                    }
                 }
             }
         }
+        return result;
     }
 
     function walkTree(node: IBSPNode): void {
         if (isLeafNode(node)) {
-            patchPolygons(node.polygons);
+            const patched = patchPolygons(node.polygons);
+            if (patched !== node.polygons) {
+                (node as any).polygons = patched;
+            }
         } else if (isSplitNode(node)) {
             walkTree(node.front);
-            patchPolygons(node.coplanar);
+            const patched = patchPolygons(node.coplanar);
+            if (patched !== node.coplanar) {
+                (node as any).coplanar = patched;
+            }
             walkTree(node.back);
         }
     }
