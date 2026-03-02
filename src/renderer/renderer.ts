@@ -17,6 +17,7 @@ import GeometryEditorComponent from './components/geometryEditorComponent';
 import StatsElement from './components/statsComponent';
 import { TestCanvasRenderer } from './testCanvas';
 import TextureLibraryElement from './components/textureLibraryComponent';
+import { View3dSelector } from '../common/actions/view3dSelector';
 
 loadComponents();
 
@@ -42,7 +43,8 @@ window.addEventListener('load', (event) => {
     let mapEditor = new MapEditorRenderer(ui.view_2d.canvas);
     const globalHandlers = createGlobalActionHandlers();
     const canvasHandlers = createCanvasHandlers(ui.view_2d.canvas, mapEditor);
-    const handlers = [...globalHandlers.handlers, ...canvasHandlers.handlers];
+    const view3dSelector = new View3dSelector(ui.view_3d.canvas).register(ui.view_3d.canvas);
+    const handlers = [...globalHandlers.handlers, ...canvasHandlers.handlers, view3dSelector];
 
     let testCanvas = new TestCanvasRenderer(ui.view_2d.canvas);//, mapEditor.context);
     const bspService = new BspGenerationService();
@@ -119,6 +121,7 @@ window.addEventListener('load', (event) => {
         // Dispose all handlers
         globalHandlers.dispose();
         canvasHandlers.dispose();
+        view3dSelector.dispose();
         
         // Dispose services
         worldLoader.dispose();

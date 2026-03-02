@@ -149,6 +149,15 @@ export const makeRays = (resolution: number, camera: ICamera): IRay[] => {
     return result;
 };
 
+/**
+ * Create a single camera ray for a specific screen column.
+ * Useful for hit-testing a single column without allocating the full ray array.
+ */
+export const makeRayForColumn = (column: number, resolution: number, camera: ICamera): IRay => {
+    const factor = 2 * column / resolution - 1;
+    return makeCameraRay(factor, camera, camera.midline);
+};
+
 export const clip = (e: IEdge, camera: ICamera): IEdge => {
     let sh = classifyPointToPlane(e.start.vector, camera.planes.camera);
     let eh = classifyPointToPlane(e.end.vector, camera.planes.camera);

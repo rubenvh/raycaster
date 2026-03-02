@@ -46,6 +46,43 @@ export const castCameraRay = (ray: IRay, geometry: IGeometry, bspContext?: IBspC
 
     return bspHit;
 }
+/**
+ * Cast a single ray and return the closest visible hit (i.e. has renderable material).
+ * Used for 3D view click-to-select: finds the frontmost wall at a given screen column.
+ * Returns null if no visible edge is hit.
+ */
+export const castVisibleRay = (ray: IRay, geometry: IGeometry, bspContext?: IBspContext): RayHit | null => {
+    const bsp = bspContext?.tree ?? null;
+    const dirtyEdges = bspContext?.dirtyEdges;
+    const options: RayCastingOptions = {
+        earlyExitPredicate: hit => !isTranslucent(hit.intersection.face, hit.edge.material),
+        edgeFilter: dirtyEdges
+            ? edge => !!edge.material && !isStaleInBsp(edge.id, dirtyEdges)
+            : edge => !!edge.material,
+    };
+
+    const collisions = detectCollisions(ray, geometry, options, bsp);
+    const sorted = filterAndSortHits(collisions.hits);
+    let best: RayHit | null = sorted.length > 0 ? sorted[0] : null;
+
+    // Phase 2: brute-force test dirty edges (added/modified since last BSP build)
+    if (dirtyEdges) {
+        const dirty = collectDirtyEdges(geometry, dirtyEdges);
+        for (let i = 0, n = dirty.length; i < n; i++) {
+            const edge = dirty[i];
+            if (!edge.material) continue;
+            const hit = intersectRayEdge(edge, ray);
+            if (hit?.intersection && needsRendering(hit)) {
+                if (!best || hit.distance < best.distance) {
+                    best = hit;
+                }
+            }
+        }
+    }
+
+    return best;
+};
+
 export const castCollisionRays = (rays: IRay[], geometry: IGeometry, bspContext?: IBspContext): CastedRays => {
     const bsp = bspContext?.tree ?? null;
     const dirtyEdges = bspContext?.dirtyEdges;
