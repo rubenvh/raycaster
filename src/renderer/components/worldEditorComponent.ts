@@ -229,6 +229,7 @@ function hexToRgb(hex: string): RGBColor {
 export default class WorldEditorComponent extends HTMLElement {
     private _config: IWorldConfigState = {};
     private _bundledSkyboxes: string[] = [];
+    private _skyboxListRefreshing = false;
 
     // Skybox elements
     private skyboxEnabled: HTMLInputElement;
@@ -405,8 +406,12 @@ export default class WorldEditorComponent extends HTMLElement {
             const matchOption = Array.from(this.skyboxSelect.options).find(o => o.value === config.skybox.id);
             if (matchOption) {
                 this.skyboxSelect.value = config.skybox.id;
+            } else if (!this._skyboxListRefreshing) {
+                // Skybox not in bundled list -- refresh the list in case it was just imported
+                this._skyboxListRefreshing = true;
+                this.loadSkyboxList().then(() => { this._skyboxListRefreshing = false; });
             } else {
-                // Imported skybox not in bundled list -- show as custom entry
+                // Still not found after refresh -- show as custom entry
                 this.ensureCurrentOption(config.skybox.id);
                 this.skyboxSelect.value = '__current__';
             }

@@ -98,6 +98,21 @@ function createWindow () {
     importSkybox(dialog, mainWindow);
   });
 
+  // Skybox operations: copy an imported file into assets/skyboxes/
+  ipcMain.handle('skybox:copyToAssets', async (_event, sourcePath: string) => {
+    try {
+      const skyboxDir = path.join(__basedir, 'assets', 'skyboxes');
+      await fs.promises.mkdir(skyboxDir, { recursive: true });
+      const fileName = path.basename(sourcePath);
+      const destPath = path.join(skyboxDir, fileName);
+      await fs.promises.copyFile(sourcePath, destPath);
+      return fileName;
+    } catch (error) {
+      console.error('Error copying skybox to assets:', error);
+      throw error;
+    }
+  });
+
   // Skybox operations: list bundled skyboxes
   ipcMain.handle('skybox:list', async () => {
     try {

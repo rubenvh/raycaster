@@ -92,32 +92,15 @@ export class WorldLoader {
 
     private importSkybox = async (path: string): Promise<void> => {
         try {
-            const [imageBuffer, dimensions] = await Promise.all([
-                window.electronAPI.readFileAsBuffer(path),
-                window.electronAPI.getImageSize(path)
-            ]);
-            const fileName = path.split('\\').pop()?.split('/').pop() || 'unknown';
-            const uint8Array = imageBuffer instanceof Uint8Array ? imageBuffer : new Uint8Array(imageBuffer);
-            const CHUNK_SIZE = 8192;
-            const chunks: string[] = [];
-            for (let i = 0; i < uint8Array.length; i += CHUNK_SIZE) {
-                const chunk = uint8Array.subarray(i, Math.min(i + CHUNK_SIZE, uint8Array.length));
-                chunks.push(String.fromCharCode.apply(null, chunk as any));
+            // Copy the file into assets/skyboxes/ so it becomes a bundled skybox
+            const fileName: string = await window.electronAPI.invoke('skybox:copyToAssets', path);
+            // Load it from the assets folder using the existing skybox:load handler
+            const skyboxData = await window.electronAPI.invoke('skybox:load', fileName);
+            if (skyboxData) {
+                dispatch(worldActions.setSkybox(skyboxData));
+            } else {
+                throw new Error('Failed to load copied skybox');
             }
-            const base64 = btoa(chunks.join(''));
-            const extension = fileName.split('.').pop()?.toLowerCase();
-            const mimeType = extension === 'jpg' || extension === 'jpeg'
-                ? 'image/jpeg'
-                : extension === 'gif'
-                    ? 'image/gif'
-                    : 'image/png';
-            dispatch(worldActions.setSkybox({
-                id: fileName,
-                data: base64,
-                mimeType,
-                width: dimensions.width,
-                height: dimensions.height
-            }));
         } catch (error) {
             console.error('Failed to import skybox:', error);
             this.showError('Import Skybox Failed', `Could not import skybox from: ${path}`);
