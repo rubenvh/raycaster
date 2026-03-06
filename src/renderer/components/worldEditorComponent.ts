@@ -2,8 +2,9 @@ import { useAppDispatch } from '../../common/store';
 import { connect } from '../../common/store/store-connector';
 import { 
     IWorldConfigState, RGBColor, DEFAULT_SKY_COLOR, DEFAULT_FLOOR_COLOR,
-    setSkyColor, setFloorColor, setFadeOn, setHorizonDistance, toggleSkyboxEnabled, setSkybox 
+    setSkyColor, setFloorColor, setFadeOn, setHorizonDistance, toggleSkyboxEnabled, setSkybox, setSkyboxRegion
 } from '../../common/store/world-config';
+import { ISkyboxRegion } from '../../common/skybox/model';
 
 const dispatch = useAppDispatch();
 
@@ -117,6 +118,58 @@ input[type="color"] {
     color: #888;
     font-size: 10px;
 }
+.skybox-crop-container {
+    position: relative;
+    width: 100%;
+    margin: 4px 0;
+    cursor: crosshair;
+    user-select: none;
+    border: 1px solid #555;
+    border-radius: 2px;
+    overflow: hidden;
+}
+.skybox-crop-container img {
+    display: block;
+    width: 100%;
+}
+.crop-overlay {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    pointer-events: none;
+}
+.crop-region {
+    position: absolute;
+    border: 2px solid #42a5f5;
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+    pointer-events: none;
+}
+.crop-handle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background: #42a5f5;
+    border: 1px solid #fff;
+    pointer-events: auto;
+    cursor: nwse-resize;
+}
+.crop-handle.tl { top: -4px; left: -4px; cursor: nwse-resize; }
+.crop-handle.tr { top: -4px; right: -4px; cursor: nesw-resize; }
+.crop-handle.bl { bottom: -4px; left: -4px; cursor: nesw-resize; }
+.crop-handle.br { bottom: -4px; right: -4px; cursor: nwse-resize; }
+.region-inputs {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    margin: 3px 0;
+    flex-wrap: wrap;
+}
+.region-inputs span {
+    color: #aaa;
+    font-size: 10px;
+}
+.region-inputs input[type="number"] {
+    width: 3.5em;
+}
 .skybox-controls {
     margin-top: 4px;
 }
@@ -170,8 +223,27 @@ button:hover { background: #555; }
             </select>
             <button id="skybox-import">Import...</button>
         </div>
-        <img id="skybox-preview" class="skybox-preview hidden" />
+        <div id="skybox-crop-container" class="skybox-crop-container hidden">
+            <img id="skybox-preview" />
+            <div class="crop-overlay">
+                <div id="crop-region" class="crop-region">
+                    <div class="crop-handle tl" data-handle="tl"></div>
+                    <div class="crop-handle tr" data-handle="tr"></div>
+                    <div class="crop-handle bl" data-handle="bl"></div>
+                    <div class="crop-handle br" data-handle="br"></div>
+                </div>
+            </div>
+        </div>
         <div id="skybox-info" class="skybox-info"></div>
+        <div id="region-controls" class="hidden">
+            <div class="region-inputs">
+                <span>X</span><input type="number" id="region-x" min="0" />
+                <span>Y</span><input type="number" id="region-y" min="0" />
+                <span>W</span><input type="number" id="region-w" min="1" />
+                <span>H</span><input type="number" id="region-h" min="1" />
+                <button id="region-reset">Reset</button>
+            </div>
+        </div>
     </div>
 </section>
 
@@ -238,6 +310,14 @@ export default class WorldEditorComponent extends HTMLElement {
     private skyboxPreview: HTMLImageElement;
     private skyboxInfo: HTMLElement;
     private skyboxDetails: HTMLElement;
+    private skyboxCropContainer: HTMLElement;
+    private cropRegionEl: HTMLElement;
+    private regionControls: HTMLElement;
+    private regionX: HTMLInputElement;
+    private regionY: HTMLInputElement;
+    private regionW: HTMLInputElement;
+    private regionH: HTMLInputElement;
+    private regionReset: HTMLButtonElement;
 
     // Color elements
     private colorsSection: HTMLElement;
@@ -272,6 +352,14 @@ export default class WorldEditorComponent extends HTMLElement {
         this.skyboxPreview = shadowRoot.getElementById('skybox-preview') as HTMLImageElement;
         this.skyboxInfo = shadowRoot.getElementById('skybox-info') as HTMLElement;
         this.skyboxDetails = shadowRoot.getElementById('skybox-details') as HTMLElement;
+        this.skyboxCropContainer = shadowRoot.getElementById('skybox-crop-container') as HTMLElement;
+        this.cropRegionEl = shadowRoot.getElementById('crop-region') as HTMLElement;
+        this.regionControls = shadowRoot.getElementById('region-controls') as HTMLElement;
+        this.regionX = shadowRoot.getElementById('region-x') as HTMLInputElement;
+        this.regionY = shadowRoot.getElementById('region-y') as HTMLInputElement;
+        this.regionW = shadowRoot.getElementById('region-w') as HTMLInputElement;
+        this.regionH = shadowRoot.getElementById('region-h') as HTMLInputElement;
+        this.regionReset = shadowRoot.getElementById('region-reset') as HTMLButtonElement;
 
         // Query color elements
         this.colorsSection = shadowRoot.getElementById('colors-section') as HTMLElement;
@@ -317,6 +405,31 @@ export default class WorldEditorComponent extends HTMLElement {
         // Import button triggers the existing skybox import dialog via IPC
         this.skyboxImport.addEventListener('click', () => {
             window.electronAPI.send('importSkybox-request');
+        });
+
+        // --- Region crop interaction ---
+        this.setupCropInteraction(shadowRoot);
+
+        // Region numeric inputs
+        const regionInputHandler = () => {
+            const skybox = this._config.skybox;
+            if (!skybox) return;
+            const region: ISkyboxRegion = {
+                x: Math.max(0, Math.min(+this.regionX.value, skybox.width - 1)),
+                y: Math.max(0, Math.min(+this.regionY.value, skybox.height - 1)),
+                width: Math.max(1, Math.min(+this.regionW.value, skybox.width)),
+                height: Math.max(1, Math.min(+this.regionH.value, skybox.height)),
+            };
+            dispatch(setSkyboxRegion(region));
+        };
+        this.regionX.addEventListener('change', regionInputHandler);
+        this.regionY.addEventListener('change', regionInputHandler);
+        this.regionW.addEventListener('change', regionInputHandler);
+        this.regionH.addEventListener('change', regionInputHandler);
+
+        // Region reset
+        this.regionReset.addEventListener('click', () => {
+            dispatch(setSkyboxRegion(null));
         });
 
         // Sky color inputs
@@ -400,8 +513,18 @@ export default class WorldEditorComponent extends HTMLElement {
 
         if (config.skybox) {
             this.skyboxPreview.src = `data:${config.skybox.mimeType};base64,${config.skybox.data}`;
-            this.skyboxPreview.classList.remove('hidden');
+            this.skyboxCropContainer.classList.remove('hidden');
+            this.regionControls.classList.remove('hidden');
             this.skyboxInfo.textContent = `${config.skybox.id} (${config.skybox.width}x${config.skybox.height})`;
+
+            // Update region inputs and crop overlay
+            const region = config.skybox.region ?? { x: 0, y: 0, width: config.skybox.width, height: config.skybox.height };
+            this.regionX.value = Math.round(region.x).toString();
+            this.regionY.value = Math.round(region.y).toString();
+            this.regionW.value = Math.round(region.width).toString();
+            this.regionH.value = Math.round(region.height).toString();
+            this.updateCropOverlay(region, config.skybox.width, config.skybox.height);
+
             // Select the current skybox in dropdown if it matches a bundled one
             const matchOption = Array.from(this.skyboxSelect.options).find(o => o.value === config.skybox.id);
             if (matchOption) {
@@ -416,7 +539,8 @@ export default class WorldEditorComponent extends HTMLElement {
                 this.skyboxSelect.value = '__current__';
             }
         } else {
-            this.skyboxPreview.classList.add('hidden');
+            this.skyboxCropContainer.classList.add('hidden');
+            this.regionControls.classList.add('hidden');
             this.skyboxInfo.textContent = '';
             this.skyboxSelect.value = '';
         }
@@ -458,6 +582,148 @@ export default class WorldEditorComponent extends HTMLElement {
             this.skyboxSelect.appendChild(opt);
         }
         opt.textContent = name + ' (imported)';
+    }
+
+    private updateCropOverlay(region: ISkyboxRegion, imgWidth: number, imgHeight: number) {
+        if (imgWidth <= 0 || imgHeight <= 0) return;
+        const pctX = (region.x / imgWidth) * 100;
+        const pctY = (region.y / imgHeight) * 100;
+        const pctW = (region.width / imgWidth) * 100;
+        const pctH = (region.height / imgHeight) * 100;
+        this.cropRegionEl.style.left = `${pctX}%`;
+        this.cropRegionEl.style.top = `${pctY}%`;
+        this.cropRegionEl.style.width = `${pctW}%`;
+        this.cropRegionEl.style.height = `${pctH}%`;
+    }
+
+    private setupCropInteraction(shadowRoot: ShadowRoot) {
+        let dragging = false;
+        let dragType: 'new' | 'tl' | 'tr' | 'bl' | 'br' = 'new';
+        let startX = 0;
+        let startY = 0;
+        let startRegion: ISkyboxRegion = { x: 0, y: 0, width: 0, height: 0 };
+
+        const getImageCoords = (clientX: number, clientY: number): [number, number] => {
+            const rect = this.skyboxCropContainer.getBoundingClientRect();
+            const skybox = this._config.skybox;
+            if (!skybox) return [0, 0];
+            const scaleX = skybox.width / rect.width;
+            const scaleY = skybox.height / rect.height;
+            return [
+                Math.max(0, Math.min(skybox.width, (clientX - rect.left) * scaleX)),
+                Math.max(0, Math.min(skybox.height, (clientY - rect.top) * scaleY))
+            ];
+        };
+
+        // Handle clicks - prevent the image preview from being dragged natively
+        this.skyboxCropContainer.addEventListener('dragstart', (e) => e.preventDefault());
+
+        // Start a new crop region by dragging on the container
+        this.skyboxCropContainer.addEventListener('mousedown', (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            if (target.classList.contains('crop-handle')) {
+                // Handle resize via corner handles
+                dragType = target.dataset.handle as 'tl' | 'tr' | 'bl' | 'br';
+                const skybox = this._config.skybox;
+                if (!skybox) return;
+                const region = skybox.region ?? { x: 0, y: 0, width: skybox.width, height: skybox.height };
+                startRegion = { ...region };
+            } else {
+                // Start a new crop rectangle
+                dragType = 'new';
+                const [ix, iy] = getImageCoords(e.clientX, e.clientY);
+                startRegion = { x: ix, y: iy, width: 0, height: 0 };
+            }
+            [startX, startY] = [e.clientX, e.clientY];
+            dragging = true;
+            e.preventDefault();
+        });
+
+        const onMouseMove = (e: MouseEvent) => {
+            if (!dragging) return;
+            const skybox = this._config.skybox;
+            if (!skybox) return;
+
+            const [curX, curY] = getImageCoords(e.clientX, e.clientY);
+            let region: ISkyboxRegion;
+
+            if (dragType === 'new') {
+                const [sx, sy] = getImageCoords(startX, startY);
+                const x1 = Math.min(sx, curX);
+                const y1 = Math.min(sy, curY);
+                const x2 = Math.max(sx, curX);
+                const y2 = Math.max(sy, curY);
+                region = { x: x1, y: y1, width: x2 - x1, height: y2 - y1 };
+            } else {
+                const rect = this.skyboxCropContainer.getBoundingClientRect();
+                const scaleX = skybox.width / rect.width;
+                const scaleY = skybox.height / rect.height;
+                const dx = (e.clientX - startX) * scaleX;
+                const dy = (e.clientY - startY) * scaleY;
+                region = { ...startRegion };
+
+                if (dragType === 'tl') {
+                    region.x = Math.max(0, startRegion.x + dx);
+                    region.y = Math.max(0, startRegion.y + dy);
+                    region.width = startRegion.width - (region.x - startRegion.x);
+                    region.height = startRegion.height - (region.y - startRegion.y);
+                } else if (dragType === 'tr') {
+                    region.y = Math.max(0, startRegion.y + dy);
+                    region.width = Math.max(1, startRegion.width + dx);
+                    region.height = startRegion.height - (region.y - startRegion.y);
+                } else if (dragType === 'bl') {
+                    region.x = Math.max(0, startRegion.x + dx);
+                    region.width = startRegion.width - (region.x - startRegion.x);
+                    region.height = Math.max(1, startRegion.height + dy);
+                } else if (dragType === 'br') {
+                    region.width = Math.max(1, startRegion.width + dx);
+                    region.height = Math.max(1, startRegion.height + dy);
+                }
+            }
+
+            // Clamp region to image bounds
+            region.x = Math.max(0, Math.min(region.x, skybox.width - 1));
+            region.y = Math.max(0, Math.min(region.y, skybox.height - 1));
+            region.width = Math.max(1, Math.min(region.width, skybox.width - region.x));
+            region.height = Math.max(1, Math.min(region.height, skybox.height - region.y));
+
+            // Round to integers
+            region.x = Math.round(region.x);
+            region.y = Math.round(region.y);
+            region.width = Math.round(region.width);
+            region.height = Math.round(region.height);
+
+            this.updateCropOverlay(region, skybox.width, skybox.height);
+            this.regionX.value = region.x.toString();
+            this.regionY.value = region.y.toString();
+            this.regionW.value = region.width.toString();
+            this.regionH.value = region.height.toString();
+        };
+
+        const onMouseUp = () => {
+            if (!dragging) return;
+            dragging = false;
+            const skybox = this._config.skybox;
+            if (!skybox) return;
+
+            const region: ISkyboxRegion = {
+                x: +this.regionX.value,
+                y: +this.regionY.value,
+                width: +this.regionW.value,
+                height: +this.regionH.value,
+            };
+
+            // If region covers the full image, clear it
+            if (region.x === 0 && region.y === 0 && region.width >= skybox.width && region.height >= skybox.height) {
+                dispatch(setSkyboxRegion(null));
+            } else if (region.width > 0 && region.height > 0) {
+                dispatch(setSkyboxRegion(region));
+            }
+        };
+
+        // Listen on document so dragging outside the container still works
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
     }
 
     private async loadSkyboxList() {

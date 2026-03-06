@@ -1,4 +1,4 @@
-import { ISkyboxSource } from './model';
+import { ISkyboxRegion, ISkyboxSource } from './model';
 
 export class Skybox {
     private canvas: HTMLCanvasElement;
@@ -27,23 +27,32 @@ export class Skybox {
         });
     }
 
+    /** Returns the full-image region. */
+    get fullRegion(): ISkyboxRegion {
+        return { x: 0, y: 0, width: this._source.width, height: this._source.height };
+    }
+
     public drawTiled = (
         target: CanvasRenderingContext2D,
         destX: number,
         destY: number,
         destWidth: number,
         destHeight: number,
-        srcX: number
+        srcX: number,
+        region?: ISkyboxRegion
     ): void => {
-        if (this._source.width <= 0 || this._source.height <= 0) return;
-        const normalizedSrcX = ((srcX % this._source.width) + this._source.width) % this._source.width;
-        const firstWidth = Math.min(destWidth, this._source.width - normalizedSrcX);
+        const r = region ?? this.fullRegion;
+        if (r.width <= 0 || r.height <= 0) return;
+
+        // srcX is an offset within the region, wrap it
+        const normalizedSrcX = ((srcX % r.width) + r.width) % r.width;
+        const firstWidth = Math.min(destWidth, r.width - normalizedSrcX);
         target.drawImage(
             this.canvas,
-            normalizedSrcX,
-            0,
+            r.x + normalizedSrcX,
+            r.y,
             firstWidth,
-            this._source.height,
+            r.height,
             destX,
             destY,
             firstWidth,
@@ -53,10 +62,10 @@ export class Skybox {
         if (remaining > 0) {
             target.drawImage(
                 this.canvas,
-                0,
-                0,
+                r.x,
+                r.y,
                 remaining,
-                this._source.height,
+                r.height,
                 destX + firstWidth,
                 destY,
                 remaining,

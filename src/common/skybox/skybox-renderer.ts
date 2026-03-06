@@ -10,6 +10,7 @@ export class SkyboxRenderer {
 
     public update = (config: IWorldConfigState): void => {
         const source = config.skybox;
+        // Token intentionally excludes region — region changes don't require re-loading the image
         const nextToken = source ? `${source.id}:${source.mimeType}:${source.width}x${source.height}:${source.data.length}` : null;
         if (source && nextToken !== this.skyboxToken) {
             this.skybox = new Skybox(source);
@@ -38,13 +39,15 @@ export class SkyboxRenderer {
         height: number
     ): boolean => {
         if (!config.skyboxEnabled || !this.skybox || !this.skyboxReady) return false;
+        const region = config.skybox?.region;
+        const effectiveWidth = region ? region.width : this.skybox.width;
         const halfHeight = height / 2;
-        const offset = computeSkyboxOffset(camera, this.skybox.width);
+        const offset = computeSkyboxOffset(camera, effectiveWidth);
         context.save();
         context.beginPath();
         context.rect(0, 0, width, halfHeight);
         context.clip();
-        this.skybox.drawTiled(context, 0, 0, width, halfHeight, offset);
+        this.skybox.drawTiled(context, 0, 0, width, halfHeight, offset, region);
         context.restore();
         return true;
     };

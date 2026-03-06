@@ -6,7 +6,7 @@ import wallsReducer, { loadWalls, updateWalls, undo, redo, move, remove, createP
     weldVertices, createRegularPolygon } from './walls';
 import selectionReducer, { addSelectedElement, startNewSelection, clearSelection, selectTreeNode, ISelectionState } from './selection';
 import playerReducer, { initializeCamera, rotateCamera, strafeCamera, moveCamera, changeCameraAngle, changeCameraDepth, IPlayerState } from './player';
-import worldConfigReducer, { initialize as initWorldConfig, toggleFadingStrategy, IWorldConfigState } from './world-config';
+import worldConfigReducer, { initialize as initWorldConfig, toggleFadingStrategy, setSkybox, setSkyboxRegion, IWorldConfigState } from './world-config';
 import uiConfigReducer, { initialize as initUIConfig, toggleTestCanvas, cycleBspDrawMode, BspDrawMode, IUIConfigState } from './ui-config';
 import texturesReducer, { initialize as initTextures, loadTexture, adaptTexture, ITextureLibraryState } from './textures';
 import statsReducer, { statisticsUpdated, IStatsState } from './stats';
@@ -743,10 +743,48 @@ describe('world-config slice', () => {
             expect(state.fadeOn).toBe(0);
         });
     });
+
+    describe('setSkybox', () => {
+        test('sets skybox and enables it', () => {
+            const source = { id: 'test.png', data: 'abc', mimeType: 'image/png', width: 100, height: 50 };
+            const state = worldConfigReducer(initialState, setSkybox(source));
+            expect(state.skybox).toEqual(source);
+            expect(state.skyboxEnabled).toBe(true);
+        });
+
+        test('clears skybox and disables it when null', () => {
+            const source = { id: 'test.png', data: 'abc', mimeType: 'image/png', width: 100, height: 50 };
+            let state = worldConfigReducer(initialState, setSkybox(source));
+            state = worldConfigReducer(state, setSkybox(null));
+            expect(state.skybox).toBeUndefined();
+            expect(state.skyboxEnabled).toBe(false);
+        });
+    });
+
+    describe('setSkyboxRegion', () => {
+        const source = { id: 'test.png', data: 'abc', mimeType: 'image/png', width: 200, height: 100 };
+        const withSkybox: IWorldConfigState = { ...initialState, skybox: source, skyboxEnabled: true };
+
+        test('sets region on existing skybox', () => {
+            const region = { x: 10, y: 20, width: 80, height: 40 };
+            const state = worldConfigReducer(withSkybox, setSkyboxRegion(region));
+            expect(state.skybox?.region).toEqual(region);
+        });
+
+        test('clears region when null', () => {
+            const region = { x: 10, y: 20, width: 80, height: 40 };
+            let state = worldConfigReducer(withSkybox, setSkyboxRegion(region));
+            state = worldConfigReducer(state, setSkyboxRegion(null));
+            expect(state.skybox?.region).toBeUndefined();
+        });
+
+        test('does nothing when no skybox is loaded', () => {
+            const region = { x: 10, y: 20, width: 80, height: 40 };
+            const state = worldConfigReducer(initialState, setSkyboxRegion(region));
+            expect(state.skybox).toBeUndefined();
+        });
+    });
 });
-
-
-// ─── UI Config Slice ─────────────────────────────────────────────
 
 describe('ui-config slice', () => {
     const initialState: IUIConfigState = { enableTestCanvas: undefined, bspDrawMode: BspDrawMode.None };

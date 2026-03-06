@@ -1,5 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { ISkyboxSource } from '../skybox/model';
+import { ISkyboxSource, ISkyboxRegion } from '../skybox/model';
 
 export type RGBColor = [number, number, number];
 
@@ -40,6 +40,11 @@ const slice = createSlice({
     toggleSkyboxEnabled: (state) => {
         state.skyboxEnabled = !state.skyboxEnabled;
     },
+    setSkyboxRegion: (state, action: PayloadAction<ISkyboxRegion | null>) => {
+        if (state.skybox) {
+            state.skybox.region = action.payload ?? undefined;
+        }
+    },
     toggleFadingStrategy: (state) => {
         if (state.fadeOn == null) {
             state.fadeOn = 0;
@@ -65,4 +70,4 @@ const slice = createSlice({
 });
 export default slice.reducer
 // Actions
-export const { initialize, setSkybox, toggleSkyboxEnabled, toggleFadingStrategy, setFadeOn, setHorizonDistance, setSkyColor, setFloorColor } = slice.actions
+export const { initialize, setSkybox, toggleSkyboxEnabled, setSkyboxRegion, toggleFadingStrategy, setFadeOn, setHorizonDistance, setSkyColor, setFloorColor } = slice.actions
