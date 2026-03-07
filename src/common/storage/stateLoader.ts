@@ -4,16 +4,10 @@ import { DEFAULT_CAMERA } from './../camera';
 import { useAppDispatch } from './../store/index';
 import { connect } from './../store/store-connector';
 import { EMPTY_GEOMETRY, storeGeometry } from './../geometry/geometry';
-import { makeCamera } from "../camera";
-import * as cameraActions from '../store/player';
-import * as wallActions  from '../store/walls';
-import * as worldActions  from '../store/world-config';
-import * as selectionActions  from '../store/selection';
-import * as textureActions from '../store/textures';
-import { setBsp } from '../store/bsp-state';
-import { recomputeBspBounds } from '../geometry/bsp/model';
 import { IBSPNode } from '../geometry/bsp/model';
-import { getEmbeddedTextureSources } from '../textures/embedded-textures';
+import * as textureActions from '../store/textures';
+import * as worldActions from '../store/world-config';
+import { loadWorld } from './load-world';
 
 /// <reference path="../../renderer/electron.d.ts" />
 
@@ -110,7 +104,7 @@ export class WorldLoader {
     private clear = (): void => {
         localStorage.removeItem('loadedFile');
         this.loadedFile = null;        
-        this.loadWorld({});
+        loadWorld({});
     };
 
     private save = (): void => {
@@ -126,7 +120,7 @@ export class WorldLoader {
             const data = await window.electronAPI.readFile(filePath);
             // Buffer from IPC becomes Uint8Array in renderer, need to decode it
             const content = new TextDecoder().decode(data);
-            this.loadWorld(JSON.parse(content));
+            loadWorld(JSON.parse(content));
             localStorage.setItem('loadedFile', filePath);
             this.loadedFile = filePath;
         } catch (error) {
@@ -155,26 +149,6 @@ export class WorldLoader {
             console.error('Failed to save file:', error);
             this.showError('Save File Failed', `Could not save world to: ${path}\n\nPlease check that you have write permissions.`);
         }
-    }
-
-    private loadWorld = (w: any): void => {
-        dispatch(selectionActions.clearSelection());
-        // Use saved texture sources, or fall back to embedded textures if none exist
-        const textureSources = (w.textureSources && w.textureSources.length > 0) 
-            ? w.textureSources 
-            : getEmbeddedTextureSources();
-        dispatch(textureActions.initialize(textureSources));
-        dispatch(cameraActions.initializeCamera(w.camera ? makeCamera(w.camera): DEFAULT_CAMERA));
-        dispatch(wallActions.loadWalls(w.geometry || EMPTY_GEOMETRY));
-        const config = w.config || {fadeOn: null};
-        if (config.skybox && config.skyboxEnabled == null) {
-            config.skyboxEnabled = true;
-        }
-        dispatch(worldActions.initialize(config));
-        // Restore BSP: prefer top-level bsp field, fall back to legacy geometry.bsp
-        const savedBsp = w.bsp || (w.geometry && w.geometry.bsp) || null;
-        const bsp = savedBsp ? recomputeBspBounds(savedBsp) : null;
-        dispatch(setBsp(bsp));
     }
 
     private showError = (title: string, message: string): void => {

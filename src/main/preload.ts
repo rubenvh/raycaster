@@ -52,6 +52,8 @@ const validReceiveChannels = [
   'bsp_generate',
   'bsp_cancel',
   // Skybox operations
+  // Player operations
+  'loadMapFile',
 ];
 
 // Whitelist of valid channels for sending messages to main process

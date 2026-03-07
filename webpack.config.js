@@ -67,5 +67,30 @@ module.exports = [
       filename: '[name]-bundle.js',
       path: path.resolve(__dirname, 'src/workers/dist')
     },
+  }),
+  // Player executable: separate main process
+  Object.assign({}, common_config, {
+    target: 'electron-main',
+    entry: {
+      'player-main': './src/main/player-main.ts',
+    },
+    output: {
+      filename: '[name]-bundle.js',
+      path: path.resolve(__dirname, 'src/main/dist')
+    },
+    node: {
+      __dirname: false,
+    },
+  }),
+  // Player executable: renderer process
+  Object.assign({}, common_config, {
+    target: 'web',
+    entry: {
+      player: './src/player/player.ts',
+    },
+    output: {
+      filename: '[name]-bundle.js',
+      path: path.resolve(__dirname, 'src/player/dist')
+    },
   })
 ]

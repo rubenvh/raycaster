@@ -7,6 +7,8 @@
     "start": "npm-run-all build run-electron",
     "build": "webpack --config webpack.config.js",
     "run-electron": "electron .",
+    "play": "npm-run-all build run-player",
+    "run-player": "electron src/main/dist/player-main-bundle.js",
     "test": "jest",
     "test:benchmark": "jest --testPathIgnorePatterns=[] --testPathPattern=benchmark"
   },
