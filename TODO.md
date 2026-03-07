@@ -1,15 +1,17 @@
-- GENERAL: style edit edge component
-- SELECTION: when clicking anywhere in the 3d rendering panel, the system should select the edge that was used to draw the wall that was clicked
+## feature: playing a map without editor
+- build a separate runnable component that is a stripped down version of the software that does not include map editor features
+- only the 3d rendering view is shown
+- code should be shared fearlessly
+- any new features that will be added later that impact the 3d view will have to work automatically in both executables
 
+## brainstorming list of features
+- GENERAL: interactive animation system based on documented plan
+- GENERAL: style edit edge component
 - RENDERING: implement sprites: represent as directed (short) line segments
 - RENDERING: implement doors
 - RENDERING: luminosity on edge as a function of time to implement flickering 
 - RENDERING: implement mirror texture (mirroring surrounding geometry)
-- RENDERING: draw skybox
 - RENDERING: overlay world with a surface of coloured mist gradient. Rays passing this gradient should colour/make fuzzy the geometry behind it. This should replace the fading strategy
-
- WOULD BE NICE
--=============-
 - MAPEDITOR: clickable scrollbars
 - MENU: disable menu items when not appropriate
 - BSP: allow adding hinting split planes drawn by the user
