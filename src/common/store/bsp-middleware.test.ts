@@ -232,7 +232,7 @@ describe('BSP middleware — edge diff tracking', () => {
     });
 
     describe('mergePolygons marks edges as dirty', () => {
-        test('merging polygons removes and adds edges', () => {
+        test('merging polygons removes shared edges and preserves boundary edges', () => {
             const store = createTestStore();
             const geom = createGeometry([
                 [[0, 0], [50, 0], [50, 100], [0, 100]],
@@ -246,9 +246,11 @@ describe('BSP middleware — edge diff tracking', () => {
             
             const bspState = store.getState().bsp;
             expect(bspState.status).toBe('stale');
-            // Shared edges are removed, boundary edges form new polygon
+            // Shared (interior) edges are removed
             expect(bspState.dirtyEdges.removedEdgeIds.size).toBeGreaterThan(0);
-            expect(bspState.dirtyEdges.addedEdgeIds.size).toBeGreaterThan(0);
+            // Boundary edges are preserved with same IDs, so they appear as modified
+            // (not added) because the merge clones edges rather than recreating them
+            expect(bspState.dirtyEdges.modifiedEdgeIds.size).toBeGreaterThan(0);
         });
     });
 

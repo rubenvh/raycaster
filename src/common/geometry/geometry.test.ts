@@ -37,9 +37,10 @@ import {
 } from './geometry';
 import { Vector } from '../math/vector';
 import { IVertexMap } from './vertex';
-import { polygons, materialFactory, resetTestRandom } from '../testing/factories';
+import { polygons, materialFactory, resetTestRandom, COLORS } from '../testing/factories';
 import { BoundingBox, centerOf } from './polygon';
 import { isVertex, isEdge, isPolygon } from '../selection/selectable';
+import { Color, IMaterial } from './properties';
 
 describe('geometry tests', () => {
     beforeEach(() => resetTestRandom());
@@ -1265,6 +1266,135 @@ describe('geometry tests', () => {
             const result = mergePolygons([geometry.polygons[0].id], geometry);
 
             expect(result).toBe(geometry);
+        });
+
+        it('preserves per-edge materials from source polygons', () => {
+            // Two rectangles side by side sharing the edge at x=50
+            const geometry = createGeometry([
+                [[0, 0], [50, 0], [50, 100], [0, 100]],
+                [[50, 0], [100, 0], [100, 100], [50, 100]]
+            ]);
+
+            // Assign distinct materials to each boundary edge
+            const blue: IMaterial = { color: [0, 0, 255, 1] as Color };
+            const green: IMaterial = { color: [0, 255, 0, 1] as Color };
+            // Polygon 0: top edge (0,0)→(50,0), shared (50,0)→(50,100), bottom (50,100)→(0,100), left (0,100)→(0,0)
+            geometry.polygons[0].edges[0].material = { color: [0, 0, 255, 1] as Color }; // top-left: blue
+            geometry.polygons[0].edges[3].material = { color: [0, 255, 0, 1] as Color }; // left: green
+            // Polygon 1: top edge (50,0)→(100,0), right (100,0)→(100,100), bottom (100,100)→(50,100), shared
+            geometry.polygons[1].edges[0].material = { color: [255, 255, 0, 1] as Color }; // top-right: yellow
+            geometry.polygons[1].edges[1].material = { color: [255, 0, 255, 1] as Color }; // right: magenta
+
+            const result = mergePolygons(
+                geometry.polygons.map(p => p.id),
+                geometry
+            );
+
+            expect(result.polygons.length).toBe(1);
+            const merged = result.polygons[0];
+            // The merged polygon should have 6 boundary edges (4 outer + 2 inner removed = 8 - 2 = 6)
+            expect(merged.edges.length).toBe(6);
+
+            // Verify that different edges have different materials (not all uniform)
+            const colorStrings = merged.edges.map(e => {
+                const m = e.material as IMaterial;
+                return m?.color?.join(',');
+            });
+            const uniqueColors = new Set(colorStrings);
+            // We assigned at least 4 distinct colors to boundary edges, so should have multiple
+            expect(uniqueColors.size).toBeGreaterThan(1);
+        });
+
+        it('preserves immaterial flags on boundary edges', () => {
+            const geometry = createGeometry([
+                [[0, 0], [50, 0], [50, 100], [0, 100]],
+                [[50, 0], [100, 0], [100, 100], [50, 100]]
+            ]);
+
+            // Mark one boundary edge as immaterial (e.g., a waterfall)
+            geometry.polygons[0].edges[0].immaterial = true;
+
+            const result = mergePolygons(
+                geometry.polygons.map(p => p.id),
+                geometry
+            );
+
+            expect(result.polygons.length).toBe(1);
+            const merged = result.polygons[0];
+            // At least one boundary edge should still be immaterial
+            const immaterialEdges = merged.edges.filter(e => e.immaterial === true);
+            expect(immaterialEdges.length).toBeGreaterThanOrEqual(1);
+        });
+
+        it('preserves directed (front/back) materials', () => {
+            const geometry = createGeometry([
+                [[0, 0], [50, 0], [50, 100], [0, 100]],
+                [[50, 0], [100, 0], [100, 100], [50, 100]]
+            ]);
+
+            // Assign a directed material [front, back] to a boundary edge
+            const frontMat: IMaterial = { color: [255, 0, 0, 1] as Color };
+            const backMat: IMaterial = { color: [0, 0, 255, 1] as Color };
+            geometry.polygons[0].edges[0].material = [frontMat, backMat];
+
+            const result = mergePolygons(
+                geometry.polygons.map(p => p.id),
+                geometry
+            );
+
+            expect(result.polygons.length).toBe(1);
+            const merged = result.polygons[0];
+            // Find the edge that has a directed material (array)
+            const directedEdge = merged.edges.find(e => Array.isArray(e.material));
+            expect(directedEdge).toBeDefined();
+            const [front, back] = directedEdge!.material as [IMaterial, IMaterial];
+            expect(front.color[0]).toBe(255); // red front
+            expect(back.color[2]).toBe(255);  // blue back
+        });
+
+        it('preserves texture references on boundary edges', () => {
+            const geometry = createGeometry([
+                [[0, 0], [50, 0], [50, 100], [0, 100]],
+                [[50, 0], [100, 0], [100, 100], [50, 100]]
+            ]);
+
+            // Assign a textured material to a boundary edge
+            const texturedMat: IMaterial = {
+                color: [255, 255, 255, 1] as Color,
+                texture: { id: 'brick-wall', index: 0 }
+            };
+            geometry.polygons[1].edges[1].material = texturedMat;
+
+            const result = mergePolygons(
+                geometry.polygons.map(p => p.id),
+                geometry
+            );
+
+            expect(result.polygons.length).toBe(1);
+            const merged = result.polygons[0];
+            // Find the edge with a texture
+            const texturedEdge = merged.edges.find(e => {
+                const m = e.material as IMaterial;
+                return m?.texture?.id === 'brick-wall';
+            });
+            expect(texturedEdge).toBeDefined();
+        });
+
+        it('does not mutate original polygon edges', () => {
+            const geometry = createGeometry([
+                [[0, 0], [50, 0], [50, 100], [0, 100]],
+                [[50, 0], [100, 0], [100, 100], [50, 100]]
+            ]);
+
+            const originalMaterial = geometry.polygons[0].edges[0].material;
+
+            const result = mergePolygons(
+                geometry.polygons.map(p => p.id),
+                geometry
+            );
+
+            // Original polygon edges should be untouched
+            expect(geometry.polygons[0].edges[0].material).toBe(originalMaterial);
         });
     });
 

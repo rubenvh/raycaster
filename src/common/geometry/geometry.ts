@@ -740,20 +740,21 @@ export const mergePolygons = (polygonIds: IEntityKey[], geometry: IGeometry): IG
 
     if (boundaryEdges.length < 3) return geometry;
 
-    // Trace the boundary: build an adjacency from end vertex to next edge's start
-    const tracePolygon = (edges: IEdge[]): vector.Vector[] => {
+    // Trace the boundary: build an adjacency from end vertex to next edge's start,
+    // preserving the original edge objects (and their materials/properties)
+    const traceBoundary = (edges: IEdge[]): IEdge[] => {
         const edgeMap = new Map<string, IEdge>();
         edges.forEach(e => {
             const key = `${Math.round(e.start.vector[0] * 100)},${Math.round(e.start.vector[1] * 100)}`;
             edgeMap.set(key, e);
         });
 
-        const result: vector.Vector[] = [];
+        const result: IEdge[] = [];
         let current = edges[0];
         const visited = new Set<string>();
 
         for (let i = 0; i < edges.length; i++) {
-            result.push(current.start.vector);
+            result.push(current);
             const endKey = `${Math.round(current.end.vector[0] * 100)},${Math.round(current.end.vector[1] * 100)}`;
             if (visited.has(current.id)) break;
             visited.add(current.id);
@@ -765,16 +766,13 @@ export const mergePolygons = (polygonIds: IEntityKey[], geometry: IGeometry): IG
         return result;
     };
 
-    const mergedVertices = tracePolygon(boundaryEdges);
-    if (mergedVertices.length < 3) return geometry;
+    const tracedEdges = traceBoundary(boundaryEdges);
+    if (tracedEdges.length < 3) return geometry;
 
-    const mergedPolygon = createPolygon(mergedVertices);
-
-    // Copy material from first polygon's first edge
-    const refMaterial = toMerge[0].edges[0]?.material;
-    mergedPolygon.edges.forEach(e => {
-        e.material = cloneMaterial(refMaterial);
-    });
+    // Clone the traced edges to avoid mutating the original polygons,
+    // preserving each edge's material, immaterial flag, and other properties
+    const clonedEdges = tracedEdges.map(e => cloneEdge(e));
+    const mergedPolygon = loadPolygon({ edges: clonedEdges });
 
     // Remove merged polygons, add the new one
     const remaining = geometry.polygons.filter(p => !polygonIds.includes(p.id));
