@@ -2,7 +2,8 @@ import { useAppDispatch } from '../../common/store';
 import { connect } from '../../common/store/store-connector';
 import { 
     IWorldConfigState, RGBColor, DEFAULT_SKY_COLOR, DEFAULT_FLOOR_COLOR,
-    setSkyColor, setFloorColor, setFadeOn, setHorizonDistance, toggleSkyboxEnabled, setSkybox, setSkyboxRegion
+    setSkyColor, setFloorColor, setFadeOn, setHorizonDistance, toggleSkyboxEnabled, setSkybox, setSkyboxRegion,
+    setSkyboxVerticalTiling, setSkyGradient, ISkyGradient
 } from '../../common/store/world-config';
 import { ISkyboxRegion } from '../../common/skybox/model';
 
@@ -244,6 +245,10 @@ button:hover { background: #555; }
                 <button id="region-reset">Reset</button>
             </div>
         </div>
+        <label id="vtiling-label" class="hidden">
+            <input type="checkbox" id="skybox-vtiling" />
+            Vertical Tiling
+        </label>
     </div>
 </section>
 
@@ -255,6 +260,30 @@ button:hover { background: #555; }
         <span class="channel-label">R</span><input type="number" id="sky-r" min="0" max="255" />
         <span class="channel-label">G</span><input type="number" id="sky-g" min="0" max="255" />
         <span class="channel-label">B</span><input type="number" id="sky-b" min="0" max="255" />
+    </div>
+    <label>
+        <input type="checkbox" id="gradient-enabled" />
+        Use Gradient
+    </label>
+    <div id="gradient-details" class="hidden">
+        <h4>Horizon Color</h4>
+        <div class="color-row">
+            <span class="color-tile" id="horizon-tile"></span>
+            <input type="color" id="horizon-picker" />
+            <span class="channel-label">R</span><input type="number" id="horizon-r" min="0" max="255" />
+            <span class="channel-label">G</span><input type="number" id="horizon-g" min="0" max="255" />
+            <span class="channel-label">B</span><input type="number" id="horizon-b" min="0" max="255" />
+        </div>
+        <div class="row">
+            <span>Position</span>
+            <input type="range" id="gradient-position" min="0" max="100" value="50" />
+            <span class="value-label" id="gradient-position-value">50%</span>
+        </div>
+        <div class="row">
+            <span>Width</span>
+            <input type="range" id="gradient-width" min="0" max="100" value="100" />
+            <span class="value-label" id="gradient-width-value">100%</span>
+        </div>
     </div>
     <h4>Floor Color</h4>
     <div class="color-row">
@@ -318,6 +347,8 @@ export default class WorldEditorComponent extends HTMLElement {
     private regionW: HTMLInputElement;
     private regionH: HTMLInputElement;
     private regionReset: HTMLButtonElement;
+    private skyboxVTiling: HTMLInputElement;
+    private vtilingLabel: HTMLElement;
 
     // Color elements
     private colorsSection: HTMLElement;
@@ -326,6 +357,17 @@ export default class WorldEditorComponent extends HTMLElement {
     private skyR: HTMLInputElement;
     private skyG: HTMLInputElement;
     private skyB: HTMLInputElement;
+    private gradientEnabled: HTMLInputElement;
+    private gradientDetails: HTMLElement;
+    private horizonPicker: HTMLInputElement;
+    private horizonTile: HTMLElement;
+    private horizonR: HTMLInputElement;
+    private horizonG: HTMLInputElement;
+    private horizonB: HTMLInputElement;
+    private gradientPosition: HTMLInputElement;
+    private gradientPositionValue: HTMLElement;
+    private gradientWidth: HTMLInputElement;
+    private gradientWidthValue: HTMLElement;
     private floorPicker: HTMLInputElement;
     private floorTile: HTMLElement;
     private floorR: HTMLInputElement;
@@ -360,6 +402,8 @@ export default class WorldEditorComponent extends HTMLElement {
         this.regionW = shadowRoot.getElementById('region-w') as HTMLInputElement;
         this.regionH = shadowRoot.getElementById('region-h') as HTMLInputElement;
         this.regionReset = shadowRoot.getElementById('region-reset') as HTMLButtonElement;
+        this.skyboxVTiling = shadowRoot.getElementById('skybox-vtiling') as HTMLInputElement;
+        this.vtilingLabel = shadowRoot.getElementById('vtiling-label') as HTMLElement;
 
         // Query color elements
         this.colorsSection = shadowRoot.getElementById('colors-section') as HTMLElement;
@@ -368,6 +412,17 @@ export default class WorldEditorComponent extends HTMLElement {
         this.skyR = shadowRoot.getElementById('sky-r') as HTMLInputElement;
         this.skyG = shadowRoot.getElementById('sky-g') as HTMLInputElement;
         this.skyB = shadowRoot.getElementById('sky-b') as HTMLInputElement;
+        this.gradientEnabled = shadowRoot.getElementById('gradient-enabled') as HTMLInputElement;
+        this.gradientDetails = shadowRoot.getElementById('gradient-details') as HTMLElement;
+        this.horizonPicker = shadowRoot.getElementById('horizon-picker') as HTMLInputElement;
+        this.horizonTile = shadowRoot.getElementById('horizon-tile') as HTMLElement;
+        this.horizonR = shadowRoot.getElementById('horizon-r') as HTMLInputElement;
+        this.horizonG = shadowRoot.getElementById('horizon-g') as HTMLInputElement;
+        this.horizonB = shadowRoot.getElementById('horizon-b') as HTMLInputElement;
+        this.gradientPosition = shadowRoot.getElementById('gradient-position') as HTMLInputElement;
+        this.gradientPositionValue = shadowRoot.getElementById('gradient-position-value') as HTMLElement;
+        this.gradientWidth = shadowRoot.getElementById('gradient-width') as HTMLInputElement;
+        this.gradientWidthValue = shadowRoot.getElementById('gradient-width-value') as HTMLElement;
         this.floorPicker = shadowRoot.getElementById('floor-picker') as HTMLInputElement;
         this.floorTile = shadowRoot.getElementById('floor-tile') as HTMLElement;
         this.floorR = shadowRoot.getElementById('floor-r') as HTMLInputElement;
@@ -432,12 +487,20 @@ export default class WorldEditorComponent extends HTMLElement {
             dispatch(setSkyboxRegion(null));
         });
 
+        // Vertical tiling toggle
+        this.skyboxVTiling.addEventListener('change', () => {
+            dispatch(setSkyboxVerticalTiling(this.skyboxVTiling.checked));
+        });
+
         // Sky color inputs
         const skyColorHandler = () => {
             const rgb: RGBColor = [+this.skyR.value, +this.skyG.value, +this.skyB.value];
             this.skyPicker.value = rgbToHex(...rgb);
             this.skyTile.style.backgroundColor = `rgb(${rgb.join(',')})`;
             dispatch(setSkyColor(rgb));
+            if (this._config.skyGradient) {
+                dispatch(setSkyGradient({ ...this._config.skyGradient, topColor: rgb }));
+            }
         };
         this.skyR.addEventListener('change', skyColorHandler);
         this.skyG.addEventListener('change', skyColorHandler);
@@ -449,6 +512,61 @@ export default class WorldEditorComponent extends HTMLElement {
             this.skyB.value = rgb[2].toString();
             this.skyTile.style.backgroundColor = `rgb(${rgb.join(',')})`;
             dispatch(setSkyColor(rgb));
+            if (this._config.skyGradient) {
+                dispatch(setSkyGradient({ ...this._config.skyGradient, topColor: rgb }));
+            }
+        });
+
+        // Gradient toggle
+        this.gradientEnabled.addEventListener('change', () => {
+            if (this.gradientEnabled.checked) {
+                const topColor = this._config.skyColor ?? DEFAULT_SKY_COLOR;
+                const bottomColor: RGBColor = [+this.horizonR.value || topColor[0], +this.horizonG.value || topColor[1], +this.horizonB.value || topColor[2]];
+                dispatch(setSkyGradient({
+                    topColor, bottomColor,
+                    crossoverPosition: +this.gradientPosition.value / 100,
+                    crossoverWidth: +this.gradientWidth.value / 100,
+                }));
+            } else {
+                dispatch(setSkyGradient(null));
+            }
+        });
+
+        // Horizon color inputs (for gradient bottom)
+        const horizonColorHandler = () => {
+            if (!this._config.skyGradient) return;
+            const rgb: RGBColor = [+this.horizonR.value, +this.horizonG.value, +this.horizonB.value];
+            this.horizonPicker.value = rgbToHex(...rgb);
+            this.horizonTile.style.backgroundColor = `rgb(${rgb.join(',')})`;
+            dispatch(setSkyGradient({ ...this._config.skyGradient, bottomColor: rgb }));
+        };
+        this.horizonR.addEventListener('change', horizonColorHandler);
+        this.horizonG.addEventListener('change', horizonColorHandler);
+        this.horizonB.addEventListener('change', horizonColorHandler);
+        this.horizonPicker.addEventListener('input', () => {
+            if (!this._config.skyGradient) return;
+            const rgb = hexToRgb(this.horizonPicker.value);
+            this.horizonR.value = rgb[0].toString();
+            this.horizonG.value = rgb[1].toString();
+            this.horizonB.value = rgb[2].toString();
+            this.horizonTile.style.backgroundColor = `rgb(${rgb.join(',')})`;
+            dispatch(setSkyGradient({ ...this._config.skyGradient, bottomColor: rgb }));
+        });
+
+        // Gradient crossover position slider
+        this.gradientPosition.addEventListener('input', () => {
+            if (!this._config.skyGradient) return;
+            const value = +this.gradientPosition.value;
+            this.gradientPositionValue.textContent = `${value}%`;
+            dispatch(setSkyGradient({ ...this._config.skyGradient, crossoverPosition: value / 100 }));
+        });
+
+        // Gradient crossover width slider
+        this.gradientWidth.addEventListener('input', () => {
+            if (!this._config.skyGradient) return;
+            const value = +this.gradientWidth.value;
+            this.gradientWidthValue.textContent = `${value}%`;
+            dispatch(setSkyGradient({ ...this._config.skyGradient, crossoverWidth: value / 100 }));
         });
 
         // Floor color inputs
@@ -515,7 +633,11 @@ export default class WorldEditorComponent extends HTMLElement {
             this.skyboxPreview.src = `data:${config.skybox.mimeType};base64,${config.skybox.data}`;
             this.skyboxCropContainer.classList.remove('hidden');
             this.regionControls.classList.remove('hidden');
+            this.vtilingLabel.classList.remove('hidden');
             this.skyboxInfo.textContent = `${config.skybox.id} (${config.skybox.width}x${config.skybox.height})`;
+
+            // Update vertical tiling checkbox
+            this.skyboxVTiling.checked = !!config.skybox.verticalTiling;
 
             // Update region inputs and crop overlay
             const region = config.skybox.region ?? { x: 0, y: 0, width: config.skybox.width, height: config.skybox.height };
@@ -541,6 +663,7 @@ export default class WorldEditorComponent extends HTMLElement {
         } else {
             this.skyboxCropContainer.classList.add('hidden');
             this.regionControls.classList.add('hidden');
+            this.vtilingLabel.classList.add('hidden');
             this.skyboxInfo.textContent = '';
             this.skyboxSelect.value = '';
         }
@@ -554,6 +677,25 @@ export default class WorldEditorComponent extends HTMLElement {
         this.skyB.value = skyColor[2].toString();
         this.skyPicker.value = rgbToHex(...skyColor);
         this.skyTile.style.backgroundColor = `rgb(${skyColor.join(',')})`;
+
+        // Gradient section
+        const gradientOn = !!config.skyGradient;
+        this.gradientEnabled.checked = gradientOn;
+        this.gradientDetails.classList.toggle('hidden', !gradientOn);
+        if (gradientOn) {
+            const horizonColor = config.skyGradient.bottomColor;
+            this.horizonR.value = horizonColor[0].toString();
+            this.horizonG.value = horizonColor[1].toString();
+            this.horizonB.value = horizonColor[2].toString();
+            this.horizonPicker.value = rgbToHex(...horizonColor);
+            this.horizonTile.style.backgroundColor = `rgb(${horizonColor.join(',')})`;
+            const pos = Math.round((config.skyGradient.crossoverPosition ?? 0.5) * 100);
+            const wid = Math.round((config.skyGradient.crossoverWidth ?? 1.0) * 100);
+            this.gradientPosition.value = pos.toString();
+            this.gradientPositionValue.textContent = `${pos}%`;
+            this.gradientWidth.value = wid.toString();
+            this.gradientWidthValue.textContent = `${wid}%`;
+        }
 
         this.floorR.value = floorColor[0].toString();
         this.floorG.value = floorColor[1].toString();

@@ -16,6 +16,7 @@ import { drawRect } from '../../drawing/drawing';
 import { createPlane } from '../../math/plane';
 import { getMaterial, isTranslucent } from '../../geometry/properties';
 import { DEFAULT_FLOOR_COLOR, DEFAULT_SKY_COLOR, IWorldConfigState } from '../../store/world-config';
+import { createSkyGradient } from '../common/sky-gradient';
 import { statisticsUpdated } from '../../store/stats';
 import { IMutableEdgeDiff, IBspContext } from '../../store/bsp-state';
 import { isStaleInBsp, collectDirtyEdges } from './zbuffer-core';
@@ -164,6 +165,13 @@ export class ZBufferRenderer implements IRenderer {
 
     private drawSky = () => {
         if (this.skyboxRenderer.draw(this.context, this.camera, this.worldConfig, this.canvas.width, this.canvas.height)) {
+            return;
+        }
+        const gradient = this.worldConfig.skyGradient;
+        if (gradient) {
+            const skyHeight = this.canvas.height / 2;
+            const g = createSkyGradient(this.context, gradient, this.canvas.width, skyHeight);
+            drawRect(this.context, [[0, 0], [this.canvas.width, skyHeight]], g);
             return;
         }
         const [r, g, b] = this.worldConfig.skyColor ?? DEFAULT_SKY_COLOR;

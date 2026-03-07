@@ -6,7 +6,7 @@ import wallsReducer, { loadWalls, updateWalls, undo, redo, move, remove, createP
     weldVertices, createRegularPolygon } from './walls';
 import selectionReducer, { addSelectedElement, startNewSelection, clearSelection, selectTreeNode, ISelectionState } from './selection';
 import playerReducer, { initializeCamera, rotateCamera, strafeCamera, moveCamera, changeCameraAngle, changeCameraDepth, IPlayerState } from './player';
-import worldConfigReducer, { initialize as initWorldConfig, toggleFadingStrategy, setSkybox, setSkyboxRegion, IWorldConfigState } from './world-config';
+import worldConfigReducer, { initialize as initWorldConfig, toggleFadingStrategy, setSkybox, setSkyboxRegion, setSkyboxVerticalTiling, setSkyGradient, IWorldConfigState } from './world-config';
 import uiConfigReducer, { initialize as initUIConfig, toggleTestCanvas, cycleBspDrawMode, BspDrawMode, IUIConfigState } from './ui-config';
 import texturesReducer, { initialize as initTextures, loadTexture, adaptTexture, ITextureLibraryState } from './textures';
 import statsReducer, { statisticsUpdated, IStatsState } from './stats';
@@ -782,6 +782,87 @@ describe('world-config slice', () => {
             const region = { x: 10, y: 20, width: 80, height: 40 };
             const state = worldConfigReducer(initialState, setSkyboxRegion(region));
             expect(state.skybox).toBeUndefined();
+        });
+    });
+
+    describe('setSkyboxVerticalTiling', () => {
+        const source = { id: 'test.png', data: 'abc', mimeType: 'image/png', width: 200, height: 100 };
+        const withSkybox: IWorldConfigState = { ...initialState, skybox: source, skyboxEnabled: true };
+
+        test('enables vertical tiling on existing skybox', () => {
+            const state = worldConfigReducer(withSkybox, setSkyboxVerticalTiling(true));
+            expect(state.skybox?.verticalTiling).toBe(true);
+        });
+
+        test('disables vertical tiling (clears to undefined)', () => {
+            let state = worldConfigReducer(withSkybox, setSkyboxVerticalTiling(true));
+            state = worldConfigReducer(state, setSkyboxVerticalTiling(false));
+            expect(state.skybox?.verticalTiling).toBeUndefined();
+        });
+
+        test('does nothing when no skybox is loaded', () => {
+            const state = worldConfigReducer(initialState, setSkyboxVerticalTiling(true));
+            expect(state.skybox).toBeUndefined();
+        });
+    });
+
+    describe('setSkyGradient', () => {
+        test('sets sky gradient', () => {
+            const gradient = { topColor: [100, 150, 200] as [number, number, number], bottomColor: [50, 80, 120] as [number, number, number] };
+            const state = worldConfigReducer(initialState, setSkyGradient(gradient));
+            expect(state.skyGradient).toEqual(gradient);
+        });
+
+        test('clears sky gradient when null', () => {
+            const gradient = { topColor: [100, 150, 200] as [number, number, number], bottomColor: [50, 80, 120] as [number, number, number] };
+            let state = worldConfigReducer(initialState, setSkyGradient(gradient));
+            state = worldConfigReducer(state, setSkyGradient(null));
+            expect(state.skyGradient).toBeUndefined();
+        });
+
+        test('preserves other config when setting gradient', () => {
+            const configured: IWorldConfigState = { ...initialState, fadeOn: 100, horizonDistance: 500 };
+            const gradient = { topColor: [100, 150, 200] as [number, number, number], bottomColor: [50, 80, 120] as [number, number, number] };
+            const state = worldConfigReducer(configured, setSkyGradient(gradient));
+            expect(state.skyGradient).toEqual(gradient);
+            expect(state.fadeOn).toBe(100);
+            expect(state.horizonDistance).toBe(500);
+        });
+
+        test('stores crossoverPosition and crossoverWidth', () => {
+            const gradient = {
+                topColor: [100, 150, 200] as [number, number, number],
+                bottomColor: [50, 80, 120] as [number, number, number],
+                crossoverPosition: 0.3,
+                crossoverWidth: 0.6,
+            };
+            const state = worldConfigReducer(initialState, setSkyGradient(gradient));
+            expect(state.skyGradient?.crossoverPosition).toBe(0.3);
+            expect(state.skyGradient?.crossoverWidth).toBe(0.6);
+        });
+
+        test('crossover fields default to undefined when not provided', () => {
+            const gradient = { topColor: [100, 150, 200] as [number, number, number], bottomColor: [50, 80, 120] as [number, number, number] };
+            const state = worldConfigReducer(initialState, setSkyGradient(gradient));
+            expect(state.skyGradient?.crossoverPosition).toBeUndefined();
+            expect(state.skyGradient?.crossoverWidth).toBeUndefined();
+        });
+
+        test('updates crossover fields independently of colors', () => {
+            const gradient = {
+                topColor: [100, 150, 200] as [number, number, number],
+                bottomColor: [50, 80, 120] as [number, number, number],
+                crossoverPosition: 0.5,
+                crossoverWidth: 1.0,
+            };
+            let state = worldConfigReducer(initialState, setSkyGradient(gradient));
+            // Update only crossoverPosition via spread
+            const updated = { ...state.skyGradient!, crossoverPosition: 0.8 };
+            state = worldConfigReducer(state, setSkyGradient(updated));
+            expect(state.skyGradient?.crossoverPosition).toBe(0.8);
+            expect(state.skyGradient?.crossoverWidth).toBe(1.0);
+            expect(state.skyGradient?.topColor).toEqual([100, 150, 200]);
+            expect(state.skyGradient?.bottomColor).toEqual([50, 80, 120]);
         });
     });
 });

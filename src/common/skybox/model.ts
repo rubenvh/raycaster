@@ -12,4 +12,5 @@ export type ISkyboxSource = {
     width: number;
     height: number;
     region?: ISkyboxRegion;
+    verticalTiling?: boolean;
 };

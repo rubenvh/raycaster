@@ -39,13 +39,49 @@ export class Skybox {
         destWidth: number,
         destHeight: number,
         srcX: number,
-        region?: ISkyboxRegion
+        region?: ISkyboxRegion,
+        verticalTiling?: boolean
     ): void => {
         const r = region ?? this.fullRegion;
         if (r.width <= 0 || r.height <= 0) return;
 
         // srcX is an offset within the region, wrap it
         const normalizedSrcX = ((srcX % r.width) + r.width) % r.width;
+
+        if (!verticalTiling) {
+            // Original behavior: stretch the region vertically to fill destHeight
+            this.drawHorizontalStrip(target, r, normalizedSrcX, destX, destY, destWidth, destHeight);
+        } else {
+            // Vertical tiling: maintain aspect ratio, repeat vertically
+            // Compute the tile height that preserves the source region's aspect ratio
+            // relative to the destination width. Since the full region width maps to
+            // destWidth, the tile height is destWidth * (r.height / r.width).
+            const tileHeight = destWidth * (r.height / r.width);
+            if (tileHeight <= 0) return;
+
+            let y = destY;
+            while (y < destY + destHeight) {
+                const rowHeight = Math.min(tileHeight, destY + destHeight - y);
+                // If this is a partial row at the bottom, only sample a proportional
+                // slice of the source region height
+                const srcHeight = (rowHeight / tileHeight) * r.height;
+                const partialRegion: ISkyboxRegion = { x: r.x, y: r.y, width: r.width, height: srcHeight };
+                this.drawHorizontalStrip(target, partialRegion, normalizedSrcX, destX, y, destWidth, rowHeight);
+                y += rowHeight;
+            }
+        }
+    };
+
+    /** Draws a single horizontal strip with seamless horizontal wrapping. */
+    private drawHorizontalStrip = (
+        target: CanvasRenderingContext2D,
+        r: ISkyboxRegion,
+        normalizedSrcX: number,
+        destX: number,
+        destY: number,
+        destWidth: number,
+        destHeight: number
+    ): void => {
         const firstWidth = Math.min(destWidth, r.width - normalizedSrcX);
         target.drawImage(
             this.canvas,

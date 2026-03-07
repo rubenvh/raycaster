@@ -10,6 +10,7 @@ import { statisticsUpdated } from '../../store/stats';
 import { useAppDispatch } from '../../store';
 import { connect } from '../../store/store-connector';
 import { DEFAULT_FLOOR_COLOR, DEFAULT_SKY_COLOR, IWorldConfigState } from '../../store/world-config';
+import { createSkyGradient } from '../common/sky-gradient';
 import { textureLib, TextureLibrary } from '../../textures/textureLibrary';
 import { Texture } from '../../textures/texture';
 import { IRenderer } from '../renderer';
@@ -102,6 +103,13 @@ export class BspWalker implements IRenderer {
 
     private drawSky = () => {
         if (this.skyboxRenderer.draw(this.context, this.camera, this.worldConfig, this.canvas.width, this.canvas.height)) {
+            return;
+        }
+        const gradient = this.worldConfig.skyGradient;
+        if (gradient) {
+            const skyHeight = this.canvas.height / 2;
+            const g = createSkyGradient(this.context, gradient, this.canvas.width, skyHeight);
+            drawRect(this.context, [[0, 0], [this.canvas.width, skyHeight]], g);
             return;
         }
         const [r, g, b] = this.worldConfig.skyColor ?? DEFAULT_SKY_COLOR;

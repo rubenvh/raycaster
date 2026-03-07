@@ -40,6 +40,7 @@ export class SkyboxRenderer {
     ): boolean => {
         if (!config.skyboxEnabled || !this.skybox || !this.skyboxReady) return false;
         const region = config.skybox?.region;
+        const verticalTiling = config.skybox?.verticalTiling;
         const effectiveWidth = region ? region.width : this.skybox.width;
         const halfHeight = height / 2;
         const offset = computeSkyboxOffset(camera, effectiveWidth);
@@ -47,7 +48,7 @@ export class SkyboxRenderer {
         context.beginPath();
         context.rect(0, 0, width, halfHeight);
         context.clip();
-        this.skybox.drawTiled(context, 0, 0, width, halfHeight, offset, region);
+        this.skybox.drawTiled(context, 0, 0, width, halfHeight, offset, region, verticalTiling);
         context.restore();
         return true;
     };
