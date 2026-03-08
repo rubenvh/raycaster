@@ -46,6 +46,7 @@ export interface ElectronAPI {
    * @param callback - Function to call when message is received
    */
   on(channel: 'importSkybox', callback: (args: { filePaths: string[] }) => void): void;
+  on(channel: 'danceMode', callback: (args: { enabled: boolean }) => void): void;
   on(channel: string, callback: (...args: any[]) => void): void;
 
   /**

@@ -54,6 +54,8 @@ const validReceiveChannels = [
   // Skybox operations
   // Player operations
   'loadMapFile',
+  // Dance mode
+  'danceMode',
 ];
 
 // Whitelist of valid channels for sending messages to main process

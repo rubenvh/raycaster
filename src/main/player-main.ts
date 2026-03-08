@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog, ipcMain, Menu } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, Menu, session } from 'electron';
 import * as path from 'path';
 import * as url from 'url';
 import * as fs from 'fs';
@@ -7,8 +7,12 @@ import __basedir from '../basepath';
 
 // The player is a stripped-down Electron main process that only shows the 3D view.
 // It accepts a map file path via command-line argument or shows a file-open dialog.
+// When launched with --dance, it activates dance mode (audio-driven camera).
 
 let mainWindow: Electron.BrowserWindow;
+
+// Check for --dance flag in process argv
+const isDanceMode = process.argv.includes('--dance');
 
 function createWindow() {
     const preloadPath = path.join(__dirname, 'preload-bundle.js');
@@ -35,6 +39,20 @@ function createWindow() {
     mainWindow.on('closed', () => {
         mainWindow = null as any;
     });
+
+    // Grant microphone permission for dance mode
+    if (isDanceMode) {
+        session.defaultSession.setPermissionRequestHandler((_webContents, permission, callback) => {
+            if (permission === 'media') {
+                callback(true);
+            } else {
+                callback(false);
+            }
+        });
+    }
+
+    // IPC handler: renderer can query whether dance mode is active
+    ipcMain.handle('dance:isEnabled', async () => isDanceMode);
 
     // Register only the IPC handlers needed for playback
     ipcMain.handle('fs:readFile', async (_event, filePath: string) => {
@@ -111,6 +129,7 @@ function createWindow() {
         {
             label: 'Window',
             submenu: [
+                { role: 'toggleDevTools', accelerator: 'F12' },
                 { role: 'togglefullscreen' },
                 { role: 'minimize' },
                 { type: 'separator' },
@@ -122,11 +141,19 @@ function createWindow() {
 
     // Determine the map file to load.
     // We must wait for BOTH the renderer to finish loading AND the map path
-    // to be resolved before sending the IPC message. Without this, the
+    // to be resolved before sending the map IPC message. Without this, the
     // message arrives before PlayerLoader has registered its listener.
     const rendererReady = new Promise<void>(resolve => {
         mainWindow.webContents.once('did-finish-load', resolve);
     });
+
+    // Send dance mode IPC as soon as the renderer is ready — don't wait for
+    // map file resolution (which may show a file dialog and block for seconds).
+    if (isDanceMode) {
+        rendererReady.then(() => {
+            mainWindow.webContents.send('danceMode', { enabled: true });
+        });
+    }
 
     Promise.all([rendererReady, resolveMapFile()]).then(([, mapFilePath]) => {
         if (mapFilePath) {
@@ -149,6 +176,7 @@ async function resolveMapFile(): Promise<string | null> {
     // Check command-line arguments for a map file path.
     // In packaged apps, argv[0] is electron, argv[1] is the script.
     // Extra args start at argv[2] (or later, skipping Electron flags).
+    // Filter out Electron flags and our own --dance flag
     const args = process.argv.slice(2).filter(arg => !arg.startsWith('--'));
 
     if (args.length > 0) {
