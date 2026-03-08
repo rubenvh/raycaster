@@ -47,9 +47,8 @@ input[type="number"]:focus {
     border-color: #42a5f5;
 }
 </style>
-<div class="row"><span class="label">id:</span><span id="identifier" class="value"></span></div>
-<div class="row"><span class="label">x:</span><input id="x" type="number" min="0" name="x" /></div>
-<div class="row"><span class="label">y:</span><input id="y" type="number" min="0" name="y" /></div>
+<div class="row" id="id-row"><span class="label">id:</span><span id="identifier" class="value"></span></div>
+<div class="row"><span class="label">x:</span><input id="x" type="number" min="0" name="x" /><span class="label" style="margin-left: 4px;">y:</span><input id="y" type="number" min="0" name="y" /></div>
 `;
 
 const dispatch = useAppDispatch();
@@ -58,6 +57,7 @@ export default class VertexEditorComponent extends HTMLElement {
     private _vertex: IVertex;
     private _polygonId: IEntityKey;
     private idElement: HTMLElement;
+    private idRowElement: HTMLElement;
     private xElement: HTMLInputElement;
     private yElement: HTMLInputElement;
     
@@ -67,8 +67,9 @@ export default class VertexEditorComponent extends HTMLElement {
         shadowRoot.appendChild(template.content.cloneNode(true));        
         
         this.idElement = shadowRoot.querySelector('#identifier');
+        this.idRowElement = shadowRoot.querySelector('#id-row');
         this.xElement = shadowRoot.querySelector('#x');
-        this.yElement = shadowRoot.querySelector('#y');        
+        this.yElement = shadowRoot.querySelector('#y');
 
         this.xElement.addEventListener('change', (event) => {
             const x = +(<HTMLInputElement>event.target).value;            
@@ -114,7 +115,7 @@ export default class VertexEditorComponent extends HTMLElement {
 
     private render() {
         this.idElement.innerText = this._vertex.id;
-        this.idElement.parentElement.hidden = this.hideIdentifier;
+        this.idRowElement.hidden = this.hideIdentifier;
         this.xElement.value = this._vertex.vector[0].toString();
         this.yElement.value = this._vertex.vector[1].toString();
     }
