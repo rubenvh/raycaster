@@ -1,11 +1,11 @@
 import { ILineSegment, slope } from '../math/lineSegment';
-import { Vector, ZERO } from "../math/vector";
+import { Vector, ZERO, subtract, perpendicular, normalize, dot } from "../math/vector";
 import { cloneKey, giveIdentity, IEntity } from "./entity";
 import { cloneMaterial, Color, IDirectedMaterial } from "./properties";
 import { areClose, cloneVertex, distance, duplicateVertex, IVertex, makeVertex, NULL_VERTEX } from "./vertex";
 
 type EdgeBase = IEntity & { start: IVertex, end: IVertex, material?: IDirectedMaterial, immaterial?: boolean };
-export type IEdge = EdgeBase & { length: number, slope: number, luminosity: number, segment: ILineSegment };
+export type IEdge = EdgeBase & { length: number, slope: number, segment: ILineSegment };
 export type IStoredEdge = EdgeBase;
 export const storeEdge = (e: IEdge): IStoredEdge => ({
     id: cloneKey(e.id),
@@ -15,11 +15,37 @@ export const storeEdge = (e: IEdge): IStoredEdge => ({
     material: e.material,
 })
 
+/**
+ * @deprecated Legacy slope-based luminosity. Kept for backward compatibility in tests
+ * and as a fallback, but replaced by computeEdgeLuminosity for sun-based lighting.
+ */
 export const determineLuminosity = (slope: number): number => {
     let percentage = 0.4;
     let m = Math.abs(slope || 0);
     if (!isFinite(m)) return 1;
     return percentage + (m / (1 + m)) * (1 - percentage);
+};
+
+const AMBIENT = 0.3;
+
+/**
+ * Compute edge luminosity based on the angle between the edge's normal and the sun direction.
+ * Walls perpendicular to the sun direction are brightest; walls parallel receive only ambient light.
+ * Uses Math.abs(dot) so both sides of a wall are lit equally (appropriate for a top-down 2D world
+ * with an overhead sun).
+ *
+ * @param segment The edge's line segment [start, end]
+ * @param sunDirection A unit vector indicating the sun's light direction
+ * @returns luminosity in [AMBIENT, 1.0]
+ */
+export const computeEdgeLuminosity = (segment: ILineSegment, sunDirection: Vector): number => {
+    const edgeDir = subtract(segment[1], segment[0]);
+    const normal = perpendicular(edgeDir);
+    const n = normalize(normal);
+    // If the edge has zero length, normalize returns NaN — fall back to ambient
+    if (!isFinite(n[0])) return AMBIENT;
+    const d = Math.abs(dot(n, sunDirection));
+    return AMBIENT + (1 - AMBIENT) * d;
 };
 
 
@@ -35,7 +61,6 @@ export const loadEdge = (e: IStoredEdge): IEdge => {
         length: distance(e.start, e.end),
         slope: m,
         segment,
-        luminosity: determineLuminosity(m)
     });
 };
 
@@ -54,7 +79,6 @@ export const duplicateEdge = (e: IEdge, delta: Vector): IEdge => giveIdentity<IE
     length: e.length,
     slope: e.slope,
     segment: e.segment,
-    luminosity: e.luminosity,
 });
 
 export const cloneEdge = (e: IEdge, start: Vector = null, end: Vector = null): IEdge => loadEdge({
@@ -98,7 +122,6 @@ export const clipEdgeLightweight = (e: IEdge, start: Vector = null, end: Vector 
         length: len,
         slope: e.slope,          // same line direction after clipping
         segment,
-        luminosity: e.luminosity // same slope => same luminosity
     };
 };
 

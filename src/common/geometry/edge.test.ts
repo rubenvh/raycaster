@@ -1,10 +1,11 @@
 import { 
     IEdge, NULL_EDGE, makeEdge, loadEdge, storeEdge, 
-    determineLuminosity, duplicateEdge, cloneEdge, clipEdge, createEdges
+    determineLuminosity, computeEdgeLuminosity, duplicateEdge, cloneEdge, clipEdge, createEdges
 } from './edge';
 import { Vector } from '../math/vector';
 import { makeVertex } from './vertex';
 import { Color, IMaterial } from './properties';
+import { ILineSegment } from '../math/lineSegment';
 
 describe('edge tests', () => {
     describe('NULL_EDGE constant', () => {
@@ -100,18 +101,86 @@ describe('edge tests', () => {
             expect(edge.immaterial).toBe(false);
         });
 
-        it('calculates luminosity based on slope', () => {
-            const horizontal = loadEdge({
+        it('does not have a luminosity property (computed at render time)', () => {
+            const edge = loadEdge({
                 start: makeVertex([0, 0]),
                 end: makeVertex([10, 0])
             });
-            const vertical = loadEdge({
-                start: makeVertex([0, 0]),
-                end: makeVertex([0, 10])
-            });
             
-            expect(horizontal.luminosity).toBe(0.4);
-            expect(vertical.luminosity).toBe(1);
+            expect((edge as any).luminosity).toBeUndefined();
+        });
+    });
+
+    describe('computeEdgeLuminosity', () => {
+        const sunOverhead: Vector = [Math.cos(Math.PI / 2), Math.sin(Math.PI / 2)]; // [~0, 1]
+        const sunFromRight: Vector = [1, 0];  // sun at angle 0 (east horizon)
+        const sunFromLeft: Vector = [-1, 0];  // sun at angle PI (west horizon)
+
+        it('horizontal edge with sun overhead has max luminosity', () => {
+            // Edge [0,0]->[10,0], normal is [0,1] (perpendicular to horizontal)
+            // sunOverhead is [~0, 1], dot([0,1],[0,1]) = 1
+            const segment: ILineSegment = [[0, 0], [10, 0]];
+            expect(computeEdgeLuminosity(segment, sunOverhead)).toBeCloseTo(1.0, 2);
+        });
+
+        it('vertical edge with sun overhead has ambient luminosity', () => {
+            // Edge [0,0]->[0,10], normal is [-10,0] normalized = [-1,0]
+            // sunOverhead is [~0, 1], |dot([-1,0],[0,1])| = 0
+            const segment: ILineSegment = [[0, 0], [0, 10]];
+            expect(computeEdgeLuminosity(segment, sunOverhead)).toBeCloseTo(0.3, 2);
+        });
+
+        it('vertical edge with sun from right has max luminosity', () => {
+            // Edge [0,0]->[0,10], normal is [-1,0], sunFromRight is [1,0]
+            // |dot([-1,0],[1,0])| = 1
+            const segment: ILineSegment = [[0, 0], [0, 10]];
+            expect(computeEdgeLuminosity(segment, sunFromRight)).toBeCloseTo(1.0, 2);
+        });
+
+        it('horizontal edge with sun from right has ambient luminosity', () => {
+            // Edge [0,0]->[10,0], normal is [0,1], sunFromRight is [1,0]
+            // |dot([0,1],[1,0])| = 0
+            const segment: ILineSegment = [[0, 0], [10, 0]];
+            expect(computeEdgeLuminosity(segment, sunFromRight)).toBeCloseTo(0.3, 2);
+        });
+
+        it('45-degree edge has intermediate luminosity', () => {
+            // Edge [0,0]->[10,10], normal via perpendicular is [-10,10] normalized = [-0.707, 0.707]
+            // sunOverhead is [~0, 1], |dot([-0.707,0.707],[0,1])| = 0.707
+            const segment: ILineSegment = [[0, 0], [10, 10]];
+            const lum = computeEdgeLuminosity(segment, sunOverhead);
+            expect(lum).toBeGreaterThan(0.3);
+            expect(lum).toBeLessThan(1.0);
+        });
+
+        it('returns ambient for zero-length edge', () => {
+            const segment: ILineSegment = [[5, 5], [5, 5]];
+            expect(computeEdgeLuminosity(segment, sunOverhead)).toBeCloseTo(0.3, 2);
+        });
+
+        it('luminosity is symmetric (both normals give same result)', () => {
+            // Thanks to Math.abs(dot), both sides of the edge get the same luminosity
+            const segmentA: ILineSegment = [[0, 0], [10, 0]];
+            const segmentB: ILineSegment = [[10, 0], [0, 0]]; // reversed direction
+            expect(computeEdgeLuminosity(segmentA, sunFromRight))
+                .toBeCloseTo(computeEdgeLuminosity(segmentB, sunFromRight), 10);
+        });
+
+        it('luminosity values are always in [0.3, 1.0]', () => {
+            const directions: Vector[] = [sunOverhead, sunFromRight, sunFromLeft, [0.5, 0.5]];
+            const segments: ILineSegment[] = [
+                [[0, 0], [10, 0]],
+                [[0, 0], [0, 10]],
+                [[0, 0], [10, 10]],
+                [[0, 0], [7, 3]],
+            ];
+            for (const dir of directions) {
+                for (const seg of segments) {
+                    const lum = computeEdgeLuminosity(seg, dir);
+                    expect(lum).toBeGreaterThanOrEqual(0.3 - 1e-10);
+                    expect(lum).toBeLessThanOrEqual(1.0 + 1e-10);
+                }
+            }
         });
     });
 
