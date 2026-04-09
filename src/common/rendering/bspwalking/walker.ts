@@ -27,7 +27,7 @@ export class BspWalker implements IRenderer {
     private horizonDistance = 300;
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
-    private worldConfig: IWorldConfigState = {};
+    private worldConfig: IWorldConfigState = { sunAngle: Math.PI / 2 };
     private bspTree: IBSPNode | null = null;
     private textureLibrary: TextureLibrary = textureLib;
     private skyboxRenderer = new SkyboxRenderer();

@@ -2,6 +2,7 @@ import { drawTrapezoid } from "../../drawing/drawing";
 import { IEntityKey } from "../../geometry/entity";
 import { IMaterial } from "../../geometry/properties";
 import { Vector } from "../../math/vector";
+import { ILineSegment } from "../../math/lineSegment";
 
 export type WallProps = {
     edgeId: IEntityKey,

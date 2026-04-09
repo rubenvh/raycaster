@@ -5,12 +5,13 @@ import * as raycaster from './raycaster';
 import { drawRect, drawTrapezoid } from '../../drawing/drawing';
 import { Guid } from 'guid-typescript';
 import { lookupMaterialFor, RayHit } from '../../geometry/collision';
+import { computeEdgeLuminosity } from '../../geometry/edge';
 import { Vector } from '../../math/vector';
 import { IMaterial } from '../../geometry/properties';
 import { statisticsUpdated } from '../../store/stats';
 import { useAppDispatch } from '../../store';
 import { connect } from '../../store/store-connector';
-import { DEFAULT_FLOOR_COLOR, DEFAULT_SKY_COLOR, IWorldConfigState } from '../../store/world-config';
+import { DEFAULT_FLOOR_COLOR, DEFAULT_SKY_COLOR, getSunDirection, IWorldConfigState } from '../../store/world-config';
 import { createSkyGradient } from '../common/sky-gradient';
 import { textureLib, TextureLibrary } from '../../textures/textureLibrary';
 import { Texture } from '../../textures/texture';
@@ -43,7 +44,8 @@ export class Renderer3d implements IRenderer {
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
     private bspContext: IBspContext | null = null;
-    private worldConfig: IWorldConfigState = {};
+    private worldConfig: IWorldConfigState = { sunAngle: Math.PI / 2 };
+    private sunDirection: Vector = getSunDirection(Math.PI / 2);
     private textureLibrary: TextureLibrary = textureLib;
     private skyboxRenderer = new SkyboxRenderer();
     // private caster: PartionedRayCaster = new PartionedRayCaster();
@@ -58,6 +60,7 @@ export class Renderer3d implements IRenderer {
         connect(s => {
             this.camera = s.player.camera;
             this.worldConfig = s.worldConfig;
+            this.sunDirection = getSunDirection(s.worldConfig.sunAngle);
             this.skyboxRenderer.update(this.worldConfig);
             this.bspContext = { tree: s.bsp.treeHolder?.node ?? null, dirtyEdges: s.bsp.dirtyEdges };
             if (this.wallGeometry != s.walls.geometry) {
@@ -79,7 +82,7 @@ export class Renderer3d implements IRenderer {
 
         return ({
             edgeId: cloneKey(edgeId), height,
-            edgeLuminosity: hit.edge?.luminosity || 0,
+            edgeLuminosity: hit.edge ? computeEdgeLuminosity(hit.edge.segment, this.sunDirection) : 0,
             material: lookupMaterialFor(hit.intersection, hit.edge),
             rowRange: [startRow, endRow],
             colRange: [this.mapToColumn(rayIndex), this.mapToColumn(rayIndex + 1)],

@@ -1,10 +1,11 @@
 import { Guid } from "guid-typescript";
 import { lookupMaterialFor, RayHit } from "../geometry/collision";
 import { cloneKey, IEntityKey } from "../geometry/entity";
+import { computeEdgeLuminosity } from "../geometry/edge";
 import { IMaterial, isTranslucent } from "../geometry/properties";
 import { Vector } from "../math/vector";
 import { connect } from "../store/store-connector";
-import { IWorldConfigState } from "../store/world-config";
+import { getSunDirection, IWorldConfigState } from "../store/world-config";
 import { Texture } from "../textures/texture";
 import { textureLib, TextureLibrary } from "../textures/textureLibrary";
 import { drawTrapezoid } from "./drawing";
@@ -54,11 +55,13 @@ function getLuminosityOverlay(alpha: number): string {
 
 export class WallPainter {
     private textureLibrary: TextureLibrary = textureLib;
-    private worldConfig: IWorldConfigState = {};
+    private worldConfig: IWorldConfigState = { sunAngle: Math.PI / 2 };
+    private sunDirection: Vector = getSunDirection(Math.PI / 2);
     
     constructor(private context: CanvasRenderingContext2D, private resolution: number, private height: number, private width: number) {
         connect(s => {            
-            this.worldConfig = s.worldConfig;            
+            this.worldConfig = s.worldConfig;
+            this.sunDirection = getSunDirection(s.worldConfig.sunAngle);
         });
     }
 
@@ -72,7 +75,7 @@ export class WallPainter {
         const edgeId = hit.edge && hit.edge.id || Guid.EMPTY;
         return ({
             edgeId: cloneKey(edgeId), height,
-            edgeLuminosity: hit.edge?.luminosity || 0,
+            edgeLuminosity: hit.edge ? computeEdgeLuminosity(hit.edge.segment, this.sunDirection) : 0,
             material: lookupMaterialFor(hit.intersection, hit.edge),
             rowRange: [startRow, endRow],
             colRange: [this.mapToColumn(rayIndex), this.mapToColumn(rayIndex +1)],

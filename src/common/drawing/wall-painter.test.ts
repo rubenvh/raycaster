@@ -7,7 +7,7 @@ import { Vector } from '../math/vector';
 jest.mock('../store/store-connector', () => ({
     connect: jest.fn((cb: Function) => {
         // Call with minimal state so WallPainter initializes
-        cb({ worldConfig: {} });
+        cb({ worldConfig: { sunAngle: Math.PI / 2 } });
         return jest.fn();
     }),
 }));
@@ -58,7 +58,6 @@ describe('WallPainter', () => {
                 start: { id: 'v1', vector: [0, 0] as Vector },
                 end: { id: 'v2', vector: [100, 0] as Vector },
                 segment: [[0, 0], [100, 0]] as any,
-                luminosity: 0.9,
                 length: 100,
                 material: { color: [255, 0, 0, 1] },
             };
@@ -72,7 +71,8 @@ describe('WallPainter', () => {
             const wall = painter.createWall(hit, 0);
             expect(wall.height).toBeGreaterThan(0);
             expect(wall.distance).toBe(20);
-            expect(wall.edgeLuminosity).toBe(0.9);
+            // Sun at PI/2 (overhead), horizontal edge normal is [0,1], sunDir is [0,1] => luminosity = 1.0
+            expect(wall.edgeLuminosity).toBeCloseTo(1.0, 2);
             expect(wall.rowRange[0]).toBeLessThan(wall.rowRange[1]);
         });
 
@@ -82,7 +82,6 @@ describe('WallPainter', () => {
                 start: { id: 'v1', vector: [0, 0] as Vector },
                 end: { id: 'v2', vector: [100, 0] as Vector },
                 segment: [[0, 0], [100, 0]] as any,
-                luminosity: 0.8,
                 length: 100,
                 material: { color: [255, 0, 0, 1] },
             };
