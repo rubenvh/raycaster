@@ -230,11 +230,13 @@ describe('ALL_ACTIONS', () => {
         expect(ALL_ACTIONS).toContain('right');
         expect(ALL_ACTIONS).toContain('turnleft');
         expect(ALL_ACTIONS).toContain('turnright');
+        expect(ALL_ACTIONS).toContain('sun_left');
+        expect(ALL_ACTIONS).toContain('sun_right');
         expect(ALL_ACTIONS).toContain('toggle_test_canvas');
         expect(ALL_ACTIONS).toContain('toggle_draw_bsp');
     });
 
-    test('has 12 actions', () => {
-        expect(ALL_ACTIONS.length).toBe(12);
+    test('has 14 actions', () => {
+        expect(ALL_ACTIONS.length).toBe(14);
     });
 });

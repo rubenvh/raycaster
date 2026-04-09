@@ -1,5 +1,7 @@
 export const ALL_ACTIONS = ["turnleft","turnright","right","left","up","down",
-                            "camera_angle_up","camera_angle_down","camera_depth_up","camera_depth_down", 'toggle_test_canvas', 'toggle_draw_bsp' ] as const;
+                            "camera_angle_up","camera_angle_down","camera_depth_up","camera_depth_down",
+                            "sun_left","sun_right",
+                            'toggle_test_canvas', 'toggle_draw_bsp' ] as const;
 export type Action = typeof ALL_ACTIONS[number]  ;
 export type Flag = {value: boolean, blockKeyDown?: boolean};
 export const makeFlag = (): Flag => ({value: false});
@@ -21,6 +23,8 @@ const Keys: KeyMap = {
     'camera_angle_down': {key: 109 },                   // -    
     'camera_depth_up': {key: 107, ctrl: true },         // +
     'camera_depth_down': {key: 109, ctrl: true },       // -
+    'sun_left': {key: 219 },                            // [
+    'sun_right': {key: 221 },                           // ]
     'toggle_test_canvas': {key: 9},                     // TAB
     'toggle_draw_bsp': {key: 9, ctrl: true}
 }

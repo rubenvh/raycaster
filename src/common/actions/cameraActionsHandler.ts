@@ -2,13 +2,15 @@ import { norm } from "../math/vector";
 import { EMPTY_GEOMETRY } from "../geometry/geometry";
 import { useAppDispatch } from "../store";
 import { CAMERA_MOVE_SPEED, CAMERA_ROTATION_SPEED, changeCameraAngle, changeCameraDepth, moveCamera, rotateCamera, strafeCamera } from "../store/player";
+import { moveSun } from "../store/world-config";
 import { connect } from "../store/store-connector";
 import { bindFlagToKey, Flag, IActionHandler, makeFlag } from "./actions";
 import { ICamera } from "../camera";
 import { IBspContext } from "../store/bsp-state";
 
 const CAMERA_ACTIONS = ["turnleft","turnright","right","left","up","down",
-"camera_angle_up","camera_angle_down","camera_depth_up","camera_depth_down"] as const;
+"camera_angle_up","camera_angle_down","camera_depth_up","camera_depth_down",
+"sun_left","sun_right"] as const;
 type CameraAction = typeof CAMERA_ACTIONS[number];
 
 const dispatch = useAppDispatch();
@@ -82,6 +84,10 @@ export class CameraActionsHandler implements IActionHandler {
         if (this.flags.camera_angle_down.value) dispatch(changeCameraAngle(-1 ));
         if (this.flags.camera_depth_up.value)   dispatch(changeCameraDepth( 1 ));
         if (this.flags.camera_depth_down.value) dispatch(changeCameraDepth(-1 ));
+
+        const sunSpeed = 1.0 * deltaTime;  // ~1 radian/sec, full arc in ~3 seconds
+        if (this.flags.sun_left.value)  dispatch(moveSun( sunSpeed));
+        if (this.flags.sun_right.value) dispatch(moveSun(-sunSpeed));
     }
 
     isActive = () => true;
