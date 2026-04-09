@@ -4,10 +4,12 @@ import { connect } from '../../common/store/store-connector';
 import { IEntityKey } from '../../common/geometry/entity';
 import { useAppDispatch } from '../../common/store';
 import { isEdge } from '../../common/selection/selectable';
-import { IEdge } from '../../common/geometry/edge';
+import { IEdge, computeEdgeLuminosity } from '../../common/geometry/edge';
 import { queryEdge } from '../../common/geometry/geometry';
 import { adaptEdges } from '../../common/store/walls';
 import DirectedMaterialEditorComponent from './directed-material.component';
+import { getSunDirection } from '../../common/store/world-config';
+import { Vector } from '../../common/math/vector';
 
 const template = document.createElement('template');
 template.innerHTML =  /*html*/`
@@ -94,6 +96,7 @@ export default class EdgeEditorComponent extends HTMLElement {
     private materialElement: DirectedMaterialEditorComponent;
     private statsElement: HTMLElement;
     private distanceToCamera: (edge: IEdge) => number;    
+    private sunDirection: Vector = getSunDirection(Math.PI / 2);
 
     constructor() {
         super();
@@ -120,6 +123,7 @@ export default class EdgeEditorComponent extends HTMLElement {
             this.materialElement.selectableTextures = state.textures?.sources ?? [];             
             const selectedElement = state.selection.treeSelection;                        
             this.distanceToCamera = (edge: IEdge): number => distanceToMidPoint(state.player.camera.position, edge.segment);
+            this.sunDirection = getSunDirection(state.worldConfig.sunAngle);
             if (isEdge(selectedElement)) {
                 let edge = queryEdge(selectedElement.edge.id, selectedElement.polygon.id, state.walls.geometry);                
                 if (edge) {
@@ -160,8 +164,9 @@ export default class EdgeEditorComponent extends HTMLElement {
     }
 
     private renderStats() {
+        const lumen = computeEdgeLuminosity(this._edge.segment, this.sunDirection);
         this.statsElement.innerHTML = `
-            <div class="stat-row"><span class="stat-label">auto-lumen</span><span class="stat-value">${this._edge.luminosity.toFixed(2)}</span></div>
+            <div class="stat-row"><span class="stat-label">auto-lumen</span><span class="stat-value">${lumen.toFixed(2)}</span></div>
             <div class="stat-row"><span class="stat-label">length</span><span class="stat-value">${this._edge.length.toFixed(2)}</span></div>
             <div class="stat-row"><span class="stat-label">distance</span><span class="stat-value">${this.distanceToCamera(this._edge).toFixed(2)}</span></div>`;
     }

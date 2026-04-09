@@ -1,9 +1,9 @@
 import { useAppDispatch } from '../../common/store';
 import { connect } from '../../common/store/store-connector';
 import { 
-    IWorldConfigState, RGBColor, DEFAULT_SKY_COLOR, DEFAULT_FLOOR_COLOR,
+    IWorldConfigState, RGBColor, DEFAULT_SKY_COLOR, DEFAULT_FLOOR_COLOR, DEFAULT_SUN_ANGLE,
     setSkyColor, setFloorColor, setFadeOn, setHorizonDistance, toggleSkyboxEnabled, setSkybox, setSkyboxRegion,
-    setSkyboxVerticalTiling, setSkyGradient, ISkyGradient
+    setSkyboxVerticalTiling, setSkyGradient, ISkyGradient, setSunAngle
 } from '../../common/store/world-config';
 import { ISkyboxRegion } from '../../common/skybox/model';
 
@@ -295,6 +295,15 @@ button:hover { background: #555; }
     </div>
 </section>
 
+<section id="lighting-section">
+    <h4>Lighting</h4>
+    <div class="row">
+        <span>Sun</span>
+        <input type="range" id="sun-angle" min="0" max="314" step="1" />
+        <span class="value-label" id="sun-angle-value">90°</span>
+    </div>
+</section>
+
 <section id="fading-section">
     <h4>Fading</h4>
     <label>
@@ -328,7 +337,7 @@ function hexToRgb(hex: string): RGBColor {
 }
 
 export default class WorldEditorComponent extends HTMLElement {
-    private _config: IWorldConfigState = {};
+    private _config: IWorldConfigState = { sunAngle: Math.PI / 2 };
     private _bundledSkyboxes: string[] = [];
     private _skyboxListRefreshing = false;
 
@@ -381,6 +390,10 @@ export default class WorldEditorComponent extends HTMLElement {
     private fadeShadeValue: HTMLElement;
     private fadeDistance: HTMLInputElement;
     private fadeDistanceValue: HTMLElement;
+
+    // Lighting elements
+    private sunAngle: HTMLInputElement;
+    private sunAngleValue: HTMLElement;
 
     constructor() {
         super();
@@ -436,6 +449,10 @@ export default class WorldEditorComponent extends HTMLElement {
         this.fadeShadeValue = shadowRoot.getElementById('fade-shade-value') as HTMLElement;
         this.fadeDistance = shadowRoot.getElementById('fade-distance') as HTMLInputElement;
         this.fadeDistanceValue = shadowRoot.getElementById('fade-distance-value') as HTMLElement;
+
+        // Query lighting elements
+        this.sunAngle = shadowRoot.getElementById('sun-angle') as HTMLInputElement;
+        this.sunAngleValue = shadowRoot.getElementById('sun-angle-value') as HTMLElement;
 
         // --- Event handlers ---
 
@@ -609,6 +626,13 @@ export default class WorldEditorComponent extends HTMLElement {
             dispatch(setHorizonDistance(+this.fadeDistance.value));
         });
 
+        // Sun angle slider
+        this.sunAngle.addEventListener('input', () => {
+            const degrees = Math.round((+this.sunAngle.value / 314) * 180);
+            this.sunAngleValue.textContent = `${degrees}°`;
+            dispatch(setSunAngle((+this.sunAngle.value / 100)));
+        });
+
         // Subscribe to store
         connect(state => {
             if (this._config !== state.worldConfig) {
@@ -714,6 +738,13 @@ export default class WorldEditorComponent extends HTMLElement {
         const horizonDist = config.horizonDistance ?? 300;
         this.fadeDistance.value = horizonDist.toString();
         this.fadeDistanceValue.textContent = horizonDist.toString();
+
+        // Lighting section
+        const sunAngleRad = config.sunAngle ?? DEFAULT_SUN_ANGLE;
+        const sunAngleSlider = Math.round(sunAngleRad * 100);
+        const sunAngleDeg = Math.round((sunAngleRad / Math.PI) * 180);
+        this.sunAngle.value = sunAngleSlider.toString();
+        this.sunAngleValue.textContent = `${sunAngleDeg}°`;
     }
 
     private ensureCurrentOption(name: string) {
