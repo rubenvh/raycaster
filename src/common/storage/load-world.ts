@@ -4,6 +4,7 @@ import { EMPTY_GEOMETRY } from '../geometry/geometry';
 import * as cameraActions from '../store/player';
 import * as wallActions from '../store/walls';
 import * as worldActions from '../store/world-config';
+import { DEFAULT_SUN_ANGLE } from '../store/world-config';
 import * as selectionActions from '../store/selection';
 import * as textureActions from '../store/textures';
 import { setBsp } from '../store/bsp-state';
@@ -32,6 +33,9 @@ export function loadWorld(w: any): void {
     const config = w.config || { fadeOn: null };
     if (config.skybox && config.skyboxEnabled == null) {
         config.skyboxEnabled = true;
+    }
+    if (config.sunAngle == null) {
+        config.sunAngle = DEFAULT_SUN_ANGLE;
     }
     dispatch(worldActions.initialize(config));
     // Restore BSP: prefer top-level bsp field, fall back to legacy geometry.bsp

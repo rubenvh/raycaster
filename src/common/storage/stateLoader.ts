@@ -18,7 +18,7 @@ export class WorldLoader {
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
     private bspTree: IBSPNode | null = null;
-    private worldConfig: IWorldConfigState = {};
+    private worldConfig: IWorldConfigState = { sunAngle: Math.PI / 2 };
     private textureSources: ITextureSource[] = [];
     private unsubscribe: () => void;
 
