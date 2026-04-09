@@ -4,8 +4,10 @@ import { intersectRay } from './querying';
 import { intersectRayPolygons, makeRay, RayHit } from '../collision';
 import { Vector, normalize, subtract } from '../../math/vector';
 import { IBSPNode, isLeafNode, isSplitNode } from './model';
-import { IPolygon } from '../polygon';
-import { isTranslucent, Face } from '../properties';
+import { IPolygon, createPolygon } from '../polygon';
+import { isTranslucent, Face, Color } from '../properties';
+import { splitPolygon } from './splitting';
+import { createPlane } from '../../math/plane';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -524,5 +526,110 @@ describe('BSP intersection tests', () => {
             // The edge should exist (possibly split)
             expect(verticalEdgesAtX120.length).toBeGreaterThan(0);
         });
+    });
+});
+
+describe('BSP splitPolygon — floor/ceiling material propagation', () => {
+    test('splitPolygon propagates floorMaterial to both sub-polygons', () => {
+        const poly = createPolygon([[0, 0], [100, 0], [100, 100], [0, 100]]);
+        poly.floorMaterial = { color: [100, 80, 60, 1] as Color };
+
+        // Split vertically at x=50
+        const plane = createPlane([[50, 0], [50, 100]]);
+        const [front, back] = splitPolygon(poly, plane);
+
+        expect(front.floorMaterial).toBeDefined();
+        expect(front.floorMaterial!.color).toEqual([100, 80, 60, 1]);
+        expect(back.floorMaterial).toBeDefined();
+        expect(back.floorMaterial!.color).toEqual([100, 80, 60, 1]);
+    });
+
+    test('splitPolygon propagates ceilingMaterial to both sub-polygons', () => {
+        const poly = createPolygon([[0, 0], [100, 0], [100, 100], [0, 100]]);
+        poly.ceilingMaterial = { color: [200, 200, 200, 1] as Color };
+
+        const plane = createPlane([[50, 0], [50, 100]]);
+        const [front, back] = splitPolygon(poly, plane);
+
+        expect(front.ceilingMaterial).toBeDefined();
+        expect(front.ceilingMaterial!.color).toEqual([200, 200, 200, 1]);
+        expect(back.ceilingMaterial).toBeDefined();
+        expect(back.ceilingMaterial!.color).toEqual([200, 200, 200, 1]);
+    });
+
+    test('splitPolygon propagates both floor and ceiling materials', () => {
+        const poly = createPolygon([[0, 0], [100, 0], [100, 100], [0, 100]]);
+        poly.floorMaterial = { color: [100, 80, 60, 1] as Color };
+        poly.ceilingMaterial = { color: [200, 200, 200, 1] as Color };
+
+        const plane = createPlane([[50, 0], [50, 100]]);
+        const [front, back] = splitPolygon(poly, plane);
+
+        expect(front.floorMaterial!.color).toEqual([100, 80, 60, 1]);
+        expect(front.ceilingMaterial!.color).toEqual([200, 200, 200, 1]);
+        expect(back.floorMaterial!.color).toEqual([100, 80, 60, 1]);
+        expect(back.ceilingMaterial!.color).toEqual([200, 200, 200, 1]);
+    });
+
+    test('splitPolygon does not add materials when source polygon has none', () => {
+        const poly = createPolygon([[0, 0], [100, 0], [100, 100], [0, 100]]);
+        // No floor/ceiling materials set
+
+        const plane = createPlane([[50, 0], [50, 100]]);
+        const [front, back] = splitPolygon(poly, plane);
+
+        expect(front.floorMaterial).toBeUndefined();
+        expect(front.ceilingMaterial).toBeUndefined();
+        expect(back.floorMaterial).toBeUndefined();
+        expect(back.ceilingMaterial).toBeUndefined();
+    });
+
+    test('splitPolygon clones materials (not shared references)', () => {
+        const poly = createPolygon([[0, 0], [100, 0], [100, 100], [0, 100]]);
+        const floorMat = { color: [100, 80, 60, 1] as Color };
+        poly.floorMaterial = floorMat;
+
+        const plane = createPlane([[50, 0], [50, 100]]);
+        const [front, back] = splitPolygon(poly, plane);
+
+        // Materials should be clones, not the same reference
+        expect(front.floorMaterial).not.toBe(floorMat);
+        expect(back.floorMaterial).not.toBe(floorMat);
+        expect(front.floorMaterial).not.toBe(back.floorMaterial);
+    });
+
+    test('buildBspTree preserves floor/ceiling materials through splits', () => {
+        // Create a non-convex polygon that BSP will split
+        const geom = createGeometry([
+            [[0, 0], [200, 0], [200, 200], [100, 100], [0, 200]],
+        ]);
+        geom.polygons[0].floorMaterial = { color: [100, 80, 60, 1] as Color };
+        geom.polygons[0].ceilingMaterial = { color: [200, 200, 200, 1] as Color };
+
+        const tree = buildBspTree(geom.polygons);
+
+        // Collect all polygons from BSP
+        const allPolygons: IPolygon[] = [];
+        function collectPolygons(node: IBSPNode): void {
+            if (isLeafNode(node)) {
+                allPolygons.push(...node.polygons);
+            } else if (isSplitNode(node)) {
+                allPolygons.push(...node.coplanar);
+                collectPolygons(node.front);
+                collectPolygons(node.back);
+            }
+        }
+        collectPolygons(tree);
+
+        // All split fragments with this polygon's ID should have the materials
+        const originalId = geom.polygons[0].id;
+        const matchingPolys = allPolygons.filter(p => p.id === originalId);
+        expect(matchingPolys.length).toBeGreaterThanOrEqual(1);
+        for (const p of matchingPolys) {
+            expect(p.floorMaterial).toBeDefined();
+            expect(p.floorMaterial!.color).toEqual([100, 80, 60, 1]);
+            expect(p.ceilingMaterial).toBeDefined();
+            expect(p.ceilingMaterial!.color).toEqual([200, 200, 200, 1]);
+        }
     });
 });

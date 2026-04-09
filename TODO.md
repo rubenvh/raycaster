@@ -6,7 +6,6 @@
 
 ## brainstorming list of features
 - GENERAL: interactive animation system based on documented plan
-- GENERAL: style edit edge component
 - RENDERING: implement floor rendering of polygons (with textures)
 - RENDERING: implement ceiling rendering of polygons (with textures)
 - RENDERING: implement polygon heights -> 

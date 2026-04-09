@@ -21,6 +21,9 @@ import { statisticsUpdated } from '../../store/stats';
 import { IMutableEdgeDiff, IBspContext } from '../../store/bsp-state';
 import { isStaleInBsp, collectDirtyEdges } from './zbuffer-core';
 import { SkyboxRenderer } from '../../skybox/skybox-renderer';
+import { IPolygon } from '../../geometry/polygon';
+import { buildPolygonGrid, IPolygonGrid } from '../../geometry/polygon-grid';
+import { renderFloors, buildColumnBounds, IFloorRendererConfig } from './floor-renderer';
 // T3.8: Removed PriorityDeque import — replaced with sorted array for small collections
 
 const dispatch = useAppDispatch();
@@ -39,6 +42,8 @@ export class ZBufferRenderer implements IRenderer {
     private lastUpdated;
     private buffer: ZBuffer;  // Persistent buffer
     private skyboxRenderer = new SkyboxRenderer();
+    /** Polygons visited during the last BSP walk, for floor/ceiling rendering prefilter */
+    private visiblePolygons: IPolygon[] = [];
     
     constructor(private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');        
@@ -81,9 +86,14 @@ export class ZBufferRenderer implements IRenderer {
         const dirtyEdges = this.bspContext?.dirtyEdges;
         const shouldCollectStats = !this.lastUpdated || performance.now() - this.lastUpdated > 1000;
         let clippedSegments: {segment: ILineSegment, depth: number}[] = shouldCollectStats ? [] : null;
+        this.visiblePolygons = [];
         walkWithFrustum(this.bspContext?.tree, this.camera.position, this.camera.planes, (ps => {
             let increment = 0;
             for (let p of ps) {
+                // Collect polygon for floor/ceiling rendering prefilter
+                if (p.floorMaterial != null || p.ceilingMaterial != null) {
+                    this.visiblePolygons.push(p);
+                }
                 for (let e of p.edges) {
                     if (e.material == null) continue;
                     
@@ -129,7 +139,32 @@ export class ZBufferRenderer implements IRenderer {
         const startDrawing = performance.now();
         // this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.drawSky();
-        this.drawFloor();        
+        this.drawFloor();
+
+        // Per-polygon floor/ceiling rendering
+        if (this.visiblePolygons.length > 0) {
+            const grid = buildPolygonGrid(this.visiblePolygons);
+            const columnBounds = buildColumnBounds(
+                (col) => this.buffer.getNearestWallBoundsForColumn(col),
+                this.resolution,
+                this.height,
+            );
+            const floorConfig: IFloorRendererConfig = {
+                screenWidth: this.width,
+                screenHeight: this.height,
+                halfHeightConstant: 5, // half of the 10 in wallHeight = 10 * screenHeight / distance
+            };
+            renderFloors(
+                this.context,
+                this.camera,
+                this.buffer.getRays(),
+                columnBounds,
+                grid,
+                floorConfig,
+                this.worldConfig,
+            );
+        }
+
         this.buffer.render();
         const endDrawing = performance.now();
         
@@ -313,6 +348,22 @@ export class ZBuffer {
             this.cols[i].clear();
         }
     }
+
+    /**
+     * Get the nearest wall's row range for a specific column, or null if empty.
+     * Used by the floor/ceiling renderer.
+     */
+    public getNearestWallBoundsForColumn(col: number): [number, number] | null {
+        return this.cols[col]?.getNearestWallBounds() ?? null;
+    }
+
+    /**
+     * Get the camera rays array.
+     */
+    public getRays(): IRay[] {
+        return this.rays;
+    }
+
     public updateCamera(camera: ICamera): void {
         this.camera = camera;
         this.rays = makeRays(this.resolution, this.camera);
@@ -361,6 +412,17 @@ export class ZBufferColumn {
             this.hasOpaqueWall = true;
         }
         return this;
+    }
+
+    /**
+     * Get the nearest wall's row range [top, bottom], or null if the column is empty.
+     * Does NOT consume the wall — used by floor/ceiling renderer before wall rendering.
+     */
+    public getNearestWallBounds(): [number, number] | null {
+        if (this.count === 0) return null;
+        // walls[0] is the nearest (sorted ascending by distance)
+        const w = this.walls[0];
+        return w.rowRange;
     }
 
     public shift(): WallProps {

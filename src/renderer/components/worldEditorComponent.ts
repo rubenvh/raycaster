@@ -1,11 +1,12 @@
 import { useAppDispatch } from '../../common/store';
 import { connect } from '../../common/store/store-connector';
 import { 
-    IWorldConfigState, RGBColor, DEFAULT_SKY_COLOR, DEFAULT_FLOOR_COLOR, DEFAULT_SUN_ANGLE,
-    setSkyColor, setFloorColor, setFadeOn, setHorizonDistance, toggleSkyboxEnabled, setSkybox, setSkyboxRegion,
+    IWorldConfigState, RGBColor, DEFAULT_SKY_COLOR, DEFAULT_FLOOR_COLOR, DEFAULT_FLOOR_MATERIAL, DEFAULT_SUN_ANGLE,
+    setSkyColor, setFloorColor, setFloorMaterial, setFadeOn, setHorizonDistance, toggleSkyboxEnabled, setSkybox, setSkyboxRegion,
     setSkyboxVerticalTiling, setSkyGradient, ISkyGradient, setSunAngle
 } from '../../common/store/world-config';
 import { ISkyboxRegion } from '../../common/skybox/model';
+import MaterialEditorComponent from './materialEditorComponent';
 
 const dispatch = useAppDispatch();
 
@@ -285,14 +286,8 @@ button:hover { background: #555; }
             <span class="value-label" id="gradient-width-value">100%</span>
         </div>
     </div>
-    <h4>Floor Color</h4>
-    <div class="color-row">
-        <span class="color-tile" id="floor-tile"></span>
-        <input type="color" id="floor-picker" />
-        <span class="channel-label">R</span><input type="number" id="floor-r" min="0" max="255" />
-        <span class="channel-label">G</span><input type="number" id="floor-g" min="0" max="255" />
-        <span class="channel-label">B</span><input type="number" id="floor-b" min="0" max="255" />
-    </div>
+    <h4>Floor Material</h4>
+    <material-editor id="floor_material"></material-editor>
 </section>
 
 <section id="lighting-section">
@@ -377,11 +372,7 @@ export default class WorldEditorComponent extends HTMLElement {
     private gradientPositionValue: HTMLElement;
     private gradientWidth: HTMLInputElement;
     private gradientWidthValue: HTMLElement;
-    private floorPicker: HTMLInputElement;
-    private floorTile: HTMLElement;
-    private floorR: HTMLInputElement;
-    private floorG: HTMLInputElement;
-    private floorB: HTMLInputElement;
+    private floorMaterialElement: MaterialEditorComponent;
 
     // Fading elements
     private fadeEnabled: HTMLInputElement;
@@ -436,11 +427,7 @@ export default class WorldEditorComponent extends HTMLElement {
         this.gradientPositionValue = shadowRoot.getElementById('gradient-position-value') as HTMLElement;
         this.gradientWidth = shadowRoot.getElementById('gradient-width') as HTMLInputElement;
         this.gradientWidthValue = shadowRoot.getElementById('gradient-width-value') as HTMLElement;
-        this.floorPicker = shadowRoot.getElementById('floor-picker') as HTMLInputElement;
-        this.floorTile = shadowRoot.getElementById('floor-tile') as HTMLElement;
-        this.floorR = shadowRoot.getElementById('floor-r') as HTMLInputElement;
-        this.floorG = shadowRoot.getElementById('floor-g') as HTMLInputElement;
-        this.floorB = shadowRoot.getElementById('floor-b') as HTMLInputElement;
+        this.floorMaterialElement = <MaterialEditorComponent>shadowRoot.querySelector('#floor_material');
 
         // Query fading elements
         this.fadeEnabled = shadowRoot.getElementById('fade-enabled') as HTMLInputElement;
@@ -586,23 +573,9 @@ export default class WorldEditorComponent extends HTMLElement {
             dispatch(setSkyGradient({ ...this._config.skyGradient, crossoverWidth: value / 100 }));
         });
 
-        // Floor color inputs
-        const floorColorHandler = () => {
-            const rgb: RGBColor = [+this.floorR.value, +this.floorG.value, +this.floorB.value];
-            this.floorPicker.value = rgbToHex(...rgb);
-            this.floorTile.style.backgroundColor = `rgb(${rgb.join(',')})`;
-            dispatch(setFloorColor(rgb));
-        };
-        this.floorR.addEventListener('change', floorColorHandler);
-        this.floorG.addEventListener('change', floorColorHandler);
-        this.floorB.addEventListener('change', floorColorHandler);
-        this.floorPicker.addEventListener('input', () => {
-            const rgb = hexToRgb(this.floorPicker.value);
-            this.floorR.value = rgb[0].toString();
-            this.floorG.value = rgb[1].toString();
-            this.floorB.value = rgb[2].toString();
-            this.floorTile.style.backgroundColor = `rgb(${rgb.join(',')})`;
-            dispatch(setFloorColor(rgb));
+        // Floor material editor
+        this.floorMaterialElement.addEventListener('change', () => {
+            dispatch(setFloorMaterial(this.floorMaterialElement.material));
         });
 
         // Fade toggle
@@ -635,6 +608,7 @@ export default class WorldEditorComponent extends HTMLElement {
 
         // Subscribe to store
         connect(state => {
+            this.floorMaterialElement.selectableTextures = state.textures?.sources ?? [];
             if (this._config !== state.worldConfig) {
                 this._config = state.worldConfig;
                 this.render();
@@ -695,7 +669,7 @@ export default class WorldEditorComponent extends HTMLElement {
         // Colors section -- visible when skybox is off
         // (even when skybox is on, sky color is still relevant as fallback, but floor always matters)
         const skyColor = config.skyColor ?? DEFAULT_SKY_COLOR;
-        const floorColor = config.floorColor ?? DEFAULT_FLOOR_COLOR;
+        const floorMaterial = config.floorMaterial ?? DEFAULT_FLOOR_MATERIAL;
         this.skyR.value = skyColor[0].toString();
         this.skyG.value = skyColor[1].toString();
         this.skyB.value = skyColor[2].toString();
@@ -721,11 +695,7 @@ export default class WorldEditorComponent extends HTMLElement {
             this.gradientWidthValue.textContent = `${wid}%`;
         }
 
-        this.floorR.value = floorColor[0].toString();
-        this.floorG.value = floorColor[1].toString();
-        this.floorB.value = floorColor[2].toString();
-        this.floorPicker.value = rgbToHex(...floorColor);
-        this.floorTile.style.backgroundColor = `rgb(${floorColor.join(',')})`;
+        this.floorMaterialElement.material = floorMaterial;
 
         // Fading section
         const fadeOn = config.fadeOn != null;

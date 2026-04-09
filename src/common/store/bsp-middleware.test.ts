@@ -2,11 +2,11 @@ import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import walls from './walls';
 import bsp from './bsp-state';
 import selection from './selection';
-import { bspListenerMiddleware, patchBspEdgeMaterials } from './bsp-middleware';
+import { bspListenerMiddleware, patchBspEdgeMaterials, patchBspPolygonSurfaces } from './bsp-middleware';
 import { createGeometry, IGeometry, storeGeometry, EMPTY_GEOMETRY } from '../geometry/geometry';
 import { loadWalls, updateWalls, createPolygon, clonePolygon, splitEdge, 
     move, remove, expandPolygon, splitPolygon, insetPolygon, mergePolygons,
-    reversePolygon, subdivideEdge, extrudeEdge, adaptEdges, undo, redo } from './walls';
+    reversePolygon, subdivideEdge, extrudeEdge, adaptEdges, adaptPolygonSurfaces, undo, redo } from './walls';
 import { setBsp, IBspState } from './bsp-state';
 import { startNewSelection } from './selection';
 import { selectEdge, selectPolygon } from '../selection/selectable';
@@ -15,6 +15,8 @@ import { resetTestRandom } from '../testing/factories';
 import { IEntityKey } from '../geometry/entity';
 import { IBSPNode, isLeafNode, isSplitNode } from '../geometry/bsp/model';
 import { IEdge } from '../geometry/edge';
+import { IPolygon } from '../geometry/polygon';
+import { Color } from '../geometry/properties';
 
 /**
  * Helper: create a fresh store with walls + bsp slices and the middleware.
@@ -671,6 +673,220 @@ describe('BSP middleware — edge diff tracking', () => {
             for (const e of matchingEdges) {
                 expect((e.material as any).color).toEqual([128, 128, 128, 0.5]);
             }
+        });
+    });
+
+    describe('patchBspPolygonSurfaces unit tests', () => {
+        /** Collect all polygons from a BSP tree by walking it. */
+        function collectBspPolygons(tree: IBSPNode): IPolygon[] {
+            const polygons: IPolygon[] = [];
+            function walk(node: IBSPNode): void {
+                if (isLeafNode(node)) {
+                    polygons.push(...node.polygons);
+                } else if (isSplitNode(node)) {
+                    walk(node.front);
+                    polygons.push(...node.coplanar);
+                    walk(node.back);
+                }
+            }
+            walk(tree);
+            return polygons;
+        }
+
+        test('patches floor material on matching polygon in BSP', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 100], [0, 100]]]);
+            const tree = buildBspTree(geom.polygons);
+            const polyId = geom.polygons[0].id!;
+
+            const patches = new Map([[polyId, {
+                floorMaterial: { color: [100, 50, 25, 1] as Color },
+                ceilingMaterial: undefined,
+            }]]);
+
+            patchBspPolygonSurfaces(tree, patches);
+
+            const bspPolygons = collectBspPolygons(tree);
+            const patched = bspPolygons.find(p => p.id === polyId);
+            expect(patched).toBeDefined();
+            expect(patched!.floorMaterial).toEqual({ color: [100, 50, 25, 1] });
+            expect(patched!.ceilingMaterial).toBeUndefined();
+        });
+
+        test('patches ceiling material on matching polygon in BSP', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 100], [0, 100]]]);
+            const tree = buildBspTree(geom.polygons);
+            const polyId = geom.polygons[0].id!;
+
+            const patches = new Map([[polyId, {
+                floorMaterial: undefined,
+                ceilingMaterial: { color: [200, 200, 200, 1] as Color },
+            }]]);
+
+            patchBspPolygonSurfaces(tree, patches);
+
+            const bspPolygons = collectBspPolygons(tree);
+            const patched = bspPolygons.find(p => p.id === polyId);
+            expect(patched).toBeDefined();
+            expect(patched!.ceilingMaterial).toEqual({ color: [200, 200, 200, 1] });
+        });
+
+        test('patches both floor and ceiling materials', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 100], [0, 100]]]);
+            const tree = buildBspTree(geom.polygons);
+            const polyId = geom.polygons[0].id!;
+
+            const patches = new Map([[polyId, {
+                floorMaterial: { color: [100, 50, 25, 1] as Color },
+                ceilingMaterial: { color: [200, 200, 200, 1] as Color },
+            }]]);
+
+            patchBspPolygonSurfaces(tree, patches);
+
+            const bspPolygons = collectBspPolygons(tree);
+            const patched = bspPolygons.find(p => p.id === polyId);
+            expect(patched).toBeDefined();
+            expect(patched!.floorMaterial).toEqual({ color: [100, 50, 25, 1] });
+            expect(patched!.ceilingMaterial).toEqual({ color: [200, 200, 200, 1] });
+        });
+
+        test('empty patches map is a no-op', () => {
+            const geom = createGeometry([[[0, 0], [100, 0], [100, 100], [0, 100]]]);
+            const tree = buildBspTree(geom.polygons);
+
+            patchBspPolygonSurfaces(tree, new Map());
+
+            const bspPolygons = collectBspPolygons(tree);
+            const poly = bspPolygons.find(p => p.id === geom.polygons[0].id);
+            expect(poly!.floorMaterial).toBeUndefined();
+            expect(poly!.ceilingMaterial).toBeUndefined();
+        });
+
+        test('patches split polygon (same ID in multiple BSP nodes)', () => {
+            // Create a non-convex polygon that BSP will split
+            const geom = createGeometry([
+                [[0, 0], [200, 0], [200, 200], [100, 100], [0, 200]],
+            ]);
+            const tree = buildBspTree(geom.polygons);
+            const polyId = geom.polygons[0].id!;
+
+            const patches = new Map([[polyId, {
+                floorMaterial: { color: [50, 100, 150, 1] as Color },
+                ceilingMaterial: { color: [200, 100, 50, 1] as Color },
+            }]]);
+
+            patchBspPolygonSurfaces(tree, patches);
+
+            // All split fragments should have the patched materials
+            const bspPolygons = collectBspPolygons(tree);
+            const matchingPolys = bspPolygons.filter(p => p.id === polyId);
+            expect(matchingPolys.length).toBeGreaterThanOrEqual(1);
+            for (const p of matchingPolys) {
+                expect(p.floorMaterial).toEqual({ color: [50, 100, 150, 1] });
+                expect(p.ceilingMaterial).toEqual({ color: [200, 100, 50, 1] });
+            }
+        });
+    });
+
+    describe('adaptPolygonSurfaces patches BSP in-place (no rebuild)', () => {
+        /** Collect all polygons from a BSP tree by walking it. */
+        function collectBspPolygons(tree: IBSPNode): IPolygon[] {
+            const polygons: IPolygon[] = [];
+            function walk(node: IBSPNode): void {
+                if (isLeafNode(node)) {
+                    polygons.push(...node.polygons);
+                } else if (isSplitNode(node)) {
+                    walk(node.front);
+                    polygons.push(...node.coplanar);
+                    walk(node.back);
+                }
+            }
+            walk(tree);
+            return polygons;
+        }
+
+        test('setting floor material patches BSP, status stays fresh', () => {
+            const store = createTestStore();
+            store.dispatch(createPolygon([[0, 0], [100, 0], [100, 100], [0, 100]]));
+            store.dispatch(setBsp(buildBspTree(store.getState().walls.geometry.polygons)));
+            expect(store.getState().bsp.status).toBe('fresh');
+
+            const polyId = store.getState().walls.geometry.polygons[0].id!;
+            store.dispatch(adaptPolygonSurfaces({
+                polygonId: polyId,
+                floorMaterial: { color: [100, 80, 60, 1] },
+            }));
+
+            const bspState = store.getState().bsp;
+            // Surface-only change should NOT trigger markDirty or status change
+            expect(bspState.status).toBe('fresh');
+            expect(bspState.dirtyCount).toBe(0);
+
+            // BSP polygon should have the new floor material patched in-place
+            const bspPolygons = collectBspPolygons(bspState.treeHolder!.node);
+            const patched = bspPolygons.find(p => p.id === polyId);
+            expect(patched).toBeDefined();
+            expect(patched!.floorMaterial).toEqual({ color: [100, 80, 60, 1] });
+        });
+
+        test('setting ceiling material patches BSP, status stays fresh', () => {
+            const store = createTestStore();
+            store.dispatch(createPolygon([[0, 0], [100, 0], [100, 100], [0, 100]]));
+            store.dispatch(setBsp(buildBspTree(store.getState().walls.geometry.polygons)));
+
+            const polyId = store.getState().walls.geometry.polygons[0].id!;
+            store.dispatch(adaptPolygonSurfaces({
+                polygonId: polyId,
+                ceilingMaterial: { color: [200, 200, 200, 1] },
+            }));
+
+            const bspState = store.getState().bsp;
+            expect(bspState.status).toBe('fresh');
+
+            const bspPolygons = collectBspPolygons(bspState.treeHolder!.node);
+            const patched = bspPolygons.find(p => p.id === polyId);
+            expect(patched).toBeDefined();
+            expect(patched!.ceilingMaterial).toEqual({ color: [200, 200, 200, 1] });
+        });
+
+        test('clearing floor material (null) patches BSP, status stays fresh', () => {
+            const store = createTestStore();
+            store.dispatch(createPolygon([[0, 0], [100, 0], [100, 100], [0, 100]]));
+            store.dispatch(setBsp(buildBspTree(store.getState().walls.geometry.polygons)));
+
+            const polyId = store.getState().walls.geometry.polygons[0].id!;
+            // Set floor material first
+            store.dispatch(adaptPolygonSurfaces({
+                polygonId: polyId,
+                floorMaterial: { color: [100, 80, 60, 1] },
+            }));
+            // Now clear it
+            store.dispatch(adaptPolygonSurfaces({
+                polygonId: polyId,
+                floorMaterial: null,
+            }));
+
+            const bspState = store.getState().bsp;
+            expect(bspState.status).toBe('fresh');
+
+            const bspPolygons = collectBspPolygons(bspState.treeHolder!.node);
+            const patched = bspPolygons.find(p => p.id === polyId);
+            expect(patched).toBeDefined();
+            expect(patched!.floorMaterial).toBeUndefined();
+        });
+
+        test('surface change without BSP tree does not crash', () => {
+            const store = createTestStore();
+            store.dispatch(createPolygon([[0, 0], [100, 0], [100, 100], [0, 100]]));
+            // No BSP set — tree is null
+            expect(store.getState().bsp.treeHolder).toBeNull();
+
+            const polyId = store.getState().walls.geometry.polygons[0].id!;
+            expect(() => {
+                store.dispatch(adaptPolygonSurfaces({
+                    polygonId: polyId,
+                    floorMaterial: { color: [100, 80, 60, 1] },
+                }));
+            }).not.toThrow();
         });
     });
 });

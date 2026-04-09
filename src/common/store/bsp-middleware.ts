@@ -7,6 +7,7 @@ import { IEntityKey } from '../geometry/entity';
 import { IEdgeDiff, EMPTY_DIFF } from '../geometry/bsp/dirty-edge-tracker';
 import { IBSPNode, isLeafNode, isSplitNode } from '../geometry/bsp/model';
 import { markDirty } from './bsp-state';
+import { IMaterial } from '../geometry/properties';
 
 /**
  * Returns true if two edges have identical vertex positions.
@@ -58,6 +59,15 @@ function singleMaterialEquals(a: {color: number[], texture?: any, luminosity?: n
         if (a.texture.id !== b.texture.id || a.texture.index !== b.texture.index) return false;
     }
     return true;
+}
+
+/**
+ * Returns true if two polygons have different floor/ceiling surface materials.
+ */
+function polygonSurfacesChanged(oldPoly: IPolygon, newPoly: IPolygon): boolean {
+    if (!singleMaterialEquals(oldPoly.floorMaterial ?? null, newPoly.floorMaterial ?? null)) return true;
+    if (!singleMaterialEquals(oldPoly.ceilingMaterial ?? null, newPoly.ceilingMaterial ?? null)) return true;
+    return false;
 }
 
 /**
@@ -140,6 +150,55 @@ export function patchBspEdgeMaterials(tree: IBSPNode, materialPatches: Map<IEnti
 }
 
 /**
+ * Walks the BSP tree and patches floor/ceiling materials in-place on BSP polygon
+ * objects whose IDs match entries in the surfacePatches map.
+ * 
+ * This follows the same pragmatic mutation approach as patchBspEdgeMaterials:
+ * the BSP spatial structure is unchanged, we're only updating polygon surface
+ * materials so the renderer sees current values during BSP walk.
+ * 
+ * @param tree - The BSP tree root node
+ * @param surfacePatches - Map from polygon ID to { floorMaterial, ceilingMaterial }
+ */
+export function patchBspPolygonSurfaces(
+    tree: IBSPNode, 
+    surfacePatches: Map<IEntityKey, { floorMaterial?: IMaterial, ceilingMaterial?: IMaterial }>
+): void {
+    if (surfacePatches.size === 0) return;
+
+    function patchPolygons(polygons: IPolygon[]): void {
+        for (let pi = 0; pi < polygons.length; pi++) {
+            let poly = polygons[pi];
+            if (poly.id == null) continue;
+            const patch = surfacePatches.get(poly.id);
+            if (patch == null) continue;
+
+            if (Object.isFrozen(poly)) {
+                poly = { ...poly };
+                if (Object.isFrozen(polygons)) {
+                    polygons = [...polygons];
+                }
+                polygons[pi] = poly;
+            }
+            poly.floorMaterial = patch.floorMaterial;
+            poly.ceilingMaterial = patch.ceilingMaterial;
+        }
+    }
+
+    function walkTree(node: IBSPNode): void {
+        if (isLeafNode(node)) {
+            patchPolygons(node.polygons);
+        } else if (isSplitNode(node)) {
+            walkTree(node.front);
+            patchPolygons(node.coplanar);
+            walkTree(node.back);
+        }
+    }
+
+    walkTree(tree);
+}
+
+/**
  * Result of computing edge diffs, separating spatial changes from material-only changes.
  */
 export interface IEdgeDiffResult {
@@ -147,11 +206,14 @@ export interface IEdgeDiffResult {
     spatialDiff: IEdgeDiff;
     /** Edges with only material/immaterial changes (same vertices) — can be patched in-place */
     materialOnlyEdges: Map<IEntityKey, IEdge>;
+    /** Polygons with only floor/ceiling material changes — can be patched in-place */
+    surfaceOnlyPolygons: Map<IEntityKey, { floorMaterial?: IMaterial, ceilingMaterial?: IMaterial }>;
 }
 
 export const EMPTY_DIFF_RESULT: IEdgeDiffResult = {
     spatialDiff: EMPTY_DIFF,
     materialOnlyEdges: new Map(),
+    surfaceOnlyPolygons: new Map(),
 };
 
 /**
@@ -186,6 +248,7 @@ function computeEdgeDiff(oldGeometry: IGeometry, newGeometry: IGeometry): IEdgeD
     const addedEdgeIds = new Set<IEntityKey>();
     const modifiedEdgeIds = new Set<IEntityKey>();
     const materialOnlyEdges = new Map<IEntityKey, IEdge>();
+    const surfaceOnlyPolygons = new Map<IEntityKey, { floorMaterial?: IMaterial, ceilingMaterial?: IMaterial }>();
     const seenOldPolygonIds = new Set<IEntityKey>();
 
     for (const newPoly of newGeometry.polygons) {
@@ -201,6 +264,14 @@ function computeEdgeDiff(oldGeometry: IGeometry, newGeometry: IGeometry): IEdgeD
             // Polygon was mutated (same ID, different reference)
             // Tier 2: Compare individual edge vertices
             seenOldPolygonIds.add(newPoly.id!);
+
+            // Check for polygon surface material changes (floor/ceiling)
+            if (polygonSurfacesChanged(oldPoly, newPoly)) {
+                surfaceOnlyPolygons.set(newPoly.id!, {
+                    floorMaterial: newPoly.floorMaterial,
+                    ceilingMaterial: newPoly.ceilingMaterial,
+                });
+            }
 
             const oldEdgeMap = new Map<IEntityKey, IEdge>();
             for (const e of oldPoly.edges) {
@@ -251,11 +322,11 @@ function computeEdgeDiff(oldGeometry: IGeometry, newGeometry: IGeometry): IEdgeD
         ? { removedEdgeIds, addedEdgeIds, modifiedEdgeIds }
         : EMPTY_DIFF;
 
-    if (spatialDiff === EMPTY_DIFF && materialOnlyEdges.size === 0) {
+    if (spatialDiff === EMPTY_DIFF && materialOnlyEdges.size === 0 && surfaceOnlyPolygons.size === 0) {
         return EMPTY_DIFF_RESULT;
     }
 
-    return { spatialDiff, materialOnlyEdges };
+    return { spatialDiff, materialOnlyEdges, surfaceOnlyPolygons };
 }
 
 /**
@@ -322,6 +393,14 @@ bspListenerMiddleware.startListening({
             const bspTree = currentState.bsp.treeHolder?.node ?? null;
             if (bspTree != null) {
                 patchBspEdgeMaterials(bspTree, result.materialOnlyEdges);
+            }
+        }
+
+        // Path 3: Surface-only changes → patch BSP polygon floor/ceiling materials in-place
+        if (result.surfaceOnlyPolygons.size > 0) {
+            const bspTree = currentState.bsp.treeHolder?.node ?? null;
+            if (bspTree != null) {
+                patchBspPolygonSurfaces(bspTree, result.surfaceOnlyPolygons);
             }
         }
     },

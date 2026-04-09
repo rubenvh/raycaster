@@ -1,5 +1,6 @@
 import { ZBufferColumn } from './zbuffer-renderer';
 import { ZBufferCore, isStaleInBsp, collectDirtyEdges } from './zbuffer-core';
+import { buildColumnBounds, IColumnWallBounds } from './floor-renderer';
 import { WallProps } from '../../drawing/wall-painter';
 import { IMaterial, Face } from '../../geometry/properties';
 import { geometries, resetTestRandom } from '../../testing/factories';
@@ -158,6 +159,74 @@ describe('ZBufferColumn', () => {
             // null material => (null?.color[3] || 0) === 0, which is not 1
             expect(col.isFull()).toBe(false);
         });
+    });
+
+    describe('getNearestWallBounds', () => {
+        test('returns null for empty column', () => {
+            const col = new ZBufferColumn();
+            expect(col.getNearestWallBounds()).toBeNull();
+        });
+
+        test('returns row range of nearest wall', () => {
+            const col = new ZBufferColumn();
+            const wall = makeWallProps(10, 1);
+            wall.rowRange = [100, 300];
+            col.add(wall);
+            expect(col.getNearestWallBounds()).toEqual([100, 300]);
+        });
+
+        test('returns nearest wall when multiple walls exist', () => {
+            const col = new ZBufferColumn();
+            const far = makeWallProps(50, 1);
+            far.rowRange = [200, 280]; // far wall = shorter
+            const near = makeWallProps(10, 1);
+            near.rowRange = [50, 430]; // near wall = taller
+            col.add(far);
+            col.add(near);
+            // walls[0] = nearest (sorted ascending)
+            expect(col.getNearestWallBounds()).toEqual([50, 430]);
+        });
+
+        test('does not consume the wall (non-destructive)', () => {
+            const col = new ZBufferColumn();
+            col.add(makeWallProps(10, 1));
+            col.getNearestWallBounds();
+            // Wall should still be available for shift
+            expect(col.shift()).toBeDefined();
+        });
+    });
+});
+
+describe('buildColumnBounds', () => {
+    test('returns correct bounds when wall exists', () => {
+        const bounds = buildColumnBounds(
+            (col) => col === 0 ? [100, 380] : null,
+            3,
+            480,
+        );
+        expect(bounds[0]).toEqual({ wallTop: 100, wallBottom: 380, hasWall: true });
+        expect(bounds[1]).toEqual({ wallTop: 240, wallBottom: 240, hasWall: false });
+        expect(bounds[2]).toEqual({ wallTop: 240, wallBottom: 240, hasWall: false });
+    });
+
+    test('handles all columns with walls', () => {
+        const bounds = buildColumnBounds(
+            (col) => [50 + col * 10, 430 - col * 10],
+            3,
+            480,
+        );
+        expect(bounds[0]).toEqual({ wallTop: 50, wallBottom: 430, hasWall: true });
+        expect(bounds[1]).toEqual({ wallTop: 60, wallBottom: 420, hasWall: true });
+        expect(bounds[2]).toEqual({ wallTop: 70, wallBottom: 410, hasWall: true });
+    });
+
+    test('handles no walls', () => {
+        const bounds = buildColumnBounds(() => null, 3, 480);
+        for (const b of bounds) {
+            expect(b.hasWall).toBe(false);
+            expect(b.wallTop).toBe(240);
+            expect(b.wallBottom).toBe(240);
+        }
     });
 });
 

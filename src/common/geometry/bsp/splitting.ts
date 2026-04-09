@@ -7,6 +7,7 @@ import { classifyPointToPlane } from './classification';
 import { PointToPlaneRelation } from "./model";
 import { makeVertex } from '../vertex';
 import { round, Vector } from '../../math/vector';
+import { cloneSimpleMaterial } from '../properties';
 
 /**
  * Given a list of polygons, attempts to compute a good splitting plane.
@@ -80,9 +81,18 @@ export const splitPolygon = (polygon: IPolygon, plane: Plane): [IPolygon, IPolyg
                 cloneEdge(edge));
         }
     }
-    return [
-        loadPolygon({ id: polygon.id, edges: closeIfNeeded(frontEdges) }),
-        loadPolygon({ id: polygon.id, edges: closeIfNeeded(backEdges) })];
+    const frontPoly = loadPolygon({ id: polygon.id, edges: closeIfNeeded(frontEdges) });
+    const backPoly = loadPolygon({ id: polygon.id, edges: closeIfNeeded(backEdges) });
+    // Propagate floor/ceiling materials from source polygon to split results
+    if (polygon.floorMaterial != null) {
+        frontPoly.floorMaterial = cloneSimpleMaterial(polygon.floorMaterial);
+        backPoly.floorMaterial = cloneSimpleMaterial(polygon.floorMaterial);
+    }
+    if (polygon.ceilingMaterial != null) {
+        frontPoly.ceilingMaterial = cloneSimpleMaterial(polygon.ceilingMaterial);
+        backPoly.ceilingMaterial = cloneSimpleMaterial(polygon.ceilingMaterial);
+    }
+    return [frontPoly, backPoly];
 };
 
 /**

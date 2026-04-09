@@ -8,7 +8,7 @@ import { BoundingBox, createPolygon, IPolygon, IStoredPolygon, loadPolygon, cont
 import { lineIntersect, distanceTo, segmentLength } from '../math/lineSegment';
 import { SingleSelectableElement, selectEdge, selectVertex } from '../selection/selectable';
 import { areEqual, areClose, IVertex, IVertexMap, makeVertex } from './vertex';
-import { cloneMaterial } from './properties';
+import { cloneMaterial, cloneSimpleMaterial } from './properties';
 
 export type IStoredGeometry = IEntity & { polygons: IStoredPolygon[]};
 export type IGeometry = IEntity & { polygons: IPolygon[], edgeCount: number, bounds: vector.Vector};
@@ -43,7 +43,11 @@ const forkPolygons = (ids: IEntityKey[], geometry: IGeometry, polygonSplitter: (
         .reduce((acc, _) => acc.concat(..._.edgeSets.map(s => {
             const key = (acc.some(p => p.id === _.p.id) || polygonIdsUsed.includes(_.p.id)) ? createEntityKey() : cloneKey(_.p.id);
             polygonIdsUsed.push(key);
-            return loadPolygon({ id: key, edges: s});
+            const loaded = loadPolygon({ id: key, edges: s});
+            // Propagate floor/ceiling materials from the source polygon
+            loaded.floorMaterial = cloneSimpleMaterial(_.p.floorMaterial);
+            loaded.ceilingMaterial = cloneSimpleMaterial(_.p.ceilingMaterial);
+            return loaded;
         })), [] as IPolygon[]);
 
     const polygons = [...unchanged, ...adaptedPolygons];
@@ -127,8 +131,12 @@ export const selectRegion = (region: BoundingBox, geometry: IGeometry): SingleSe
 };
 
 export const duplicatePolygons = (poligons: IPolygon[], delta: vector.Vector, geometry: IGeometry): [IGeometry, IPolygon[]] => {
-    const newPoligons = poligons.map(p => 
-        loadPolygon(giveIdentity<IStoredPolygon>({edges: p.edges.map(e => duplicateEdge(e, delta))})));
+    const newPoligons = poligons.map(p => {
+        const loaded = loadPolygon(giveIdentity<IStoredPolygon>({edges: p.edges.map(e => duplicateEdge(e, delta))}));
+        loaded.floorMaterial = cloneSimpleMaterial(p.floorMaterial);
+        loaded.ceilingMaterial = cloneSimpleMaterial(p.ceilingMaterial);
+        return loaded;
+    });
     return [
         {...geometry, polygons: [...geometry.polygons, ...newPoligons]},
         newPoligons];
@@ -691,6 +699,9 @@ export const insetPolygon = (polygonId: IEntityKey, dist: number, geometry: IGeo
             e.immaterial = polygon.edges[i].immaterial;
         }
     });
+    // Propagate floor/ceiling materials
+    innerPolygon.floorMaterial = cloneSimpleMaterial(polygon.floorMaterial);
+    innerPolygon.ceilingMaterial = cloneSimpleMaterial(polygon.ceilingMaterial);
 
     const newGeometry = {
         ...geometry,
