@@ -1,5 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { ISkyboxSource, ISkyboxRegion } from '../skybox/model';
+import { Vector } from '../math/vector';
 
 export type RGBColor = [number, number, number];
 
@@ -10,6 +11,17 @@ export type ISkyGradient = {
   crossoverWidth?: number,     // 0–1, how wide the transition band is (default 1.0 = full span)
 };
 
+/**
+ * Compute the 2D sun direction vector from a sun angle.
+ * sunAngle ranges from 0 (east/right horizon) to PI (west/left horizon).
+ * At PI/2 the sun is directly overhead.
+ * Returns a unit vector indicating where the light comes from.
+ */
+export const getSunDirection = (sunAngle: number): Vector =>
+    [Math.cos(sunAngle), Math.sin(sunAngle)];
+
+export const DEFAULT_SUN_ANGLE = Math.PI / 2; // noon — sun directly overhead
+
 // Slice
 export type IWorldConfigState = {
   fadeOn?: number,
@@ -19,6 +31,7 @@ export type IWorldConfigState = {
   skyColor?: RGBColor,
   floorColor?: RGBColor,
   skyGradient?: ISkyGradient,
+  sunAngle: number,
 };
 
 export const DEFAULT_SKY_COLOR: RGBColor = [200, 200, 200];
@@ -32,6 +45,7 @@ const slice = createSlice({
       skyboxEnabled: false,
       skyColor: DEFAULT_SKY_COLOR,
       floorColor: DEFAULT_FLOOR_COLOR,
+      sunAngle: DEFAULT_SUN_ANGLE,
   } as IWorldConfigState,
   reducers: {    
     initialize: (_, action: PayloadAction<IWorldConfigState>) => action.payload,
@@ -82,8 +96,14 @@ const slice = createSlice({
     setSkyGradient: (state, action: PayloadAction<ISkyGradient | null>) => {
         state.skyGradient = action.payload ?? undefined;
     },
+    setSunAngle: (state, action: PayloadAction<number>) => {
+        state.sunAngle = Math.max(0, Math.min(Math.PI, action.payload));
+    },
+    moveSun: (state, action: PayloadAction<number>) => {
+        state.sunAngle = Math.max(0, Math.min(Math.PI, state.sunAngle + action.payload));
+    },
   },
 });
 export default slice.reducer
 // Actions
-export const { initialize, setSkybox, toggleSkyboxEnabled, setSkyboxRegion, setSkyboxVerticalTiling, toggleFadingStrategy, setFadeOn, setHorizonDistance, setSkyColor, setFloorColor, setSkyGradient } = slice.actions
+export const { initialize, setSkybox, toggleSkyboxEnabled, setSkyboxRegion, setSkyboxVerticalTiling, toggleFadingStrategy, setFadeOn, setHorizonDistance, setSkyColor, setFloorColor, setSkyGradient, setSunAngle, moveSun } = slice.actions

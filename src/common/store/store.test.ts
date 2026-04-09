@@ -6,7 +6,7 @@ import wallsReducer, { loadWalls, updateWalls, undo, redo, move, remove, createP
     weldVertices, createRegularPolygon } from './walls';
 import selectionReducer, { addSelectedElement, startNewSelection, clearSelection, selectTreeNode, ISelectionState } from './selection';
 import playerReducer, { initializeCamera, rotateCamera, strafeCamera, moveCamera, changeCameraAngle, changeCameraDepth, IPlayerState } from './player';
-import worldConfigReducer, { initialize as initWorldConfig, toggleFadingStrategy, setSkybox, setSkyboxRegion, setSkyboxVerticalTiling, setSkyGradient, IWorldConfigState } from './world-config';
+import worldConfigReducer, { initialize as initWorldConfig, toggleFadingStrategy, setSkybox, setSkyboxRegion, setSkyboxVerticalTiling, setSkyGradient, setSunAngle, moveSun, DEFAULT_SUN_ANGLE, IWorldConfigState } from './world-config';
 import uiConfigReducer, { initialize as initUIConfig, toggleTestCanvas, cycleBspDrawMode, BspDrawMode, IUIConfigState } from './ui-config';
 import texturesReducer, { initialize as initTextures, loadTexture, adaptTexture, ITextureLibraryState } from './textures';
 import statsReducer, { statisticsUpdated, IStatsState } from './stats';
@@ -688,18 +688,19 @@ describe('player slice', () => {
 // ─── World Config Slice ──────────────────────────────────────────
 
 describe('world-config slice', () => {
-    const initialState: IWorldConfigState = { fadeOn: undefined, horizonDistance: 300, skyboxEnabled: false };
+    const initialState: IWorldConfigState = { fadeOn: undefined, horizonDistance: 300, skyboxEnabled: false, sunAngle: DEFAULT_SUN_ANGLE };
 
-    test('initial state has no fading', () => {
+    test('initial state has no fading and default sun angle', () => {
         const state = worldConfigReducer(undefined, { type: 'unknown' });
         expect(state.fadeOn).toBeUndefined();
         expect(state.horizonDistance).toBe(300);
         expect(state.skyboxEnabled).toBe(false);
+        expect(state.sunAngle).toBe(DEFAULT_SUN_ANGLE);
     });
 
     describe('initialize', () => {
         test('sets world config', () => {
-            const state = worldConfigReducer(initialState, initWorldConfig({ fadeOn: 128, horizonDistance: 500, skyboxEnabled: true }));
+            const state = worldConfigReducer(initialState, initWorldConfig({ fadeOn: 128, horizonDistance: 500, skyboxEnabled: true, sunAngle: DEFAULT_SUN_ANGLE }));
             expect(state.fadeOn).toBe(128);
             expect(state.horizonDistance).toBe(500);
             expect(state.skyboxEnabled).toBe(true);
@@ -713,19 +714,19 @@ describe('world-config slice', () => {
         });
 
         test('increments fadeOn by 10', () => {
-            let state: IWorldConfigState = { fadeOn: 0 };
+            let state: IWorldConfigState = { fadeOn: 0, sunAngle: DEFAULT_SUN_ANGLE };
             state = worldConfigReducer(state, toggleFadingStrategy());
             expect(state.fadeOn).toBe(10);
         });
 
         test('wraps to null after exceeding 245', () => {
-            let state: IWorldConfigState = { fadeOn: 250 };
+            let state: IWorldConfigState = { fadeOn: 250, sunAngle: DEFAULT_SUN_ANGLE };
             state = worldConfigReducer(state, toggleFadingStrategy());
             expect(state.fadeOn).toBeNull();
         });
 
         test('cycles through: undefined -> 0 -> 10 -> ... -> 250 -> null -> 0', () => {
-            let state: IWorldConfigState = { fadeOn: undefined };
+            let state: IWorldConfigState = { fadeOn: undefined, sunAngle: DEFAULT_SUN_ANGLE };
             state = worldConfigReducer(state, toggleFadingStrategy());
             expect(state.fadeOn).toBe(0);
             
@@ -863,6 +864,42 @@ describe('world-config slice', () => {
             expect(state.skyGradient?.crossoverWidth).toBe(1.0);
             expect(state.skyGradient?.topColor).toEqual([100, 150, 200]);
             expect(state.skyGradient?.bottomColor).toEqual([50, 80, 120]);
+        });
+    });
+
+    describe('setSunAngle', () => {
+        test('sets sun angle', () => {
+            const state = worldConfigReducer(initialState, setSunAngle(1.0));
+            expect(state.sunAngle).toBe(1.0);
+        });
+
+        test('clamps sun angle to 0', () => {
+            const state = worldConfigReducer(initialState, setSunAngle(-0.5));
+            expect(state.sunAngle).toBe(0);
+        });
+
+        test('clamps sun angle to PI', () => {
+            const state = worldConfigReducer(initialState, setSunAngle(4.0));
+            expect(state.sunAngle).toBe(Math.PI);
+        });
+    });
+
+    describe('moveSun', () => {
+        test('moves sun by delta', () => {
+            const state = worldConfigReducer(initialState, moveSun(0.1));
+            expect(state.sunAngle).toBeCloseTo(DEFAULT_SUN_ANGLE + 0.1, 10);
+        });
+
+        test('clamps to 0 when moving past left horizon', () => {
+            const atLeft: IWorldConfigState = { ...initialState, sunAngle: 0.05 };
+            const state = worldConfigReducer(atLeft, moveSun(-0.5));
+            expect(state.sunAngle).toBe(0);
+        });
+
+        test('clamps to PI when moving past right horizon', () => {
+            const atRight: IWorldConfigState = { ...initialState, sunAngle: Math.PI - 0.05 };
+            const state = worldConfigReducer(atRight, moveSun(0.5));
+            expect(state.sunAngle).toBe(Math.PI);
         });
     });
 });
