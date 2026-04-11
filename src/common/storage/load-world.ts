@@ -37,6 +37,11 @@ export function loadWorld(w: any): void {
     if (config.sunAngle == null) {
         config.sunAngle = DEFAULT_SUN_ANGLE;
     }
+    // Backward compatibility: convert old floorColor [r,g,b] to floorMaterial {color: [r,g,b,1]}
+    if (config.floorColor && !config.floorMaterial) {
+        const [r, g, b] = config.floorColor;
+        config.floorMaterial = { color: [r, g, b, 1] };
+    }
     dispatch(worldActions.initialize(config));
     // Restore BSP: prefer top-level bsp field, fall back to legacy geometry.bsp
     const savedBsp = w.bsp || (w.geometry && w.geometry.bsp) || null;

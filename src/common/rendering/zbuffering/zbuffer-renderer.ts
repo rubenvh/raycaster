@@ -21,6 +21,11 @@ import { statisticsUpdated } from '../../store/stats';
 import { IMutableEdgeDiff, IBspContext } from '../../store/bsp-state';
 import { isStaleInBsp, collectDirtyEdges } from './zbuffer-core';
 import { SkyboxRenderer } from '../../skybox/skybox-renderer';
+import { IPolygon } from '../../geometry/polygon';
+import { buildPolygonGrid, IPolygonGrid } from '../../geometry/polygon-grid';
+import { renderFloors, buildColumnBounds, IFloorRendererConfig } from './floor-renderer';
+import { textureLib } from '../../textures/textureLibrary';
+import { getResolution } from '../../config/resolution';
 // T3.8: Removed PriorityDeque import — replaced with sorted array for small collections
 
 const dispatch = useAppDispatch();
@@ -30,7 +35,7 @@ export class ZBufferRenderer implements IRenderer {
     private context: CanvasRenderingContext2D;    
     private width: number;
     private height: number;
-    private resolution = 640;
+    private resolution = getResolution();
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
     private bspContext: IBspContext | null = null;
@@ -39,6 +44,8 @@ export class ZBufferRenderer implements IRenderer {
     private lastUpdated;
     private buffer: ZBuffer;  // Persistent buffer
     private skyboxRenderer = new SkyboxRenderer();
+    /** Polygons visited during the last BSP walk, for floor/ceiling rendering prefilter */
+    private visiblePolygons: IPolygon[] = [];
     
     constructor(private canvas: HTMLCanvasElement) {
         this.context = canvas.getContext('2d');        
@@ -81,9 +88,14 @@ export class ZBufferRenderer implements IRenderer {
         const dirtyEdges = this.bspContext?.dirtyEdges;
         const shouldCollectStats = !this.lastUpdated || performance.now() - this.lastUpdated > 1000;
         let clippedSegments: {segment: ILineSegment, depth: number}[] = shouldCollectStats ? [] : null;
+        this.visiblePolygons = [];
         walkWithFrustum(this.bspContext?.tree, this.camera.position, this.camera.planes, (ps => {
             let increment = 0;
             for (let p of ps) {
+                // Collect polygon for floor/ceiling rendering prefilter
+                if (p.floorMaterial != null || p.ceilingMaterial != null) {
+                    this.visiblePolygons.push(p);
+                }
                 for (let e of p.edges) {
                     if (e.material == null) continue;
                     
@@ -129,7 +141,35 @@ export class ZBufferRenderer implements IRenderer {
         const startDrawing = performance.now();
         // this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.drawSky();
-        this.drawFloor();        
+        this.drawFloor();
+        const afterBackground = performance.now();
+
+        // Per-polygon floor/ceiling rendering
+        if (this.visiblePolygons.length > 0) {
+            const grid = buildPolygonGrid(this.visiblePolygons);
+            const columnBounds = buildColumnBounds(
+                (col) => this.buffer.getNearestWallBoundsForColumn(col),
+                this.resolution,
+                this.height,
+            );
+            const floorConfig: IFloorRendererConfig = {
+                screenWidth: this.width,
+                screenHeight: this.height,
+                halfHeightConstant: 5, // half of the 10 in wallHeight = 10 * screenHeight / distance
+            };
+            renderFloors(
+                this.context,
+                this.camera,
+                this.buffer.getRays(),
+                columnBounds,
+                grid,
+                floorConfig,
+                this.worldConfig,
+                textureLib,
+            );
+        }
+        const afterFloorCeiling = performance.now();
+
         this.buffer.render();
         const endDrawing = performance.now();
         
@@ -141,7 +181,10 @@ export class ZBufferRenderer implements IRenderer {
                         drawing: endDrawing - startDrawing,
                         casting: 0,
                         zbuffering: startDrawing - startZBuffering,
-                        total: endDrawing - startZBuffering
+                        total: endDrawing - startZBuffering,
+                        background: afterBackground - startDrawing,
+                        floorCeiling: afterFloorCeiling - afterBackground,
+                        wallRendering: endDrawing - afterFloorCeiling,
                     },
                     fps
                 },
@@ -313,6 +356,22 @@ export class ZBuffer {
             this.cols[i].clear();
         }
     }
+
+    /**
+     * Get the nearest wall's row range for a specific column, or null if empty.
+     * Used by the floor/ceiling renderer.
+     */
+    public getNearestWallBoundsForColumn(col: number): [number, number] | null {
+        return this.cols[col]?.getNearestWallBounds() ?? null;
+    }
+
+    /**
+     * Get the camera rays array.
+     */
+    public getRays(): IRay[] {
+        return this.rays;
+    }
+
     public updateCamera(camera: ICamera): void {
         this.camera = camera;
         this.rays = makeRays(this.resolution, this.camera);
@@ -361,6 +420,22 @@ export class ZBufferColumn {
             this.hasOpaqueWall = true;
         }
         return this;
+    }
+
+    /**
+     * Get the nearest OPAQUE wall's row range [top, bottom], or null if none exists.
+     * Used by the floor/ceiling renderer to determine where to stop rendering.
+     * Translucent walls are skipped because floors/ceilings are visible through them —
+     * the rendering order (floor/ceiling first, then walls back-to-front) ensures
+     * translucent walls composite correctly over the floor/ceiling underneath.
+     */
+    public getNearestWallBounds(): [number, number] | null {
+        for (let i = 0; i < this.count; i++) {
+            if ((this.walls[i].material?.color[3] || 0) === 1) {
+                return this.walls[i].rowRange;
+            }
+        }
+        return null;
     }
 
     public shift(): WallProps {

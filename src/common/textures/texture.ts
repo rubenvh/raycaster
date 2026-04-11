@@ -12,6 +12,7 @@ export class Texture {
     private rows: number;
     private _source: ITextureSource;
     private _loaded: Promise<void>;
+    private _isLoaded = false;
 
     /** Promise that resolves when the texture image has finished loading */
     get loaded(): Promise<void> { return this._loaded; }
@@ -31,6 +32,7 @@ export class Texture {
             const image = new Image();
             image.onload = () => {
                 this.context.drawImage(image, 0, 0);
+                this._isLoaded = true;
                 resolve();
             };
             image.src = `data:${mimeType};base64,${source.data}`;
@@ -76,6 +78,9 @@ export class Texture {
     // Textures are immutable after loading, so cache never needs invalidation.
     private _cachedDataUrls: Map<number, string> = new Map();
 
+    /** Cache for sub-texture pixel data, keyed by texture index */
+    private _cachedPixelData: Map<number, { data: Uint8ClampedArray, width: number, height: number }> = new Map();
+
     public getTextureAsImage = (tref: ITextureReference): string => {
         const index = tref != null ? tref.index : 0;
         const cached = this._cachedDataUrls.get(index);
@@ -90,7 +95,31 @@ export class Texture {
         const context = canvas.getContext('2d');
         context.drawImage(this.canvas, col * twidth, row * theight, twidth, theight, 0, 0, twidth, theight);
         const dataUrl = canvas.toDataURL();
-        this._cachedDataUrls.set(index, dataUrl);
+        // Only cache after the source image has loaded, otherwise we'd
+        // permanently store a blank/transparent snapshot.
+        if (this._isLoaded) {
+            this._cachedDataUrls.set(index, dataUrl);
+        }
         return dataUrl;
     }
+
+    /**
+     * Get the raw RGBA pixel data for a sub-texture at the given index.
+     * Returns null if the texture image has not loaded yet.
+     * Results are cached after the first successful extraction.
+     */
+    public getSubTexturePixels = (index: number): { data: Uint8ClampedArray, width: number, height: number } | null => {
+        if (!this._isLoaded) return null;
+
+        const cached = this._cachedPixelData.get(index);
+        if (cached) return cached;
+
+        const [col, row] = this.getPosition(index);
+        const twidth = this._source.textureWidth;
+        const theight = this._source.textureHeight;
+        const imageData = this.context.getImageData(col * twidth, row * theight, twidth, theight);
+        const result = { data: imageData.data, width: twidth, height: theight };
+        this._cachedPixelData.set(index, result);
+        return result;
+    };
 }

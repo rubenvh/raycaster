@@ -27,6 +27,14 @@ import { ZBufferRenderer } from '../common/rendering/zbuffering/zbuffer-renderer
 import { MiniMap } from '../common/rendering/minimap';
 import { PlayerLoader } from '../common/storage/playerLoader';
 import { BspGenerationService } from '../common/geometry/bsp/bsp-generation-service';
+import { setResolution } from '../common/config/resolution';
+
+// Apply resolution from URL query parameter (set by main process from --resolution CLI arg)
+const _resParam = new URLSearchParams(window.location.search).get('resolution');
+if (_resParam) {
+    const val = parseInt(_resParam, 10);
+    if (!isNaN(val) && val > 0) setResolution(val);
+}
 
 // Promise that resolves to true if dance mode is enabled, false otherwise.
 // Resolves when the 'danceMode' IPC arrives, or after a short timeout

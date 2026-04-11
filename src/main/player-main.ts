@@ -14,6 +14,17 @@ let mainWindow: Electron.BrowserWindow;
 // Check for --dance flag in process argv
 const isDanceMode = process.argv.includes('--dance');
 
+// Parse --resolution <N> from command-line arguments (default 640)
+function parseResolution(): number {
+    const idx = process.argv.indexOf('--resolution');
+    if (idx !== -1 && idx + 1 < process.argv.length) {
+        const val = parseInt(process.argv[idx + 1], 10);
+        if (!isNaN(val) && val > 0) return val;
+    }
+    return 640;
+}
+const resolution = parseResolution();
+
 function createWindow() {
     const preloadPath = path.join(__dirname, 'preload-bundle.js');
 
@@ -32,6 +43,7 @@ function createWindow() {
         pathname: path.join(__dirname, '../../player/player.html'),
         protocol: 'file:',
         slashes: true,
+        search: resolution !== 640 ? `?resolution=${resolution}` : undefined,
     }));
 
     mainWindow.once('ready-to-show', () => mainWindow.show());
@@ -176,8 +188,16 @@ async function resolveMapFile(): Promise<string | null> {
     // Check command-line arguments for a map file path.
     // In packaged apps, argv[0] is electron, argv[1] is the script.
     // Extra args start at argv[2] (or later, skipping Electron flags).
-    // Filter out Electron flags and our own --dance flag
-    const args = process.argv.slice(2).filter(arg => !arg.startsWith('--'));
+    // Filter out Electron flags and our own flags (--dance, --resolution <N>)
+    const rawArgs = process.argv.slice(2);
+    const args: string[] = [];
+    for (let i = 0; i < rawArgs.length; i++) {
+        if (rawArgs[i] === '--resolution') {
+            i++; // skip the value following --resolution
+        } else if (!rawArgs[i].startsWith('--')) {
+            args.push(rawArgs[i]);
+        }
+    }
 
     if (args.length > 0) {
         const mapPath = path.resolve(args[0]);

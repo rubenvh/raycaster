@@ -1,6 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 import { ISkyboxSource, ISkyboxRegion } from '../skybox/model';
 import { Vector } from '../math/vector';
+import { IMaterial } from '../geometry/properties';
 
 export type RGBColor = [number, number, number];
 
@@ -30,12 +31,14 @@ export type IWorldConfigState = {
   skyboxEnabled?: boolean,
   skyColor?: RGBColor,
   floorColor?: RGBColor,
+  floorMaterial?: IMaterial,
   skyGradient?: ISkyGradient,
   sunAngle: number,
 };
 
 export const DEFAULT_SKY_COLOR: RGBColor = [200, 200, 200];
 export const DEFAULT_FLOOR_COLOR: RGBColor = [50, 80, 80];
+export const DEFAULT_FLOOR_MATERIAL: IMaterial = { color: [50, 80, 80, 1] };
 
 const slice = createSlice({
   name: 'worldConfig',
@@ -45,6 +48,7 @@ const slice = createSlice({
       skyboxEnabled: false,
       skyColor: DEFAULT_SKY_COLOR,
       floorColor: DEFAULT_FLOOR_COLOR,
+      floorMaterial: DEFAULT_FLOOR_MATERIAL,
       sunAngle: DEFAULT_SUN_ANGLE,
   } as IWorldConfigState,
   reducers: {    
@@ -92,6 +96,11 @@ const slice = createSlice({
     },
     setFloorColor: (state, action: PayloadAction<RGBColor>) => {
         state.floorColor = action.payload;
+        state.floorMaterial = { color: [action.payload[0], action.payload[1], action.payload[2], 1] };
+    },
+    setFloorMaterial: (state, action: PayloadAction<IMaterial>) => {
+        state.floorMaterial = action.payload;
+        state.floorColor = [action.payload.color[0], action.payload.color[1], action.payload.color[2]];
     },
     setSkyGradient: (state, action: PayloadAction<ISkyGradient | null>) => {
         state.skyGradient = action.payload ?? undefined;
@@ -106,4 +115,4 @@ const slice = createSlice({
 });
 export default slice.reducer
 // Actions
-export const { initialize, setSkybox, toggleSkyboxEnabled, setSkyboxRegion, setSkyboxVerticalTiling, toggleFadingStrategy, setFadeOn, setHorizonDistance, setSkyColor, setFloorColor, setSkyGradient, setSunAngle, moveSun } = slice.actions
+export const { initialize, setSkybox, toggleSkyboxEnabled, setSkyboxRegion, setSkyboxVerticalTiling, toggleFadingStrategy, setFadeOn, setHorizonDistance, setSkyColor, setFloorColor, setFloorMaterial, setSkyGradient, setSunAngle, moveSun } = slice.actions

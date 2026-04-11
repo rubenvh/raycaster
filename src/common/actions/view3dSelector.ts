@@ -7,10 +7,11 @@ import { selectEdge, selectPolygon } from '../selection/selectable';
 import { useAppDispatch } from '../store';
 import { addSelectedElement, clearSelection, startNewSelection } from '../store/selection';
 import { connect } from '../store/store-connector';
+import { getResolution } from '../config/resolution';
 
 const dispatch = useAppDispatch();
 
-const RESOLUTION = 640;
+const RESOLUTION = getResolution();
 
 export class View3dSelector implements IActionHandler {
     private camera: ICamera = DEFAULT_CAMERA;

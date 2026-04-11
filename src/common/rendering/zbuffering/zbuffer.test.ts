@@ -1,5 +1,6 @@
 import { ZBufferColumn } from './zbuffer-renderer';
 import { ZBufferCore, isStaleInBsp, collectDirtyEdges } from './zbuffer-core';
+import { buildColumnBounds, IColumnWallBounds } from './floor-renderer';
 import { WallProps } from '../../drawing/wall-painter';
 import { IMaterial, Face } from '../../geometry/properties';
 import { geometries, resetTestRandom } from '../../testing/factories';
@@ -158,6 +159,135 @@ describe('ZBufferColumn', () => {
             // null material => (null?.color[3] || 0) === 0, which is not 1
             expect(col.isFull()).toBe(false);
         });
+    });
+
+    describe('getNearestWallBounds', () => {
+        test('returns null for empty column', () => {
+            const col = new ZBufferColumn();
+            expect(col.getNearestWallBounds()).toBeNull();
+        });
+
+        test('returns row range of nearest wall', () => {
+            const col = new ZBufferColumn();
+            const wall = makeWallProps(10, 1);
+            wall.rowRange = [100, 300];
+            col.add(wall);
+            expect(col.getNearestWallBounds()).toEqual([100, 300]);
+        });
+
+        test('returns nearest wall when multiple walls exist', () => {
+            const col = new ZBufferColumn();
+            const far = makeWallProps(50, 1);
+            far.rowRange = [200, 280]; // far wall = shorter
+            const near = makeWallProps(10, 1);
+            near.rowRange = [50, 430]; // near wall = taller
+            col.add(far);
+            col.add(near);
+            // walls[0] = nearest (sorted ascending)
+            expect(col.getNearestWallBounds()).toEqual([50, 430]);
+        });
+
+        test('does not consume the wall (non-destructive)', () => {
+            const col = new ZBufferColumn();
+            col.add(makeWallProps(10, 1));
+            col.getNearestWallBounds();
+            // Wall should still be available for shift
+            expect(col.shift()).toBeDefined();
+        });
+    });
+});
+
+describe('buildColumnBounds', () => {
+    test('returns correct bounds when wall exists', () => {
+        const bounds = buildColumnBounds(
+            (col) => col === 0 ? [100, 380] : null,
+            3,
+            480,
+        );
+        expect(bounds[0]).toEqual({ wallTop: 100, wallBottom: 380, hasWall: true });
+        expect(bounds[1]).toEqual({ wallTop: 240, wallBottom: 240, hasWall: false });
+        expect(bounds[2]).toEqual({ wallTop: 240, wallBottom: 240, hasWall: false });
+    });
+
+    test('handles all columns with walls', () => {
+        const bounds = buildColumnBounds(
+            (col) => [50 + col * 10, 430 - col * 10],
+            3,
+            480,
+        );
+        expect(bounds[0]).toEqual({ wallTop: 50, wallBottom: 430, hasWall: true });
+        expect(bounds[1]).toEqual({ wallTop: 60, wallBottom: 420, hasWall: true });
+        expect(bounds[2]).toEqual({ wallTop: 70, wallBottom: 410, hasWall: true });
+    });
+
+    test('handles no walls', () => {
+        const bounds = buildColumnBounds(() => null, 3, 480);
+        for (const b of bounds) {
+            expect(b.hasWall).toBe(false);
+            expect(b.wallTop).toBe(240);
+            expect(b.wallBottom).toBe(240);
+        }
+    });
+});
+
+describe('floor start vs wall bottom boundary', () => {
+    // The floor renderer must not paint the pixel at wallBottom, because:
+    // 1. The wall trapezoid extends to wallBottom + 0.5 (boundary pixel, coverage not guaranteed)
+    // 2. Due to rounding in wall height, the floor pixel at wallBottom often projects to a
+    //    perpendicular distance slightly GREATER than the wall's distance, landing inside the
+    //    polygon behind the wall. This causes polygon floor color to "leak" under the wall.
+    //
+    // The fix: floorStart = wallBottom + 1, so the first floor pixel is always in front of the wall.
+
+    const screenHeight = 480;
+    const halfScreen = screenHeight / 2;
+    const halfHeightConstant = 5; // half of 10 in wallHeight = 10 * screenHeight / d
+
+    /** Simulate wall height computation (same as WallPainter.convertDistanceToWallHeight) */
+    const wallHeight = (d: number) => Math.round(10 * screenHeight / d);
+    /** Simulate wallBottom computation (same as WallPainter.createWall) */
+    const wallBottom = (d: number) => Math.floor((screenHeight + wallHeight(d)) / 2);
+    /** Simulate floor perpDist at a given row (same as renderFloorColumn) */
+    const floorPerpDist = (row: number) => halfHeightConstant * halfScreen * 2 / (row - halfScreen);
+
+    test('floor pixel at wallBottom projects at or past the wall for odd wall heights', () => {
+        // Find a distance that produces an odd wall height
+        const d = 23.9; // wallHeight = round(4800/23.9) = round(200.8) = 201 (odd)
+        const h = wallHeight(d);
+        expect(h % 2).toBe(1); // confirm odd
+
+        const wb = wallBottom(d);
+        const perpDist = floorPerpDist(wb);
+        // perpDist >= d: floor pixel at wallBottom is at or past the wall
+        expect(perpDist).toBeGreaterThanOrEqual(d);
+    });
+
+    test('floor pixel at wallBottom+1 always projects in front of the wall', () => {
+        // Test across a range of wall distances
+        for (let d = 5; d < 200; d += 0.7) {
+            const wb = wallBottom(d);
+            const firstFloorRow = wb + 1;
+            const rowOffset = firstFloorRow - halfScreen;
+            if (rowOffset <= 0) continue; // wall taller than screen, skip
+
+            const perpDist = floorPerpDist(firstFloorRow);
+            expect(perpDist).toBeLessThan(d);
+        }
+    });
+
+    test('floor start uses wallBottom+1 when wall exists', () => {
+        // Replicate the floor start computation from renderFloors
+        const bounds = buildColumnBounds(
+            (col) => [100, 350], // wallTop=100, wallBottom=350
+            1,
+            screenHeight,
+        );
+        const b = bounds[0];
+        // Simulated floorStart (matching the fixed code)
+        const floorStart = b.hasWall
+            ? Math.max(Math.ceil(halfScreen), b.wallBottom + 1)
+            : Math.ceil(halfScreen);
+        expect(floorStart).toBe(351); // wallBottom(350) + 1
     });
 });
 

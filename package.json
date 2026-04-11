@@ -4,10 +4,10 @@
   "description": "electron raycaster experiments",
   "main": "src/main/dist/main-bundle.js",
   "scripts": {
-    "start": "npm-run-all build run-electron",
+    "start": "webpack --config webpack.config.js && electron .",
     "build": "webpack --config webpack.config.js",
     "run-electron": "electron .",
-    "play": "npm-run-all build run-player",
+    "play": "webpack --config webpack.config.js && electron src/main/dist/player-main-bundle.js",
     "run-player": "electron src/main/dist/player-main-bundle.js",
     "dance": "npm-run-all build run-dance",
     "run-dance": "electron src/main/dist/player-main-bundle.js --dance",

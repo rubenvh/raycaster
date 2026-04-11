@@ -1,6 +1,7 @@
 import { createPolygon as doCreatePolygon, IPolygon } from './../geometry/polygon';
 import { IEntityKey } from './../geometry/entity';
 import { IEdge } from './../geometry/edge';
+import { IMaterial } from './../geometry/properties';
 import { IStoredGeometry, loadGeometry, IGeometry, transformEdges, moveVertices, removeVertex, addPolygon, duplicatePolygons, 
   splitEdge as doSplitEdge,
   expandPolygon as doExpandPolygon, reversePolygon as doReversePolygon, splitPolygon as doSplitPolygon,
@@ -55,6 +56,17 @@ const slice = createSlice({
       const updatedEdges = Array.from(action.payload.edgeMap.entries())
           .reduce((geo, [poligonId, edges]) => transformEdges(edges, poligonId, action.payload.transformer, geo), state.geometry);
       undoableUpdate(state, updatedEdges);          
+    },
+    adaptPolygonSurfaces: (state, action: PayloadAction<{polygonId: IEntityKey, floorMaterial?: IMaterial | null, ceilingMaterial?: IMaterial | null}>) => {
+      const { polygonId, floorMaterial, ceilingMaterial } = action.payload;
+      const polygons = state.geometry.polygons.map(p => {
+        if (p.id !== polygonId) return p;
+        const updated = { ...p };
+        if (floorMaterial !== undefined) updated.floorMaterial = floorMaterial ?? undefined;
+        if (ceilingMaterial !== undefined) updated.ceilingMaterial = ceilingMaterial ?? undefined;
+        return updated;
+      });
+      undoableUpdate(state, { ...state.geometry, polygons });
     },
     splitEdge: (state, action: PayloadAction<{edge: IEdge, poligon: IEntityKey, target: Vector}>) => {
       const cut = projectOn(action.payload.target, action.payload.edge.segment);
@@ -172,7 +184,7 @@ const undoableUpdate = (state: IWallState, geometry: IGeometry) => {
 
 export default slice.reducer
 // Actions
-export const { undo, redo, loadWalls, updateWalls, adaptEdges, splitEdge, move, remove, createPolygon, clonePolygon, 
+export const { undo, redo, loadWalls, updateWalls, adaptEdges, adaptPolygonSurfaces, splitEdge, move, remove, createPolygon, clonePolygon, 
               expandPolygon, reversePolygon, splitPolygon, rotatePolygon, editVertex,
               subdivideEdge, extrudeEdge, bevelVertex, insetEdge, flipPolygon, scalePolygon,
               regularizePolygon, convexHull, insetPolygon, mergePolygons, alignVertices, alignPolygons,

@@ -2,16 +2,22 @@ import { lineAngle, midpoint, slope } from "../math/lineSegment";
 import { angleBetween, maximumComponents, minimumComponents, subtract, Vector } from "../math/vector";
 import { createEdges, IEdge, IStoredEdge, loadEdge, storeEdge } from "./edge";
 import { cloneKey, giveIdentity, IEntity } from "./entity";
+import { cloneSimpleMaterial, IMaterial } from "./properties";
 import { areClose, areEqual, IVertex } from "./vertex";
 
-export type IStoredPolygon = IEntity & { edges: IStoredEdge[] };
-export type IPolygon = IEntity & { edges: IEdge[], vertices: IVertex[], boundingBox: BoundingBox, edgeCount: number };
+export type IStoredPolygon = IEntity & { edges: IStoredEdge[], floorMaterial?: IMaterial, ceilingMaterial?: IMaterial };
+export type IPolygon = IEntity & { edges: IEdge[], vertices: IVertex[], boundingBox: BoundingBox, edgeCount: number, floorMaterial?: IMaterial, ceilingMaterial?: IMaterial };
 export type BoundingBox = [Vector, Vector];
 
-export const storePolygon = (p: IPolygon): IStoredPolygon => ({
-    id: cloneKey(p.id),
-    edges: p.edges.map(storeEdge),
-});
+export const storePolygon = (p: IPolygon): IStoredPolygon => {
+    const stored: IStoredPolygon = {
+        id: cloneKey(p.id),
+        edges: p.edges.map(storeEdge),
+    };
+    if (p.floorMaterial != null) stored.floorMaterial = p.floorMaterial;
+    if (p.ceilingMaterial != null) stored.ceilingMaterial = p.ceilingMaterial;
+    return stored;
+};
 export const loadPolygon = (polygon: IStoredPolygon): IPolygon => {
     let [min, max]: BoundingBox = [[Infinity, Infinity], [-Infinity, -Infinity]];
     const reduced = polygon.edges.reduce((acc, e) => {
@@ -48,7 +54,9 @@ export const loadPolygon = (polygon: IStoredPolygon): IPolygon => {
         ...result,
         edgeCount: result.edges.length,
         vertices: result.edges.map(_ => _.start),
-        boundingBox: [min, max]
+        boundingBox: [min, max],
+        floorMaterial: polygon.floorMaterial ?? undefined,
+        ceilingMaterial: polygon.ceilingMaterial ?? undefined,
     });
 }
 

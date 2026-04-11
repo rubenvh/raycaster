@@ -19,6 +19,7 @@ import { CastedRays, PartionedRayCaster } from './raycaster';
 import { IRenderer } from '../renderer';
 import { IBspContext } from '../../store/bsp-state';
 import { SkyboxRenderer } from '../../skybox/skybox-renderer';
+import { getResolution } from '../../config/resolution';
 
 const dispatch = useAppDispatch();
 
@@ -39,7 +40,7 @@ export class Renderer3d implements IRenderer {
     private context: CanvasRenderingContext2D;
     private width: number;
     private height: number;
-    private resolution = 640;
+    private resolution = getResolution();
     private horizonDistance = 300;
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;

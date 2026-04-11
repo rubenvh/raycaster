@@ -1,0 +1,2536 @@
+{
+  "runDate": "2026-04-11T17:05:24.919Z",
+  "results": [
+    {
+      "timestamp": "2026-04-11T17:05:16.630Z",
+      "config": {
+        "name": "dense-flat",
+        "description": "Many polygons with flat-color floors, no textures",
+        "polygonCount": 281,
+        "floorPolygonCount": 81,
+        "screenWidth": 640,
+        "screenHeight": 480,
+        "frameCount": 60
+      },
+      "metrics": {
+        "avgFloorRenderMs": 9.913168333333306,
+        "minFloorRenderMs": 0.0907999999999447,
+        "maxFloorRenderMs": 45.55029999999988,
+        "p95FloorRenderMs": 38.7538999999997,
+        "avgTotalMs": 22.160534999999996,
+        "avgGridBuildMs": 0.0828283333333502,
+        "avgColumnBoundsMs": 12.164538333333342,
+        "stdDevMs": 12.686281826754023,
+        "avgExcludingWarmup": 9.978649090909046,
+        "stdDevExcludingWarmup": 12.44667295283611
+      },
+      "frames": [
+        {
+          "floorRenderTimeMs": 39.0003999999999,
+          "gridBuildTimeMs": 0.346599999999853,
+          "columnBoundsTimeMs": 12.074300000000221,
+          "totalTimeMs": 51.421299999999974,
+          "floorPolygonCount": 7,
+          "gridCellCount": 26
+        },
+        {
+          "floorRenderTimeMs": 5.835500000000138,
+          "gridBuildTimeMs": 0.06169999999974607,
+          "columnBoundsTimeMs": 3.716400000000249,
+          "totalTimeMs": 9.613600000000133,
+          "floorPolygonCount": 5,
+          "gridCellCount": 20
+        },
+        {
+          "floorRenderTimeMs": 0.6689000000001215,
+          "gridBuildTimeMs": 0.053100000000085856,
+          "columnBoundsTimeMs": 4.367499999999836,
+          "totalTimeMs": 5.089500000000044,
+          "floorPolygonCount": 2,
+          "gridCellCount": 14
+        },
+        {
+          "floorRenderTimeMs": 0.2531000000003587,
+          "gridBuildTimeMs": 0.03949999999986176,
+          "columnBoundsTimeMs": 2.05600000000004,
+          "totalTimeMs": 2.3486000000002605,
+          "floorPolygonCount": 2,
+          "gridCellCount": 14
+        },
+        {
+          "floorRenderTimeMs": 0.20650000000023283,
+          "gridBuildTimeMs": 0.017199999999775173,
+          "columnBoundsTimeMs": 1.6201000000000931,
+          "totalTimeMs": 1.8438000000001011,
+          "floorPolygonCount": 1,
+          "gridCellCount": 12
+        },
+        {
+          "floorRenderTimeMs": 0.19489999999996144,
+          "gridBuildTimeMs": 0.0227999999997337,
+          "columnBoundsTimeMs": 1.6035999999999149,
+          "totalTimeMs": 1.82129999999961,
+          "floorPolygonCount": 1,
+          "gridCellCount": 12
+        },
+        {
+          "floorRenderTimeMs": 0.21129999999993743,
+          "gridBuildTimeMs": 0.013000000000374712,
+          "columnBoundsTimeMs": 1.4411000000000058,
+          "totalTimeMs": 1.665400000000318,
+          "floorPolygonCount": 1,
+          "gridCellCount": 12
+        },
+        {
+          "floorRenderTimeMs": 0.2717999999999847,
+          "gridBuildTimeMs": 0.023799999999937427,
+          "columnBoundsTimeMs": 1.3946000000000822,
+          "totalTimeMs": 1.6902000000000044,
+          "floorPolygonCount": 1,
+          "gridCellCount": 12
+        },
+        {
+          "floorRenderTimeMs": 0.3306999999999789,
+          "gridBuildTimeMs": 0.014599999999973079,
+          "columnBoundsTimeMs": 1.4191000000000713,
+          "totalTimeMs": 1.7644000000000233,
+          "floorPolygonCount": 1,
+          "gridCellCount": 12
+        },
+        {
+          "floorRenderTimeMs": 0.3934999999996762,
+          "gridBuildTimeMs": 0.018100000000231375,
+          "columnBoundsTimeMs": 2.430399999999736,
+          "totalTimeMs": 2.8419999999996435,
+          "floorPolygonCount": 1,
+          "gridCellCount": 12
+        },
+        {
+          "floorRenderTimeMs": 0.48129999999991924,
+          "gridBuildTimeMs": 0.017400000000179716,
+          "columnBoundsTimeMs": 1.4279999999998836,
+          "totalTimeMs": 1.9266999999999825,
+          "floorPolygonCount": 1,
+          "gridCellCount": 12
+        },
+        {
+          "floorRenderTimeMs": 0.0907999999999447,
+          "gridBuildTimeMs": 0.021600000000034925,
+          "columnBoundsTimeMs": 3.402299999999741,
+          "totalTimeMs": 3.5146999999997206,
+          "floorPolygonCount": 2,
+          "gridCellCount": 16
+        },
+        {
+          "floorRenderTimeMs": 17.92579999999998,
+          "gridBuildTimeMs": 0.04599999999982174,
+          "columnBoundsTimeMs": 2.8677999999999884,
+          "totalTimeMs": 20.83959999999979,
+          "floorPolygonCount": 5,
+          "gridCellCount": 22
+        },
+        {
+          "floorRenderTimeMs": 31.791999999999916,
+          "gridBuildTimeMs": 0.054099999999834836,
+          "columnBoundsTimeMs": 6.933100000000195,
+          "totalTimeMs": 38.779199999999946,
+          "floorPolygonCount": 13,
+          "gridCellCount": 30
+        },
+        {
+          "floorRenderTimeMs": 19.371000000000095,
+          "gridBuildTimeMs": 0.07600000000002183,
+          "columnBoundsTimeMs": 10.871900000000096,
+          "totalTimeMs": 30.318900000000212,
+          "floorPolygonCount": 22,
+          "gridCellCount": 41
+        },
+        {
+          "floorRenderTimeMs": 4.282400000000052,
+          "gridBuildTimeMs": 0.14219999999977517,
+          "columnBoundsTimeMs": 15.840599999999995,
+          "totalTimeMs": 20.265199999999822,
+          "floorPolygonCount": 39,
+          "gridCellCount": 65
+        },
+        {
+          "floorRenderTimeMs": 18.834899999999834,
+          "gridBuildTimeMs": 0.3004000000000815,
+          "columnBoundsTimeMs": 24.370800000000145,
+          "totalTimeMs": 43.50610000000006,
+          "floorPolygonCount": 56,
+          "gridCellCount": 80
+        },
+        {
+          "floorRenderTimeMs": 0.15259999999989304,
+          "gridBuildTimeMs": 0.14620000000013533,
+          "columnBoundsTimeMs": 27.11830000000009,
+          "totalTimeMs": 27.41710000000012,
+          "floorPolygonCount": 63,
+          "gridCellCount": 83
+        },
+        {
+          "floorRenderTimeMs": 18.976000000000113,
+          "gridBuildTimeMs": 0.14049999999997453,
+          "columnBoundsTimeMs": 23.55659999999989,
+          "totalTimeMs": 42.67309999999998,
+          "floorPolygonCount": 56,
+          "gridCellCount": 65
+        },
+        {
+          "floorRenderTimeMs": 37.384900000000016,
+          "gridBuildTimeMs": 0.10269999999991342,
+          "columnBoundsTimeMs": 16.59940000000006,
+          "totalTimeMs": 54.08699999999999,
+          "floorPolygonCount": 46,
+          "gridCellCount": 52
+        },
+        {
+          "floorRenderTimeMs": 1.9289000000003398,
+          "gridBuildTimeMs": 0.13089999999965585,
+          "columnBoundsTimeMs": 12.984100000000126,
+          "totalTimeMs": 15.043900000000122,
+          "floorPolygonCount": 33,
+          "gridCellCount": 37
+        },
+        {
+          "floorRenderTimeMs": 33.15139999999974,
+          "gridBuildTimeMs": 0.07000000000016371,
+          "columnBoundsTimeMs": 19.354499999999916,
+          "totalTimeMs": 52.57589999999982,
+          "floorPolygonCount": 29,
+          "gridCellCount": 34
+        },
+        {
+          "floorRenderTimeMs": 45.55029999999988,
+          "gridBuildTimeMs": 0.12800000000015643,
+          "columnBoundsTimeMs": 13.326500000000124,
+          "totalTimeMs": 59.00480000000016,
+          "floorPolygonCount": 26,
+          "gridCellCount": 30
+        },
+        {
+          "floorRenderTimeMs": 12.045799999999872,
+          "gridBuildTimeMs": 0.07439999999996871,
+          "columnBoundsTimeMs": 9.759800000000268,
+          "totalTimeMs": 21.88000000000011,
+          "floorPolygonCount": 25,
+          "gridCellCount": 30
+        },
+        {
+          "floorRenderTimeMs": 11.348100000000159,
+          "gridBuildTimeMs": 0.06440000000020518,
+          "columnBoundsTimeMs": 12.100300000000061,
+          "totalTimeMs": 23.512800000000425,
+          "floorPolygonCount": 29,
+          "gridCellCount": 31
+        },
+        {
+          "floorRenderTimeMs": 1.1359999999999673,
+          "gridBuildTimeMs": 0.18770000000040454,
+          "columnBoundsTimeMs": 11.91439999999966,
+          "totalTimeMs": 13.238100000000031,
+          "floorPolygonCount": 33,
+          "gridCellCount": 40
+        },
+        {
+          "floorRenderTimeMs": 15.103399999999965,
+          "gridBuildTimeMs": 0.17210000000022774,
+          "columnBoundsTimeMs": 14.930499999999938,
+          "totalTimeMs": 30.20600000000013,
+          "floorPolygonCount": 40,
+          "gridCellCount": 47
+        },
+        {
+          "floorRenderTimeMs": 15.73219999999992,
+          "gridBuildTimeMs": 0.15810000000010405,
+          "columnBoundsTimeMs": 22.25669999999991,
+          "totalTimeMs": 38.146999999999935,
+          "floorPolygonCount": 46,
+          "gridCellCount": 54
+        },
+        {
+          "floorRenderTimeMs": 14.411599999999908,
+          "gridBuildTimeMs": 0.12429999999994834,
+          "columnBoundsTimeMs": 29.45809999999983,
+          "totalTimeMs": 43.99399999999969,
+          "floorPolygonCount": 57,
+          "gridCellCount": 67
+        },
+        {
+          "floorRenderTimeMs": 0.2242999999998574,
+          "gridBuildTimeMs": 0.2863000000002103,
+          "columnBoundsTimeMs": 29.40769999999975,
+          "totalTimeMs": 29.918299999999817,
+          "floorPolygonCount": 68,
+          "gridCellCount": 77
+        },
+        {
+          "floorRenderTimeMs": 11.64910000000009,
+          "gridBuildTimeMs": 0.18089999999983775,
+          "columnBoundsTimeMs": 33.16370000000006,
+          "totalTimeMs": 44.99369999999999,
+          "floorPolygonCount": 77,
+          "gridCellCount": 91
+        },
+        {
+          "floorRenderTimeMs": 3.657600000000002,
+          "gridBuildTimeMs": 0.2199999999997999,
+          "columnBoundsTimeMs": 34.94730000000027,
+          "totalTimeMs": 38.82490000000007,
+          "floorPolygonCount": 88,
+          "gridCellCount": 101
+        },
+        {
+          "floorRenderTimeMs": 1.5046000000002095,
+          "gridBuildTimeMs": 0.35159999999996217,
+          "columnBoundsTimeMs": 40.8128999999999,
+          "totalTimeMs": 42.66910000000007,
+          "floorPolygonCount": 99,
+          "gridCellCount": 109
+        },
+        {
+          "floorRenderTimeMs": 4.675200000000132,
+          "gridBuildTimeMs": 0.19750000000021828,
+          "columnBoundsTimeMs": 44.76459999999997,
+          "totalTimeMs": 49.63730000000032,
+          "floorPolygonCount": 102,
+          "gridCellCount": 115
+        },
+        {
+          "floorRenderTimeMs": 11.041999999999916,
+          "gridBuildTimeMs": 0.1428000000000793,
+          "columnBoundsTimeMs": 39.22240000000011,
+          "totalTimeMs": 50.4072000000001,
+          "floorPolygonCount": 90,
+          "gridCellCount": 107
+        },
+        {
+          "floorRenderTimeMs": 20.197799999999916,
+          "gridBuildTimeMs": 0.1226000000001477,
+          "columnBoundsTimeMs": 33.5009,
+          "totalTimeMs": 53.821300000000065,
+          "floorPolygonCount": 79,
+          "gridCellCount": 97
+        },
+        {
+          "floorRenderTimeMs": 31.235799999999927,
+          "gridBuildTimeMs": 0.09830000000010841,
+          "columnBoundsTimeMs": 23.261399999999867,
+          "totalTimeMs": 54.5954999999999,
+          "floorPolygonCount": 58,
+          "gridCellCount": 87
+        },
+        {
+          "floorRenderTimeMs": 19.496299999999792,
+          "gridBuildTimeMs": 0.06150000000025102,
+          "columnBoundsTimeMs": 14.244599999999991,
+          "totalTimeMs": 33.802400000000034,
+          "floorPolygonCount": 34,
+          "gridCellCount": 59
+        },
+        {
+          "floorRenderTimeMs": 5.101000000000113,
+          "gridBuildTimeMs": 0.05269999999973152,
+          "columnBoundsTimeMs": 11.05450000000019,
+          "totalTimeMs": 16.208200000000033,
+          "floorPolygonCount": 18,
+          "gridCellCount": 43
+        },
+        {
+          "floorRenderTimeMs": 12.768799999999828,
+          "gridBuildTimeMs": 0.018500000000130967,
+          "columnBoundsTimeMs": 8.033100000000104,
+          "totalTimeMs": 20.820400000000063,
+          "floorPolygonCount": 6,
+          "gridCellCount": 24
+        },
+        {
+          "floorRenderTimeMs": 14.755799999999908,
+          "gridBuildTimeMs": 0.015300000000024738,
+          "columnBoundsTimeMs": 3.878600000000006,
+          "totalTimeMs": 18.64969999999994,
+          "floorPolygonCount": 4,
+          "gridCellCount": 21
+        },
+        {
+          "floorRenderTimeMs": 14.582200000000284,
+          "gridBuildTimeMs": 0.011799999999766442,
+          "columnBoundsTimeMs": 2.5286000000000968,
+          "totalTimeMs": 17.122600000000148,
+          "floorPolygonCount": 3,
+          "gridCellCount": 20
+        },
+        {
+          "floorRenderTimeMs": 8.561299999999846,
+          "gridBuildTimeMs": 0.00930000000016662,
+          "columnBoundsTimeMs": 2.851599999999962,
+          "totalTimeMs": 11.422199999999975,
+          "floorPolygonCount": 1,
+          "gridCellCount": 12
+        },
+        {
+          "floorRenderTimeMs": 4.8378999999999905,
+          "gridBuildTimeMs": 0.017800000000079308,
+          "columnBoundsTimeMs": 2.244299999999839,
+          "totalTimeMs": 7.099999999999909,
+          "floorPolygonCount": 1,
+          "gridCellCount": 12
+        },
+        {
+          "floorRenderTimeMs": 0.14840000000003783,
+          "gridBuildTimeMs": 0.006000000000312866,
+          "columnBoundsTimeMs": 1.0031999999996515,
+          "totalTimeMs": 1.1576000000000022,
+          "floorPolygonCount": 1,
+          "gridCellCount": 12
+        },
+        {
+          "floorRenderTimeMs": 0.17950000000018917,
+          "gridBuildTimeMs": 0.004799999999704596,
+          "columnBoundsTimeMs": 1.0914000000002488,
+          "totalTimeMs": 1.2757000000001426,
+          "floorPolygonCount": 1,
+          "gridCellCount": 12
+        },
+        {
+          "floorRenderTimeMs": 0.3346000000001368,
+          "gridBuildTimeMs": 0.027999999999792635,
+          "columnBoundsTimeMs": 1.7229000000002088,
+          "totalTimeMs": 2.0855000000001382,
+          "floorPolygonCount": 2,
+          "gridCellCount": 14
+        },
+        {
+          "floorRenderTimeMs": 0.8808000000003631,
+          "gridBuildTimeMs": 0.01779999999962456,
+          "columnBoundsTimeMs": 3.492700000000241,
+          "totalTimeMs": 4.3913000000002285,
+          "floorPolygonCount": 6,
+          "gridCellCount": 20
+        },
+        {
+          "floorRenderTimeMs": 0.1517999999996391,
+          "gridBuildTimeMs": 0.04280000000017026,
+          "columnBoundsTimeMs": 11.082699999999932,
+          "totalTimeMs": 11.277299999999741,
+          "floorPolygonCount": 16,
+          "gridCellCount": 39
+        },
+        {
+          "floorRenderTimeMs": 0.19899999999961437,
+          "gridBuildTimeMs": 0.054600000000391447,
+          "columnBoundsTimeMs": 12.183700000000044,
+          "totalTimeMs": 12.43730000000005,
+          "floorPolygonCount": 26,
+          "gridCellCount": 50
+        },
+        {
+          "floorRenderTimeMs": 0.14989999999988868,
+          "gridBuildTimeMs": 0.07520000000022264,
+          "columnBoundsTimeMs": 18.71349999999984,
+          "totalTimeMs": 18.93859999999995,
+          "floorPolygonCount": 38,
+          "gridCellCount": 59
+        },
+        {
+          "floorRenderTimeMs": 0.13699999999971624,
+          "gridBuildTimeMs": 0.05529999999998836,
+          "columnBoundsTimeMs": 12.76929999999993,
+          "totalTimeMs": 12.961599999999635,
+          "floorPolygonCount": 31,
+          "gridCellCount": 52
+        },
+        {
+          "floorRenderTimeMs": 0.23430000000007567,
+          "gridBuildTimeMs": 0.0650999999998021,
+          "columnBoundsTimeMs": 15.355799999999817,
+          "totalTimeMs": 15.655199999999695,
+          "floorPolygonCount": 22,
+          "gridCellCount": 46
+        },
+        {
+          "floorRenderTimeMs": 0.11700000000018917,
+          "gridBuildTimeMs": 0.026199999999789725,
+          "columnBoundsTimeMs": 8.740500000000338,
+          "totalTimeMs": 8.883700000000317,
+          "floorPolygonCount": 12,
+          "gridCellCount": 33
+        },
+        {
+          "floorRenderTimeMs": 0.09689999999955035,
+          "gridBuildTimeMs": 0.0136000000002241,
+          "columnBoundsTimeMs": 3.4526999999998225,
+          "totalTimeMs": 3.563199999999597,
+          "floorPolygonCount": 6,
+          "gridCellCount": 20
+        },
+        {
+          "floorRenderTimeMs": 0.09560000000010405,
+          "gridBuildTimeMs": 0.006899999999859574,
+          "columnBoundsTimeMs": 1.7080000000000837,
+          "totalTimeMs": 1.8105000000000473,
+          "floorPolygonCount": 2,
+          "gridCellCount": 14
+        },
+        {
+          "floorRenderTimeMs": 0.09490000000005239,
+          "gridBuildTimeMs": 0.005599999999958527,
+          "columnBoundsTimeMs": 1.2507999999997992,
+          "totalTimeMs": 1.35129999999981,
+          "floorPolygonCount": 1,
+          "gridCellCount": 12
+        },
+        {
+          "floorRenderTimeMs": 0.09699999999975262,
+          "gridBuildTimeMs": 0.005300000000261207,
+          "columnBoundsTimeMs": 0.9002000000000407,
+          "totalTimeMs": 1.0025000000000546,
+          "floorPolygonCount": 1,
+          "gridCellCount": 12
+        },
+        {
+          "floorRenderTimeMs": 41.76379999999972,
+          "gridBuildTimeMs": 0.0035000000002582965,
+          "columnBoundsTimeMs": 0.6392000000000735,
+          "totalTimeMs": 42.40650000000005,
+          "floorPolygonCount": 0,
+          "gridCellCount": 0
+        },
+        {
+          "floorRenderTimeMs": 38.7538999999997,
+          "gridBuildTimeMs": 0.004699999999957072,
+          "columnBoundsTimeMs": 0.6527000000000953,
+          "totalTimeMs": 39.411299999999756,
+          "floorPolygonCount": 0,
+          "gridCellCount": 0
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-04-11T17:05:18.230Z",
+      "config": {
+        "name": "dense-textured",
+        "description": "Many polygons with textured floors",
+        "polygonCount": 274,
+        "floorPolygonCount": 74,
+        "screenWidth": 640,
+        "screenHeight": 480,
+        "frameCount": 60
+      },
+      "metrics": {
+        "avgFloorRenderMs": 13.164921666666661,
+        "minFloorRenderMs": 0.08689999999978681,
+        "maxFloorRenderMs": 52.62029999999959,
+        "p95FloorRenderMs": 35.13310000000001,
+        "avgTotalMs": 25.65467999999993,
+        "avgGridBuildMs": 0.05370000000001104,
+        "avgColumnBoundsMs": 12.436058333333259,
+        "stdDevMs": 11.487784009504677,
+        "avgExcludingWarmup": 12.493429090909087,
+        "stdDevExcludingWarmup": 11.697743306120284
+      },
+      "frames": [
+        {
+          "floorRenderTimeMs": 26.835799999999836,
+          "gridBuildTimeMs": 0.022100000000136788,
+          "columnBoundsTimeMs": 3.805399999999736,
+          "totalTimeMs": 30.66329999999971,
+          "floorPolygonCount": 7,
+          "gridCellCount": 35
+        },
+        {
+          "floorRenderTimeMs": 17.628600000000006,
+          "gridBuildTimeMs": 0.020199999999931606,
+          "columnBoundsTimeMs": 2.989100000000235,
+          "totalTimeMs": 20.637900000000172,
+          "floorPolygonCount": 7,
+          "gridCellCount": 35
+        },
+        {
+          "floorRenderTimeMs": 16.99290000000019,
+          "gridBuildTimeMs": 0.014500000000225555,
+          "columnBoundsTimeMs": 2.336899999999787,
+          "totalTimeMs": 19.344300000000203,
+          "floorPolygonCount": 4,
+          "gridCellCount": 30
+        },
+        {
+          "floorRenderTimeMs": 24.760099999999966,
+          "gridBuildTimeMs": 0.017600000000129512,
+          "columnBoundsTimeMs": 3.1105999999999767,
+          "totalTimeMs": 27.888300000000072,
+          "floorPolygonCount": 3,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 16.539299999999912,
+          "gridBuildTimeMs": 0.01110000000016953,
+          "columnBoundsTimeMs": 1.4618999999997868,
+          "totalTimeMs": 18.01229999999987,
+          "floorPolygonCount": 3,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 15.248099999999795,
+          "gridBuildTimeMs": 0.01040000000011787,
+          "columnBoundsTimeMs": 1.4185999999999694,
+          "totalTimeMs": 16.677099999999882,
+          "floorPolygonCount": 3,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 15.156799999999748,
+          "gridBuildTimeMs": 0.012200000000120781,
+          "columnBoundsTimeMs": 1.4171999999998661,
+          "totalTimeMs": 16.586199999999735,
+          "floorPolygonCount": 3,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 15.752700000000004,
+          "gridBuildTimeMs": 0.010800000000017462,
+          "columnBoundsTimeMs": 1.3843999999999141,
+          "totalTimeMs": 17.147899999999936,
+          "floorPolygonCount": 3,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 14.101400000000012,
+          "gridBuildTimeMs": 0.015099999999620195,
+          "columnBoundsTimeMs": 1.6285000000002583,
+          "totalTimeMs": 15.74499999999989,
+          "floorPolygonCount": 3,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 18.150900000000092,
+          "gridBuildTimeMs": 0.01710000000002765,
+          "columnBoundsTimeMs": 1.806699999999637,
+          "totalTimeMs": 19.974699999999757,
+          "floorPolygonCount": 3,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 14.082600000000184,
+          "gridBuildTimeMs": 0.012999999999919964,
+          "columnBoundsTimeMs": 1.6314000000002125,
+          "totalTimeMs": 15.727000000000317,
+          "floorPolygonCount": 3,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 0.08689999999978681,
+          "gridBuildTimeMs": 0.019900000000234286,
+          "columnBoundsTimeMs": 2.076499999999669,
+          "totalTimeMs": 2.18329999999969,
+          "floorPolygonCount": 6,
+          "gridCellCount": 42
+        },
+        {
+          "floorRenderTimeMs": 36.41559999999981,
+          "gridBuildTimeMs": 0.01830000000018117,
+          "columnBoundsTimeMs": 2.7456999999999425,
+          "totalTimeMs": 39.17959999999994,
+          "floorPolygonCount": 8,
+          "gridCellCount": 47
+        },
+        {
+          "floorRenderTimeMs": 8.77559999999994,
+          "gridBuildTimeMs": 0.03240000000005239,
+          "columnBoundsTimeMs": 6.46979999999985,
+          "totalTimeMs": 15.277799999999843,
+          "floorPolygonCount": 13,
+          "gridCellCount": 53
+        },
+        {
+          "floorRenderTimeMs": 31.982500000000073,
+          "gridBuildTimeMs": 0.05789999999979045,
+          "columnBoundsTimeMs": 11.804000000000087,
+          "totalTimeMs": 43.84439999999995,
+          "floorPolygonCount": 25,
+          "gridCellCount": 68
+        },
+        {
+          "floorRenderTimeMs": 11.439300000000003,
+          "gridBuildTimeMs": 0.07979999999997744,
+          "columnBoundsTimeMs": 16.948100000000068,
+          "totalTimeMs": 28.467200000000048,
+          "floorPolygonCount": 40,
+          "gridCellCount": 76
+        },
+        {
+          "floorRenderTimeMs": 16.82529999999997,
+          "gridBuildTimeMs": 0.10830000000032669,
+          "columnBoundsTimeMs": 26.782600000000002,
+          "totalTimeMs": 43.7162000000003,
+          "floorPolygonCount": 52,
+          "gridCellCount": 87
+        },
+        {
+          "floorRenderTimeMs": 0.088799999999992,
+          "gridBuildTimeMs": 0.11449999999967986,
+          "columnBoundsTimeMs": 24.865700000000288,
+          "totalTimeMs": 25.06899999999996,
+          "floorPolygonCount": 60,
+          "gridCellCount": 84
+        },
+        {
+          "floorRenderTimeMs": 8.64910000000009,
+          "gridBuildTimeMs": 0.08649999999988722,
+          "columnBoundsTimeMs": 23.01189999999997,
+          "totalTimeMs": 31.747499999999945,
+          "floorPolygonCount": 54,
+          "gridCellCount": 61
+        },
+        {
+          "floorRenderTimeMs": 13.144199999999728,
+          "gridBuildTimeMs": 0.09960000000000946,
+          "columnBoundsTimeMs": 17.481300000000374,
+          "totalTimeMs": 30.72510000000011,
+          "floorPolygonCount": 45,
+          "gridCellCount": 51
+        },
+        {
+          "floorRenderTimeMs": 21.41020000000026,
+          "gridBuildTimeMs": 0.05519999999978609,
+          "columnBoundsTimeMs": 13.527199999999993,
+          "totalTimeMs": 34.99260000000004,
+          "floorPolygonCount": 34,
+          "gridCellCount": 40
+        },
+        {
+          "floorRenderTimeMs": 13.847600000000057,
+          "gridBuildTimeMs": 0.04730000000017753,
+          "columnBoundsTimeMs": 12.215599999999995,
+          "totalTimeMs": 26.11050000000023,
+          "floorPolygonCount": 31,
+          "gridCellCount": 36
+        },
+        {
+          "floorRenderTimeMs": 10.249499999999898,
+          "gridBuildTimeMs": 0.0706000000000131,
+          "columnBoundsTimeMs": 11.683799999999792,
+          "totalTimeMs": 22.003899999999703,
+          "floorPolygonCount": 29,
+          "gridCellCount": 32
+        },
+        {
+          "floorRenderTimeMs": 11.010800000000017,
+          "gridBuildTimeMs": 0.04150000000026921,
+          "columnBoundsTimeMs": 9.878399999999601,
+          "totalTimeMs": 20.930699999999888,
+          "floorPolygonCount": 26,
+          "gridCellCount": 32
+        },
+        {
+          "floorRenderTimeMs": 13.730099999999766,
+          "gridBuildTimeMs": 0.05010000000038417,
+          "columnBoundsTimeMs": 11.565099999999802,
+          "totalTimeMs": 25.345299999999952,
+          "floorPolygonCount": 30,
+          "gridCellCount": 34
+        },
+        {
+          "floorRenderTimeMs": 0.738800000000083,
+          "gridBuildTimeMs": 0.056199999999989814,
+          "columnBoundsTimeMs": 12.469699999999648,
+          "totalTimeMs": 13.26469999999972,
+          "floorPolygonCount": 36,
+          "gridCellCount": 42
+        },
+        {
+          "floorRenderTimeMs": 12.59310000000005,
+          "gridBuildTimeMs": 0.06869999999980791,
+          "columnBoundsTimeMs": 17.340100000000348,
+          "totalTimeMs": 30.001900000000205,
+          "floorPolygonCount": 44,
+          "gridCellCount": 50
+        },
+        {
+          "floorRenderTimeMs": 30.740600000000086,
+          "gridBuildTimeMs": 0.07440000000042346,
+          "columnBoundsTimeMs": 19.547499999999673,
+          "totalTimeMs": 50.36250000000018,
+          "floorPolygonCount": 50,
+          "gridCellCount": 54
+        },
+        {
+          "floorRenderTimeMs": 12.15309999999954,
+          "gridBuildTimeMs": 0.15279999999984284,
+          "columnBoundsTimeMs": 25.25380000000041,
+          "totalTimeMs": 37.55969999999979,
+          "floorPolygonCount": 60,
+          "gridCellCount": 66
+        },
+        {
+          "floorRenderTimeMs": 0.08850000000074942,
+          "gridBuildTimeMs": 0.09959999999955471,
+          "columnBoundsTimeMs": 34.314400000000205,
+          "totalTimeMs": 34.50250000000051,
+          "floorPolygonCount": 68,
+          "gridCellCount": 79
+        },
+        {
+          "floorRenderTimeMs": 24.312800000000607,
+          "gridBuildTimeMs": 0.20899999999983265,
+          "columnBoundsTimeMs": 47.66069999999945,
+          "totalTimeMs": 72.18249999999989,
+          "floorPolygonCount": 77,
+          "gridCellCount": 89
+        },
+        {
+          "floorRenderTimeMs": 3.53899999999976,
+          "gridBuildTimeMs": 0.17640000000028522,
+          "columnBoundsTimeMs": 56.000200000000405,
+          "totalTimeMs": 59.71560000000045,
+          "floorPolygonCount": 89,
+          "gridCellCount": 101
+        },
+        {
+          "floorRenderTimeMs": 0.9174999999995634,
+          "gridBuildTimeMs": 0.24380000000019209,
+          "columnBoundsTimeMs": 41.39480000000003,
+          "totalTimeMs": 42.55609999999979,
+          "floorPolygonCount": 96,
+          "gridCellCount": 108
+        },
+        {
+          "floorRenderTimeMs": 16.918400000000474,
+          "gridBuildTimeMs": 0.16969999999946594,
+          "columnBoundsTimeMs": 41.75660000000062,
+          "totalTimeMs": 58.84470000000056,
+          "floorPolygonCount": 99,
+          "gridCellCount": 130
+        },
+        {
+          "floorRenderTimeMs": 35.13310000000001,
+          "gridBuildTimeMs": 0.12349999999969441,
+          "columnBoundsTimeMs": 39.35390000000007,
+          "totalTimeMs": 74.61049999999977,
+          "floorPolygonCount": 90,
+          "gridCellCount": 127
+        },
+        {
+          "floorRenderTimeMs": 18.60779999999977,
+          "gridBuildTimeMs": 0.10670000000027358,
+          "columnBoundsTimeMs": 33.83189999999922,
+          "totalTimeMs": 52.54639999999927,
+          "floorPolygonCount": 77,
+          "gridCellCount": 118
+        },
+        {
+          "floorRenderTimeMs": 11.863400000000183,
+          "gridBuildTimeMs": 0.0775999999996202,
+          "columnBoundsTimeMs": 22.98369999999977,
+          "totalTimeMs": 34.924699999999575,
+          "floorPolygonCount": 52,
+          "gridCellCount": 103
+        },
+        {
+          "floorRenderTimeMs": 7.3344999999999345,
+          "gridBuildTimeMs": 0.06970000000001164,
+          "columnBoundsTimeMs": 14.840400000000045,
+          "totalTimeMs": 22.24459999999999,
+          "floorPolygonCount": 34,
+          "gridCellCount": 79
+        },
+        {
+          "floorRenderTimeMs": 2.9332000000003973,
+          "gridBuildTimeMs": 0.037400000000161526,
+          "columnBoundsTimeMs": 9.405799999999545,
+          "totalTimeMs": 12.376400000000103,
+          "floorPolygonCount": 18,
+          "gridCellCount": 63
+        },
+        {
+          "floorRenderTimeMs": 13.47609999999986,
+          "gridBuildTimeMs": 0.029800000000250293,
+          "columnBoundsTimeMs": 4.627799999999297,
+          "totalTimeMs": 18.133699999999408,
+          "floorPolygonCount": 8,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 13.512899999999718,
+          "gridBuildTimeMs": 0.01749999999992724,
+          "columnBoundsTimeMs": 3.468499999999949,
+          "totalTimeMs": 16.998899999999594,
+          "floorPolygonCount": 7,
+          "gridCellCount": 46
+        },
+        {
+          "floorRenderTimeMs": 16.151100000000042,
+          "gridBuildTimeMs": 0.01389999999992142,
+          "columnBoundsTimeMs": 2.514299999999821,
+          "totalTimeMs": 18.679299999999785,
+          "floorPolygonCount": 6,
+          "gridCellCount": 44
+        },
+        {
+          "floorRenderTimeMs": 9.340000000000146,
+          "gridBuildTimeMs": 0.014699999999720603,
+          "columnBoundsTimeMs": 2.7219999999997526,
+          "totalTimeMs": 12.076699999999619,
+          "floorPolygonCount": 5,
+          "gridCellCount": 40
+        },
+        {
+          "floorRenderTimeMs": 19.667300000000523,
+          "gridBuildTimeMs": 0.009500000000116415,
+          "columnBoundsTimeMs": 1.532999999999447,
+          "totalTimeMs": 21.209800000000087,
+          "floorPolygonCount": 3,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 12.215299999999843,
+          "gridBuildTimeMs": 0.010599999999612919,
+          "columnBoundsTimeMs": 1.2678999999998268,
+          "totalTimeMs": 13.493799999999283,
+          "floorPolygonCount": 3,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 12.558899999999994,
+          "gridBuildTimeMs": 0.014699999999720603,
+          "columnBoundsTimeMs": 2.184200000000601,
+          "totalTimeMs": 14.757800000000316,
+          "floorPolygonCount": 3,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 9.955799999999726,
+          "gridBuildTimeMs": 0.013100000000122236,
+          "columnBoundsTimeMs": 1.6059000000004744,
+          "totalTimeMs": 11.574800000000323,
+          "floorPolygonCount": 3,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 10.422300000000178,
+          "gridBuildTimeMs": 0.01739999999972497,
+          "columnBoundsTimeMs": 3.4804000000003725,
+          "totalTimeMs": 13.920100000000275,
+          "floorPolygonCount": 7,
+          "gridCellCount": 37
+        },
+        {
+          "floorRenderTimeMs": 0.2806000000000495,
+          "gridBuildTimeMs": 0.0342000000000553,
+          "columnBoundsTimeMs": 11.555900000000292,
+          "totalTimeMs": 11.870700000000397,
+          "floorPolygonCount": 16,
+          "gridCellCount": 54
+        },
+        {
+          "floorRenderTimeMs": 0.37550000000010186,
+          "gridBuildTimeMs": 0.06180000000040309,
+          "columnBoundsTimeMs": 12.461999999999534,
+          "totalTimeMs": 12.89930000000004,
+          "floorPolygonCount": 24,
+          "gridCellCount": 63
+        },
+        {
+          "floorRenderTimeMs": 0.20379999999931897,
+          "gridBuildTimeMs": 0.06850000000031287,
+          "columnBoundsTimeMs": 22.28780000000006,
+          "totalTimeMs": 22.560099999999693,
+          "floorPolygonCount": 38,
+          "gridCellCount": 73
+        },
+        {
+          "floorRenderTimeMs": 0.18800000000010186,
+          "gridBuildTimeMs": 0.04709999999977299,
+          "columnBoundsTimeMs": 15.397100000000137,
+          "totalTimeMs": 15.632200000000012,
+          "floorPolygonCount": 28,
+          "gridCellCount": 64
+        },
+        {
+          "floorRenderTimeMs": 0.13720000000012078,
+          "gridBuildTimeMs": 0.03480000000035943,
+          "columnBoundsTimeMs": 11.213399999999638,
+          "totalTimeMs": 11.385400000000118,
+          "floorPolygonCount": 20,
+          "gridCellCount": 59
+        },
+        {
+          "floorRenderTimeMs": 0.12419999999929132,
+          "gridBuildTimeMs": 0.020900000000438013,
+          "columnBoundsTimeMs": 6.175799999999981,
+          "totalTimeMs": 6.32089999999971,
+          "floorPolygonCount": 12,
+          "gridCellCount": 44
+        },
+        {
+          "floorRenderTimeMs": 0.21519999999964057,
+          "gridBuildTimeMs": 0.023600000000442378,
+          "columnBoundsTimeMs": 3.795999999999367,
+          "totalTimeMs": 4.03479999999945,
+          "floorPolygonCount": 6,
+          "gridCellCount": 35
+        },
+        {
+          "floorRenderTimeMs": 0.24210000000039145,
+          "gridBuildTimeMs": 0.01589999999941938,
+          "columnBoundsTimeMs": 3.4915000000000873,
+          "totalTimeMs": 3.749499999999898,
+          "floorPolygonCount": 3,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 0.21770000000014988,
+          "gridBuildTimeMs": 0.016099999999823922,
+          "columnBoundsTimeMs": 2.5473999999994703,
+          "totalTimeMs": 2.781199999999444,
+          "floorPolygonCount": 3,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 0.18249999999989086,
+          "gridBuildTimeMs": 0.039099999999962165,
+          "columnBoundsTimeMs": 1.7286999999996624,
+          "totalTimeMs": 1.9502999999995154,
+          "floorPolygonCount": 1,
+          "gridCellCount": 12
+        },
+        {
+          "floorRenderTimeMs": 47.030000000000655,
+          "gridBuildTimeMs": 0.0039999999999054126,
+          "columnBoundsTimeMs": 1.266099999999824,
+          "totalTimeMs": 48.300100000000384,
+          "floorPolygonCount": 0,
+          "gridCellCount": 0
+        },
+        {
+          "floorRenderTimeMs": 52.62029999999959,
+          "gridBuildTimeMs": 0.0033000000003085006,
+          "columnBoundsTimeMs": 0.6378999999997177,
+          "totalTimeMs": 53.261499999999614,
+          "floorPolygonCount": 0,
+          "gridCellCount": 0
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-04-11T17:05:20.477Z",
+      "config": {
+        "name": "dense-floor-ceiling",
+        "description": "Both floor and ceiling materials",
+        "polygonCount": 277,
+        "floorPolygonCount": 77,
+        "screenWidth": 640,
+        "screenHeight": 480,
+        "frameCount": 60
+      },
+      "metrics": {
+        "avgFloorRenderMs": 23.527083333333362,
+        "minFloorRenderMs": 0.0874999999996362,
+        "maxFloorRenderMs": 108.24389999999948,
+        "p95FloorRenderMs": 45.53520000000026,
+        "avgTotalMs": 36.24184166666661,
+        "avgGridBuildMs": 0.066758333333352,
+        "avgColumnBoundsMs": 12.647999999999895,
+        "stdDevMs": 17.269923655352972,
+        "avgExcludingWarmup": 20.627430909090965,
+        "stdDevExcludingWarmup": 12.667086961784396
+      },
+      "frames": [
+        {
+          "floorRenderTimeMs": 108.24389999999948,
+          "gridBuildTimeMs": 0.08480000000054133,
+          "columnBoundsTimeMs": 4.487199999999575,
+          "totalTimeMs": 112.8158999999996,
+          "floorPolygonCount": 14,
+          "gridCellCount": 71
+        },
+        {
+          "floorRenderTimeMs": 39.206999999999425,
+          "gridBuildTimeMs": 0.05020000000058644,
+          "columnBoundsTimeMs": 3.2516999999998006,
+          "totalTimeMs": 42.50889999999981,
+          "floorPolygonCount": 10,
+          "gridCellCount": 66
+        },
+        {
+          "floorRenderTimeMs": 45.53520000000026,
+          "gridBuildTimeMs": 0.044200000000273576,
+          "columnBoundsTimeMs": 3.103399999999965,
+          "totalTimeMs": 48.6828000000005,
+          "floorPolygonCount": 7,
+          "gridCellCount": 62
+        },
+        {
+          "floorRenderTimeMs": 44.621900000000096,
+          "gridBuildTimeMs": 0.02489999999943393,
+          "columnBoundsTimeMs": 1.894100000000435,
+          "totalTimeMs": 46.540899999999965,
+          "floorPolygonCount": 4,
+          "gridCellCount": 57
+        },
+        {
+          "floorRenderTimeMs": 39.50829999999951,
+          "gridBuildTimeMs": 0.023100000000340515,
+          "columnBoundsTimeMs": 1.6413999999995212,
+          "totalTimeMs": 41.17279999999937,
+          "floorPolygonCount": 4,
+          "gridCellCount": 57
+        },
+        {
+          "floorRenderTimeMs": 39.95329999999922,
+          "gridBuildTimeMs": 0.02070000000003347,
+          "columnBoundsTimeMs": 1.593300000000454,
+          "totalTimeMs": 41.567299999999705,
+          "floorPolygonCount": 4,
+          "gridCellCount": 57
+        },
+        {
+          "floorRenderTimeMs": 38.39730000000054,
+          "gridBuildTimeMs": 0.02250000000003638,
+          "columnBoundsTimeMs": 1.5266999999994368,
+          "totalTimeMs": 39.946500000000015,
+          "floorPolygonCount": 4,
+          "gridCellCount": 57
+        },
+        {
+          "floorRenderTimeMs": 39.70669999999973,
+          "gridBuildTimeMs": 0.073500000000422,
+          "columnBoundsTimeMs": 2.8622999999997774,
+          "totalTimeMs": 42.64249999999993,
+          "floorPolygonCount": 4,
+          "gridCellCount": 57
+        },
+        {
+          "floorRenderTimeMs": 54.154099999999744,
+          "gridBuildTimeMs": 0.019500000000334694,
+          "columnBoundsTimeMs": 1.4406999999991967,
+          "totalTimeMs": 55.614299999999275,
+          "floorPolygonCount": 4,
+          "gridCellCount": 57
+        },
+        {
+          "floorRenderTimeMs": 39.53659999999945,
+          "gridBuildTimeMs": 0.02040000000033615,
+          "columnBoundsTimeMs": 1.4697999999998501,
+          "totalTimeMs": 41.02679999999964,
+          "floorPolygonCount": 4,
+          "gridCellCount": 57
+        },
+        {
+          "floorRenderTimeMs": 47.57259999999951,
+          "gridBuildTimeMs": 0.020599999999831198,
+          "columnBoundsTimeMs": 1.4457000000002154,
+          "totalTimeMs": 49.03889999999956,
+          "floorPolygonCount": 4,
+          "gridCellCount": 57
+        },
+        {
+          "floorRenderTimeMs": 0.1701999999995678,
+          "gridBuildTimeMs": 0.05169999999998254,
+          "columnBoundsTimeMs": 4.988299999999981,
+          "totalTimeMs": 5.210199999999531,
+          "floorPolygonCount": 6,
+          "gridCellCount": 69
+        },
+        {
+          "floorRenderTimeMs": 36.43069999999989,
+          "gridBuildTimeMs": 0.08300000000053842,
+          "columnBoundsTimeMs": 7.521599999999125,
+          "totalTimeMs": 44.03529999999955,
+          "floorPolygonCount": 12,
+          "gridCellCount": 78
+        },
+        {
+          "floorRenderTimeMs": 31.756200000000717,
+          "gridBuildTimeMs": 0.056899999999586726,
+          "columnBoundsTimeMs": 9.62079999999969,
+          "totalTimeMs": 41.433899999999994,
+          "floorPolygonCount": 19,
+          "gridCellCount": 84
+        },
+        {
+          "floorRenderTimeMs": 11.775499999999738,
+          "gridBuildTimeMs": 0.07880000000022847,
+          "columnBoundsTimeMs": 13.669799999999668,
+          "totalTimeMs": 25.524099999999635,
+          "floorPolygonCount": 28,
+          "gridCellCount": 97
+        },
+        {
+          "floorRenderTimeMs": 9.619899999999689,
+          "gridBuildTimeMs": 0.10850000000027649,
+          "columnBoundsTimeMs": 16.33050000000003,
+          "totalTimeMs": 26.058899999999994,
+          "floorPolygonCount": 41,
+          "gridCellCount": 89
+        },
+        {
+          "floorRenderTimeMs": 22.459799999999632,
+          "gridBuildTimeMs": 0.1768000000001848,
+          "columnBoundsTimeMs": 24.340000000000146,
+          "totalTimeMs": 46.97659999999996,
+          "floorPolygonCount": 61,
+          "gridCellCount": 93
+        },
+        {
+          "floorRenderTimeMs": 0.09320000000025175,
+          "gridBuildTimeMs": 0.1481999999996333,
+          "columnBoundsTimeMs": 24.960399999999936,
+          "totalTimeMs": 25.20179999999982,
+          "floorPolygonCount": 63,
+          "gridCellCount": 93
+        },
+        {
+          "floorRenderTimeMs": 11.020900000000438,
+          "gridBuildTimeMs": 0.10980000000017753,
+          "columnBoundsTimeMs": 22.378999999999905,
+          "totalTimeMs": 33.50970000000052,
+          "floorPolygonCount": 53,
+          "gridCellCount": 66
+        },
+        {
+          "floorRenderTimeMs": 32.893200000000434,
+          "gridBuildTimeMs": 0.07340000000021973,
+          "columnBoundsTimeMs": 17.315999999999804,
+          "totalTimeMs": 50.28260000000046,
+          "floorPolygonCount": 41,
+          "gridCellCount": 52
+        },
+        {
+          "floorRenderTimeMs": 18.97240000000056,
+          "gridBuildTimeMs": 0.07639999999992142,
+          "columnBoundsTimeMs": 13.981899999999769,
+          "totalTimeMs": 33.03070000000025,
+          "floorPolygonCount": 33,
+          "gridCellCount": 42
+        },
+        {
+          "floorRenderTimeMs": 21.1878999999999,
+          "gridBuildTimeMs": 0.0536999999994805,
+          "columnBoundsTimeMs": 12.448699999999917,
+          "totalTimeMs": 33.6902999999993,
+          "floorPolygonCount": 31,
+          "gridCellCount": 38
+        },
+        {
+          "floorRenderTimeMs": 25.350500000000466,
+          "gridBuildTimeMs": 0.10559999999986758,
+          "columnBoundsTimeMs": 14.416299999999865,
+          "totalTimeMs": 39.8724000000002,
+          "floorPolygonCount": 27,
+          "gridCellCount": 31
+        },
+        {
+          "floorRenderTimeMs": 18.721599999999853,
+          "gridBuildTimeMs": 0.054799999999886495,
+          "columnBoundsTimeMs": 19.448500000000422,
+          "totalTimeMs": 38.22490000000016,
+          "floorPolygonCount": 27,
+          "gridCellCount": 31
+        },
+        {
+          "floorRenderTimeMs": 18.48699999999917,
+          "gridBuildTimeMs": 0.0974000000005617,
+          "columnBoundsTimeMs": 12.010599999999613,
+          "totalTimeMs": 30.594999999999345,
+          "floorPolygonCount": 31,
+          "gridCellCount": 31
+        },
+        {
+          "floorRenderTimeMs": 0.8106999999999971,
+          "gridBuildTimeMs": 0.06040000000029977,
+          "columnBoundsTimeMs": 13.306699999999182,
+          "totalTimeMs": 14.177799999999479,
+          "floorPolygonCount": 36,
+          "gridCellCount": 40
+        },
+        {
+          "floorRenderTimeMs": 12.959100000000035,
+          "gridBuildTimeMs": 0.06180000000040309,
+          "columnBoundsTimeMs": 16.62920000000031,
+          "totalTimeMs": 29.650100000000748,
+          "floorPolygonCount": 39,
+          "gridCellCount": 43
+        },
+        {
+          "floorRenderTimeMs": 12.187300000000505,
+          "gridBuildTimeMs": 0.07899999999972351,
+          "columnBoundsTimeMs": 21.995600000000195,
+          "totalTimeMs": 34.26190000000042,
+          "floorPolygonCount": 48,
+          "gridCellCount": 56
+        },
+        {
+          "floorRenderTimeMs": 15.853100000000268,
+          "gridBuildTimeMs": 0.10210000000006403,
+          "columnBoundsTimeMs": 24.646899999999732,
+          "totalTimeMs": 40.602100000000064,
+          "floorPolygonCount": 60,
+          "gridCellCount": 67
+        },
+        {
+          "floorRenderTimeMs": 0.0874999999996362,
+          "gridBuildTimeMs": 0.10400000000026921,
+          "columnBoundsTimeMs": 27.76509999999962,
+          "totalTimeMs": 27.956599999999526,
+          "floorPolygonCount": 66,
+          "gridCellCount": 80
+        },
+        {
+          "floorRenderTimeMs": 20.115999999999985,
+          "gridBuildTimeMs": 0.11149999999997817,
+          "columnBoundsTimeMs": 31.072900000000118,
+          "totalTimeMs": 51.30040000000008,
+          "floorPolygonCount": 71,
+          "gridCellCount": 88
+        },
+        {
+          "floorRenderTimeMs": 4.841300000000047,
+          "gridBuildTimeMs": 0.13330000000041764,
+          "columnBoundsTimeMs": 35.284599999999955,
+          "totalTimeMs": 40.25920000000042,
+          "floorPolygonCount": 81,
+          "gridCellCount": 97
+        },
+        {
+          "floorRenderTimeMs": 0.9221999999999753,
+          "gridBuildTimeMs": 0.19349999999940337,
+          "columnBoundsTimeMs": 47.2512999999999,
+          "totalTimeMs": 48.36699999999928,
+          "floorPolygonCount": 90,
+          "gridCellCount": 106
+        },
+        {
+          "floorRenderTimeMs": 9.067200000000412,
+          "gridBuildTimeMs": 0.2220999999999549,
+          "columnBoundsTimeMs": 42.36020000000008,
+          "totalTimeMs": 51.649500000000444,
+          "floorPolygonCount": 94,
+          "gridCellCount": 135
+        },
+        {
+          "floorRenderTimeMs": 15.702500000000327,
+          "gridBuildTimeMs": 0.2557999999999083,
+          "columnBoundsTimeMs": 57.889500000000226,
+          "totalTimeMs": 73.84780000000046,
+          "floorPolygonCount": 91,
+          "gridCellCount": 134
+        },
+        {
+          "floorRenderTimeMs": 19.460299999999734,
+          "gridBuildTimeMs": 0.2202000000006592,
+          "columnBoundsTimeMs": 41.180599999999686,
+          "totalTimeMs": 60.86110000000008,
+          "floorPolygonCount": 77,
+          "gridCellCount": 134
+        },
+        {
+          "floorRenderTimeMs": 12.07550000000083,
+          "gridBuildTimeMs": 0.07949999999982538,
+          "columnBoundsTimeMs": 23.238099999999577,
+          "totalTimeMs": 35.39310000000023,
+          "floorPolygonCount": 54,
+          "gridCellCount": 133
+        },
+        {
+          "floorRenderTimeMs": 7.980899999999565,
+          "gridBuildTimeMs": 0.05640000000039436,
+          "columnBoundsTimeMs": 16.54019999999946,
+          "totalTimeMs": 24.577499999999418,
+          "floorPolygonCount": 36,
+          "gridCellCount": 107
+        },
+        {
+          "floorRenderTimeMs": 4.462999999999738,
+          "gridBuildTimeMs": 0.040899999999965075,
+          "columnBoundsTimeMs": 8.958300000000236,
+          "totalTimeMs": 13.462199999999939,
+          "floorPolygonCount": 23,
+          "gridCellCount": 91
+        },
+        {
+          "floorRenderTimeMs": 22.15440000000035,
+          "gridBuildTimeMs": 0.020199999999931606,
+          "columnBoundsTimeMs": 5.795500000000175,
+          "totalTimeMs": 27.970100000000457,
+          "floorPolygonCount": 8,
+          "gridCellCount": 72
+        },
+        {
+          "floorRenderTimeMs": 27.89969999999994,
+          "gridBuildTimeMs": 0.029800000000250293,
+          "columnBoundsTimeMs": 5.549699999999575,
+          "totalTimeMs": 33.479199999999764,
+          "floorPolygonCount": 7,
+          "gridCellCount": 71
+        },
+        {
+          "floorRenderTimeMs": 20.91570000000047,
+          "gridBuildTimeMs": 0.016499999999723514,
+          "columnBoundsTimeMs": 2.4309000000002925,
+          "totalTimeMs": 23.363100000000486,
+          "floorPolygonCount": 6,
+          "gridCellCount": 67
+        },
+        {
+          "floorRenderTimeMs": 15.776600000000144,
+          "gridBuildTimeMs": 0.014699999999720603,
+          "columnBoundsTimeMs": 2.025499999999738,
+          "totalTimeMs": 17.816799999999603,
+          "floorPolygonCount": 5,
+          "gridCellCount": 65
+        },
+        {
+          "floorRenderTimeMs": 39.718400000000656,
+          "gridBuildTimeMs": 0.02070000000003347,
+          "columnBoundsTimeMs": 2.4144999999998618,
+          "totalTimeMs": 42.15360000000055,
+          "floorPolygonCount": 4,
+          "gridCellCount": 57
+        },
+        {
+          "floorRenderTimeMs": 41.3762999999999,
+          "gridBuildTimeMs": 0.012700000000222644,
+          "columnBoundsTimeMs": 1.1162999999996828,
+          "totalTimeMs": 42.50529999999981,
+          "floorPolygonCount": 4,
+          "gridCellCount": 57
+        },
+        {
+          "floorRenderTimeMs": 39.3729000000003,
+          "gridBuildTimeMs": 0.016399999999521242,
+          "columnBoundsTimeMs": 2.305199999999786,
+          "totalTimeMs": 41.69449999999961,
+          "floorPolygonCount": 3,
+          "gridCellCount": 37
+        },
+        {
+          "floorRenderTimeMs": 33.000700000000506,
+          "gridBuildTimeMs": 0.014400000000023283,
+          "columnBoundsTimeMs": 1.4857999999994718,
+          "totalTimeMs": 34.5009,
+          "floorPolygonCount": 5,
+          "gridCellCount": 40
+        },
+        {
+          "floorRenderTimeMs": 26.37580000000071,
+          "gridBuildTimeMs": 0.025799999999435386,
+          "columnBoundsTimeMs": 4.810199999999895,
+          "totalTimeMs": 31.21180000000004,
+          "floorPolygonCount": 9,
+          "gridCellCount": 47
+        },
+        {
+          "floorRenderTimeMs": 13.837900000000445,
+          "gridBuildTimeMs": 0.04199999999946158,
+          "columnBoundsTimeMs": 12.006900000000314,
+          "totalTimeMs": 25.88680000000022,
+          "floorPolygonCount": 18,
+          "gridCellCount": 65
+        },
+        {
+          "floorRenderTimeMs": 16.251400000000103,
+          "gridBuildTimeMs": 0.07589999999981956,
+          "columnBoundsTimeMs": 13.48909999999978,
+          "totalTimeMs": 29.816399999999703,
+          "floorPolygonCount": 26,
+          "gridCellCount": 77
+        },
+        {
+          "floorRenderTimeMs": 18.081499999999323,
+          "gridBuildTimeMs": 0.07160000000021682,
+          "columnBoundsTimeMs": 17.619300000000294,
+          "totalTimeMs": 35.772399999999834,
+          "floorPolygonCount": 37,
+          "gridCellCount": 84
+        },
+        {
+          "floorRenderTimeMs": 22.935899999999492,
+          "gridBuildTimeMs": 0.056499999999687134,
+          "columnBoundsTimeMs": 13.865700000000288,
+          "totalTimeMs": 36.85809999999947,
+          "floorPolygonCount": 29,
+          "gridCellCount": 78
+        },
+        {
+          "floorRenderTimeMs": 19.944100000000617,
+          "gridBuildTimeMs": 0.06529999999929714,
+          "columnBoundsTimeMs": 12.236300000000483,
+          "totalTimeMs": 32.2457000000004,
+          "floorPolygonCount": 23,
+          "gridCellCount": 89
+        },
+        {
+          "floorRenderTimeMs": 18.41939999999977,
+          "gridBuildTimeMs": 0.03240000000005239,
+          "columnBoundsTimeMs": 6.336800000000039,
+          "totalTimeMs": 24.78859999999986,
+          "floorPolygonCount": 15,
+          "gridCellCount": 76
+        },
+        {
+          "floorRenderTimeMs": 16.003099999999904,
+          "gridBuildTimeMs": 0.02250000000003638,
+          "columnBoundsTimeMs": 3.3999000000003434,
+          "totalTimeMs": 19.425500000000284,
+          "floorPolygonCount": 10,
+          "gridCellCount": 65
+        },
+        {
+          "floorRenderTimeMs": 23.775000000000546,
+          "gridBuildTimeMs": 0.0239000000001397,
+          "columnBoundsTimeMs": 1.949399999999514,
+          "totalTimeMs": 25.7483000000002,
+          "floorPolygonCount": 6,
+          "gridCellCount": 60
+        },
+        {
+          "floorRenderTimeMs": 15.349900000000162,
+          "gridBuildTimeMs": 0.01239999999961583,
+          "columnBoundsTimeMs": 1.324200000000019,
+          "totalTimeMs": 16.686499999999796,
+          "floorPolygonCount": 4,
+          "gridCellCount": 57
+        },
+        {
+          "floorRenderTimeMs": 15.957999999999629,
+          "gridBuildTimeMs": 0.01209999999991851,
+          "columnBoundsTimeMs": 0.9823999999998705,
+          "totalTimeMs": 16.952499999999418,
+          "floorPolygonCount": 4,
+          "gridCellCount": 57
+        },
+        {
+          "floorRenderTimeMs": 16.40270000000055,
+          "gridBuildTimeMs": 0.009900000000016007,
+          "columnBoundsTimeMs": 0.734599999999773,
+          "totalTimeMs": 17.14720000000034,
+          "floorPolygonCount": 3,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 16.173099999999977,
+          "gridBuildTimeMs": 0.009900000000016007,
+          "columnBoundsTimeMs": 0.7339000000001761,
+          "totalTimeMs": 16.91690000000017,
+          "floorPolygonCount": 3,
+          "gridCellCount": 48
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-04-11T17:05:21.757Z",
+      "config": {
+        "name": "sparse-floor",
+        "description": "Few polygons with floors (worst-case iteration overhead)",
+        "polygonCount": 208,
+        "floorPolygonCount": 8,
+        "screenWidth": 640,
+        "screenHeight": 480,
+        "frameCount": 60
+      },
+      "metrics": {
+        "avgFloorRenderMs": 9.065939999999985,
+        "minFloorRenderMs": 0.08719999999993888,
+        "maxFloorRenderMs": 54.51220000000012,
+        "p95FloorRenderMs": 34.64419999999973,
+        "avgTotalMs": 20.57298999999989,
+        "avgGridBuildMs": 0.01821666666657317,
+        "avgColumnBoundsMs": 11.488833333333332,
+        "stdDevMs": 12.558741862280616,
+        "avgExcludingWarmup": 9.851225454545437,
+        "stdDevExcludingWarmup": 12.831950948078669
+      },
+      "frames": [
+        {
+          "floorRenderTimeMs": 0.5155999999997221,
+          "gridBuildTimeMs": 0.020499999999628926,
+          "columnBoundsTimeMs": 6.047700000000077,
+          "totalTimeMs": 6.583799999999428,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 0.586500000000342,
+          "gridBuildTimeMs": 0.01569999999992433,
+          "columnBoundsTimeMs": 5.761899999999514,
+          "totalTimeMs": 6.36409999999978,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 0.4530000000004293,
+          "gridBuildTimeMs": 0.01779999999962456,
+          "columnBoundsTimeMs": 4.165899999999965,
+          "totalTimeMs": 4.636700000000019,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 0.32330000000001746,
+          "gridBuildTimeMs": 0.015300000000024738,
+          "columnBoundsTimeMs": 1.6172000000005937,
+          "totalTimeMs": 1.955800000000636,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 0.2605999999996129,
+          "gridBuildTimeMs": 0.007400000000416185,
+          "columnBoundsTimeMs": 1.396299999999428,
+          "totalTimeMs": 1.6642999999994572,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 0.3346000000001368,
+          "gridBuildTimeMs": 0.015399999999317515,
+          "columnBoundsTimeMs": 1.4954000000007,
+          "totalTimeMs": 1.8454000000001543,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 0.1544000000003507,
+          "gridBuildTimeMs": 0.008799999999610009,
+          "columnBoundsTimeMs": 1.5113000000001193,
+          "totalTimeMs": 1.67450000000008,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 0.12699999999949796,
+          "gridBuildTimeMs": 0.0072000000000116415,
+          "columnBoundsTimeMs": 1.2496000000001004,
+          "totalTimeMs": 1.38379999999961,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 0.12489999999979773,
+          "gridBuildTimeMs": 0.00650000000041473,
+          "columnBoundsTimeMs": 1.246900000000096,
+          "totalTimeMs": 1.3783000000003085,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 0.12640000000010332,
+          "gridBuildTimeMs": 0.00650000000041473,
+          "columnBoundsTimeMs": 1.246900000000096,
+          "totalTimeMs": 1.379800000000614,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 0.12619999999969878,
+          "gridBuildTimeMs": 0.005799999999908323,
+          "columnBoundsTimeMs": 1.239900000000489,
+          "totalTimeMs": 1.371900000000096,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 0.18850000000020373,
+          "gridBuildTimeMs": 0.02129999999942811,
+          "columnBoundsTimeMs": 2.994300000000294,
+          "totalTimeMs": 3.204099999999926,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 0.17630000000008295,
+          "gridBuildTimeMs": 0.018299999999726424,
+          "columnBoundsTimeMs": 4.506900000000314,
+          "totalTimeMs": 4.701500000000124,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 0.10360000000036962,
+          "gridBuildTimeMs": 0.012300000000323053,
+          "columnBoundsTimeMs": 6.239699999999175,
+          "totalTimeMs": 6.355599999999868,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 32.67630000000008,
+          "gridBuildTimeMs": 0.02190000000064174,
+          "columnBoundsTimeMs": 12.253399999999601,
+          "totalTimeMs": 44.951600000000326,
+          "floorPolygonCount": 4,
+          "gridCellCount": 52
+        },
+        {
+          "floorRenderTimeMs": 0.4193999999997686,
+          "gridBuildTimeMs": 0.021200000000135333,
+          "columnBoundsTimeMs": 15.53899999999976,
+          "totalTimeMs": 15.979599999999664,
+          "floorPolygonCount": 4,
+          "gridCellCount": 32
+        },
+        {
+          "floorRenderTimeMs": 34.64419999999973,
+          "gridBuildTimeMs": 0.025599999999940337,
+          "columnBoundsTimeMs": 25.371799999999894,
+          "totalTimeMs": 60.04159999999956,
+          "floorPolygonCount": 6,
+          "gridCellCount": 38
+        },
+        {
+          "floorRenderTimeMs": 0.08950000000004366,
+          "gridBuildTimeMs": 0.04379999999946449,
+          "columnBoundsTimeMs": 29.138200000000325,
+          "totalTimeMs": 29.271499999999833,
+          "floorPolygonCount": 7,
+          "gridCellCount": 38
+        },
+        {
+          "floorRenderTimeMs": 30.838999999999942,
+          "gridBuildTimeMs": 0.026600000000144064,
+          "columnBoundsTimeMs": 22.44210000000021,
+          "totalTimeMs": 53.307700000000295,
+          "floorPolygonCount": 7,
+          "gridCellCount": 14
+        },
+        {
+          "floorRenderTimeMs": 37.588699999999335,
+          "gridBuildTimeMs": 0.02080000000023574,
+          "columnBoundsTimeMs": 16.667699999999968,
+          "totalTimeMs": 54.27719999999954,
+          "floorPolygonCount": 6,
+          "gridCellCount": 14
+        },
+        {
+          "floorRenderTimeMs": 1.397200000000339,
+          "gridBuildTimeMs": 0.021899999999732245,
+          "columnBoundsTimeMs": 15.189000000000306,
+          "totalTimeMs": 16.608100000000377,
+          "floorPolygonCount": 3,
+          "gridCellCount": 8
+        },
+        {
+          "floorRenderTimeMs": 41.6866,
+          "gridBuildTimeMs": 0.013199999999415013,
+          "columnBoundsTimeMs": 14.9962000000005,
+          "totalTimeMs": 56.69599999999991,
+          "floorPolygonCount": 3,
+          "gridCellCount": 8
+        },
+        {
+          "floorRenderTimeMs": 54.51220000000012,
+          "gridBuildTimeMs": 0.023000000000138243,
+          "columnBoundsTimeMs": 19.096999999999753,
+          "totalTimeMs": 73.63220000000001,
+          "floorPolygonCount": 2,
+          "gridCellCount": 6
+        },
+        {
+          "floorRenderTimeMs": 10.531200000000354,
+          "gridBuildTimeMs": 0.016399999999521242,
+          "columnBoundsTimeMs": 10.591599999999744,
+          "totalTimeMs": 21.13919999999962,
+          "floorPolygonCount": 2,
+          "gridCellCount": 6
+        },
+        {
+          "floorRenderTimeMs": 11.669300000000476,
+          "gridBuildTimeMs": 0.01769999999942229,
+          "columnBoundsTimeMs": 10.572000000000116,
+          "totalTimeMs": 22.259000000000015,
+          "floorPolygonCount": 4,
+          "gridCellCount": 10
+        },
+        {
+          "floorRenderTimeMs": 0.7429000000001906,
+          "gridBuildTimeMs": 0.0158000000001266,
+          "columnBoundsTimeMs": 12.320300000000316,
+          "totalTimeMs": 13.079000000000633,
+          "floorPolygonCount": 4,
+          "gridCellCount": 10
+        },
+        {
+          "floorRenderTimeMs": 0.5113000000001193,
+          "gridBuildTimeMs": 0.017300000000432192,
+          "columnBoundsTimeMs": 15.65480000000025,
+          "totalTimeMs": 16.183400000000802,
+          "floorPolygonCount": 4,
+          "gridCellCount": 10
+        },
+        {
+          "floorRenderTimeMs": 0.2888999999995576,
+          "gridBuildTimeMs": 0.03260000000045693,
+          "columnBoundsTimeMs": 20.458799999999428,
+          "totalTimeMs": 20.780299999999443,
+          "floorPolygonCount": 4,
+          "gridCellCount": 10
+        },
+        {
+          "floorRenderTimeMs": 21.9390999999996,
+          "gridBuildTimeMs": 0.025900000000547152,
+          "columnBoundsTimeMs": 24.107299999999668,
+          "totalTimeMs": 46.072299999999814,
+          "floorPolygonCount": 5,
+          "gridCellCount": 11
+        },
+        {
+          "floorRenderTimeMs": 0.08719999999993888,
+          "gridBuildTimeMs": 0.03290000000015425,
+          "columnBoundsTimeMs": 27.58550000000014,
+          "totalTimeMs": 27.70560000000023,
+          "floorPolygonCount": 9,
+          "gridCellCount": 18
+        },
+        {
+          "floorRenderTimeMs": 0.8976999999995314,
+          "gridBuildTimeMs": 0.029800000000250293,
+          "columnBoundsTimeMs": 29.942399999999907,
+          "totalTimeMs": 30.86989999999969,
+          "floorPolygonCount": 9,
+          "gridCellCount": 18
+        },
+        {
+          "floorRenderTimeMs": 0.2385999999996784,
+          "gridBuildTimeMs": 0.046000000000276486,
+          "columnBoundsTimeMs": 36.53299999999945,
+          "totalTimeMs": 36.8175999999994,
+          "floorPolygonCount": 9,
+          "gridCellCount": 18
+        },
+        {
+          "floorRenderTimeMs": 0.14460000000053697,
+          "gridBuildTimeMs": 0.07110000000011496,
+          "columnBoundsTimeMs": 38.71860000000015,
+          "totalTimeMs": 38.9343000000008,
+          "floorPolygonCount": 9,
+          "gridCellCount": 18
+        },
+        {
+          "floorRenderTimeMs": 2.706199999999626,
+          "gridBuildTimeMs": 0.0419000000001688,
+          "columnBoundsTimeMs": 40.14900000000034,
+          "totalTimeMs": 42.89710000000014,
+          "floorPolygonCount": 11,
+          "gridCellCount": 44
+        },
+        {
+          "floorRenderTimeMs": 3.8562000000001717,
+          "gridBuildTimeMs": 0.034599999999045394,
+          "columnBoundsTimeMs": 36.634900000000016,
+          "totalTimeMs": 40.52569999999923,
+          "floorPolygonCount": 11,
+          "gridCellCount": 44
+        },
+        {
+          "floorRenderTimeMs": 25.47819999999956,
+          "gridBuildTimeMs": 0.03049999999893771,
+          "columnBoundsTimeMs": 30.189000000000306,
+          "totalTimeMs": 55.697699999998804,
+          "floorPolygonCount": 9,
+          "gridCellCount": 64
+        },
+        {
+          "floorRenderTimeMs": 27.627300000000105,
+          "gridBuildTimeMs": 0.022100000000136788,
+          "columnBoundsTimeMs": 20.634100000001126,
+          "totalTimeMs": 48.28350000000137,
+          "floorPolygonCount": 5,
+          "gridCellCount": 54
+        },
+        {
+          "floorRenderTimeMs": 18.43000000000029,
+          "gridBuildTimeMs": 0.018299999999726424,
+          "columnBoundsTimeMs": 13.60989999999947,
+          "totalTimeMs": 32.05819999999949,
+          "floorPolygonCount": 4,
+          "gridCellCount": 52
+        },
+        {
+          "floorRenderTimeMs": 0.14329999999972642,
+          "gridBuildTimeMs": 0.01479999999901338,
+          "columnBoundsTimeMs": 9.361399999999776,
+          "totalTimeMs": 9.519499999998516,
+          "floorPolygonCount": 3,
+          "gridCellCount": 50
+        },
+        {
+          "floorRenderTimeMs": 1.8634000000001834,
+          "gridBuildTimeMs": 0.017399999998815474,
+          "columnBoundsTimeMs": 7.5733000000000175,
+          "totalTimeMs": 9.454099999999016,
+          "floorPolygonCount": 3,
+          "gridCellCount": 50
+        },
+        {
+          "floorRenderTimeMs": 1.4873999999999796,
+          "gridBuildTimeMs": 0.012899999999717693,
+          "columnBoundsTimeMs": 6.09480000000076,
+          "totalTimeMs": 7.595100000000457,
+          "floorPolygonCount": 3,
+          "gridCellCount": 50
+        },
+        {
+          "floorRenderTimeMs": 2.212100000000646,
+          "gridBuildTimeMs": 0.009399999999004649,
+          "columnBoundsTimeMs": 2.125799999999799,
+          "totalTimeMs": 4.34729999999945,
+          "floorPolygonCount": 3,
+          "gridCellCount": 50
+        },
+        {
+          "floorRenderTimeMs": 0.14640000000144937,
+          "gridBuildTimeMs": 0.006999999999607098,
+          "columnBoundsTimeMs": 1.8539999999993597,
+          "totalTimeMs": 2.007400000000416,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 0.15569999999934225,
+          "gridBuildTimeMs": 0.006199999999807915,
+          "columnBoundsTimeMs": 1.2422000000005937,
+          "totalTimeMs": 1.4040999999997439,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 0.18109999999978754,
+          "gridBuildTimeMs": 0.005799999998998828,
+          "columnBoundsTimeMs": 0.8042000000004919,
+          "totalTimeMs": 0.9910999999992782,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 0.6514999999999418,
+          "gridBuildTimeMs": 0.0072000000000116415,
+          "columnBoundsTimeMs": 1.011399999999412,
+          "totalTimeMs": 1.6700999999993655,
+          "floorPolygonCount": 1,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 0.5460999999995693,
+          "gridBuildTimeMs": 0.010800000000017462,
+          "columnBoundsTimeMs": 2.4060000000008586,
+          "totalTimeMs": 2.9629000000004453,
+          "floorPolygonCount": 1,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 0.3653999999987718,
+          "gridBuildTimeMs": 0.006300000000919681,
+          "columnBoundsTimeMs": 3.3837000000003172,
+          "totalTimeMs": 3.7554000000000087,
+          "floorPolygonCount": 1,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 10.689799999998286,
+          "gridBuildTimeMs": 0.008200000000215368,
+          "columnBoundsTimeMs": 7.425699999999779,
+          "totalTimeMs": 18.12369999999828,
+          "floorPolygonCount": 1,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 13.361300000000483,
+          "gridBuildTimeMs": 0.015799999999217107,
+          "columnBoundsTimeMs": 12.89429999999993,
+          "totalTimeMs": 26.27139999999963,
+          "floorPolygonCount": 3,
+          "gridCellCount": 32
+        },
+        {
+          "floorRenderTimeMs": 13.652900000000955,
+          "gridBuildTimeMs": 0.017900000000736327,
+          "columnBoundsTimeMs": 16.510699999998906,
+          "totalTimeMs": 30.181500000000597,
+          "floorPolygonCount": 4,
+          "gridCellCount": 32
+        },
+        {
+          "floorRenderTimeMs": 14.051900000000387,
+          "gridBuildTimeMs": 0.02109999999993306,
+          "columnBoundsTimeMs": 13.072000000000116,
+          "totalTimeMs": 27.145000000000437,
+          "floorPolygonCount": 4,
+          "gridCellCount": 32
+        },
+        {
+          "floorRenderTimeMs": 14.618400000001202,
+          "gridBuildTimeMs": 0.017599999999220017,
+          "columnBoundsTimeMs": 10.030899999999747,
+          "totalTimeMs": 24.66690000000017,
+          "floorPolygonCount": 3,
+          "gridCellCount": 52
+        },
+        {
+          "floorRenderTimeMs": 15.074000000000524,
+          "gridBuildTimeMs": 0.011000000000422006,
+          "columnBoundsTimeMs": 5.962099999998827,
+          "totalTimeMs": 21.047099999999773,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 14.582900000001246,
+          "gridBuildTimeMs": 0.010800000000017462,
+          "columnBoundsTimeMs": 3.639099999998507,
+          "totalTimeMs": 18.23279999999977,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 15.423699999999371,
+          "gridBuildTimeMs": 0.008799999999610009,
+          "columnBoundsTimeMs": 1.5978000000013708,
+          "totalTimeMs": 17.030300000000352,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 15.38630000000012,
+          "gridBuildTimeMs": 0.009000000000014552,
+          "columnBoundsTimeMs": 1.2489000000005035,
+          "totalTimeMs": 16.644200000000637,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 15.49789999999848,
+          "gridBuildTimeMs": 0.009000000000014552,
+          "columnBoundsTimeMs": 0.8886000000002241,
+          "totalTimeMs": 16.39549999999872,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 15.170500000000175,
+          "gridBuildTimeMs": 0.008100000000922591,
+          "columnBoundsTimeMs": 0.5391999999992549,
+          "totalTimeMs": 15.717800000000352,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        },
+        {
+          "floorRenderTimeMs": 16.091699999999037,
+          "gridBuildTimeMs": 0.008200000000215368,
+          "columnBoundsTimeMs": 0.548399999999674,
+          "totalTimeMs": 16.648299999998926,
+          "floorPolygonCount": 2,
+          "gridCellCount": 48
+        }
+      ]
+    },
+    {
+      "timestamp": "2026-04-11T17:05:24.917Z",
+      "config": {
+        "name": "stress-all",
+        "description": "Maximum complexity: all floors, half ceilings, mostly textured",
+        "polygonCount": 609,
+        "floorPolygonCount": 159,
+        "screenWidth": 640,
+        "screenHeight": 480,
+        "frameCount": 60
+      },
+      "metrics": {
+        "avgFloorRenderMs": 10.789695000000014,
+        "minFloorRenderMs": 0.08759999999892898,
+        "maxFloorRenderMs": 24.630199999999604,
+        "p95FloorRenderMs": 22.46140000000014,
+        "avgTotalMs": 49.00562833333347,
+        "avgGridBuildMs": 0.14954833333334439,
+        "avgColumnBoundsMs": 38.06638500000011,
+        "stdDevMs": 7.224120975187326,
+        "avgExcludingWarmup": 10.56906545454549,
+        "stdDevExcludingWarmup": 7.152505150180061
+      },
+      "frames": [
+        {
+          "floorRenderTimeMs": 22.46140000000014,
+          "gridBuildTimeMs": 0.13760000000002037,
+          "columnBoundsTimeMs": 31.988800000000992,
+          "totalTimeMs": 54.58780000000115,
+          "floorPolygonCount": 78,
+          "gridCellCount": 58
+        },
+        {
+          "floorRenderTimeMs": 20.643599999998514,
+          "gridBuildTimeMs": 0.14050000000133878,
+          "columnBoundsTimeMs": 30.545599999999467,
+          "totalTimeMs": 51.32969999999932,
+          "floorPolygonCount": 75,
+          "gridCellCount": 56
+        },
+        {
+          "floorRenderTimeMs": 11.965099999999438,
+          "gridBuildTimeMs": 0.11540000000059081,
+          "columnBoundsTimeMs": 27.212499999999636,
+          "totalTimeMs": 39.292999999999665,
+          "floorPolygonCount": 72,
+          "gridCellCount": 54
+        },
+        {
+          "floorRenderTimeMs": 2.016799999999421,
+          "gridBuildTimeMs": 0.10159999999996217,
+          "columnBoundsTimeMs": 29.311800000001313,
+          "totalTimeMs": 31.430200000000696,
+          "floorPolygonCount": 70,
+          "gridCellCount": 53
+        },
+        {
+          "floorRenderTimeMs": 8.996200000001409,
+          "gridBuildTimeMs": 0.09499999999934516,
+          "columnBoundsTimeMs": 27.252000000000407,
+          "totalTimeMs": 36.34320000000116,
+          "floorPolygonCount": 67,
+          "gridCellCount": 49
+        },
+        {
+          "floorRenderTimeMs": 5.443699999999808,
+          "gridBuildTimeMs": 0.09519999999974971,
+          "columnBoundsTimeMs": 28.181400000001304,
+          "totalTimeMs": 33.72030000000086,
+          "floorPolygonCount": 68,
+          "gridCellCount": 50
+        },
+        {
+          "floorRenderTimeMs": 2.5649999999986903,
+          "gridBuildTimeMs": 0.0871000000006461,
+          "columnBoundsTimeMs": 25.307600000000093,
+          "totalTimeMs": 27.95969999999943,
+          "floorPolygonCount": 64,
+          "gridCellCount": 49
+        },
+        {
+          "floorRenderTimeMs": 2.6777000000001863,
+          "gridBuildTimeMs": 0.07790000000022701,
+          "columnBoundsTimeMs": 23.932800000000498,
+          "totalTimeMs": 26.68840000000091,
+          "floorPolygonCount": 65,
+          "gridCellCount": 49
+        },
+        {
+          "floorRenderTimeMs": 21.793100000000777,
+          "gridBuildTimeMs": 0.08430000000043947,
+          "columnBoundsTimeMs": 24.695599999999104,
+          "totalTimeMs": 46.57300000000032,
+          "floorPolygonCount": 68,
+          "gridCellCount": 52
+        },
+        {
+          "floorRenderTimeMs": 0.7710999999999331,
+          "gridBuildTimeMs": 0.08740000000034343,
+          "columnBoundsTimeMs": 29.68419999999969,
+          "totalTimeMs": 30.542699999999968,
+          "floorPolygonCount": 67,
+          "gridCellCount": 51
+        },
+        {
+          "floorRenderTimeMs": 16.596700000000055,
+          "gridBuildTimeMs": 0.08669999999983702,
+          "columnBoundsTimeMs": 25.01419999999962,
+          "totalTimeMs": 41.69759999999951,
+          "floorPolygonCount": 68,
+          "gridCellCount": 50
+        },
+        {
+          "floorRenderTimeMs": 0.10010000000147556,
+          "gridBuildTimeMs": 0.17419999999947322,
+          "columnBoundsTimeMs": 33.17059999999947,
+          "totalTimeMs": 33.444900000000416,
+          "floorPolygonCount": 86,
+          "gridCellCount": 65
+        },
+        {
+          "floorRenderTimeMs": 12.557499999998981,
+          "gridBuildTimeMs": 0.13400000000001455,
+          "columnBoundsTimeMs": 37.90819999999985,
+          "totalTimeMs": 50.59969999999885,
+          "floorPolygonCount": 93,
+          "gridCellCount": 70
+        },
+        {
+          "floorRenderTimeMs": 15.934199999999691,
+          "gridBuildTimeMs": 0.16380000000026484,
+          "columnBoundsTimeMs": 43.243499999998676,
+          "totalTimeMs": 59.34149999999863,
+          "floorPolygonCount": 107,
+          "gridCellCount": 77
+        },
+        {
+          "floorRenderTimeMs": 15.414099999999962,
+          "gridBuildTimeMs": 0.20890000000144937,
+          "columnBoundsTimeMs": 45.70329999999922,
+          "totalTimeMs": 61.32630000000063,
+          "floorPolygonCount": 113,
+          "gridCellCount": 83
+        },
+        {
+          "floorRenderTimeMs": 7.673300000000381,
+          "gridBuildTimeMs": 0.2297999999991589,
+          "columnBoundsTimeMs": 54.49510000000009,
+          "totalTimeMs": 62.39819999999963,
+          "floorPolygonCount": 119,
+          "gridCellCount": 98
+        },
+        {
+          "floorRenderTimeMs": 24.630199999999604,
+          "gridBuildTimeMs": 0.17599999999947613,
+          "columnBoundsTimeMs": 46.03360000000066,
+          "totalTimeMs": 70.83979999999974,
+          "floorPolygonCount": 113,
+          "gridCellCount": 96
+        },
+        {
+          "floorRenderTimeMs": 0.0930000000007567,
+          "gridBuildTimeMs": 0.16129999999975553,
+          "columnBoundsTimeMs": 48.496900000000096,
+          "totalTimeMs": 48.75120000000061,
+          "floorPolygonCount": 95,
+          "gridCellCount": 83
+        },
+        {
+          "floorRenderTimeMs": 11.195999999999913,
+          "gridBuildTimeMs": 0.13020000000142318,
+          "columnBoundsTimeMs": 36.24129999999968,
+          "totalTimeMs": 47.56750000000102,
+          "floorPolygonCount": 76,
+          "gridCellCount": 66
+        },
+        {
+          "floorRenderTimeMs": 16.821200000000317,
+          "gridBuildTimeMs": 0.1448999999993248,
+          "columnBoundsTimeMs": 24.863499999999476,
+          "totalTimeMs": 41.82959999999912,
+          "floorPolygonCount": 59,
+          "gridCellCount": 54
+        },
+        {
+          "floorRenderTimeMs": 15.885400000001027,
+          "gridBuildTimeMs": 0.07859999999891443,
+          "columnBoundsTimeMs": 22.05000000000109,
+          "totalTimeMs": 38.01400000000103,
+          "floorPolygonCount": 45,
+          "gridCellCount": 42
+        },
+        {
+          "floorRenderTimeMs": 17.445400000000518,
+          "gridBuildTimeMs": 0.06710000000020955,
+          "columnBoundsTimeMs": 19.528299999999945,
+          "totalTimeMs": 37.04080000000067,
+          "floorPolygonCount": 43,
+          "gridCellCount": 38
+        },
+        {
+          "floorRenderTimeMs": 12.212199999999939,
+          "gridBuildTimeMs": 0.10030000000006112,
+          "columnBoundsTimeMs": 19.136599999999817,
+          "totalTimeMs": 31.449099999999817,
+          "floorPolygonCount": 36,
+          "gridCellCount": 32
+        },
+        {
+          "floorRenderTimeMs": 10.081600000001345,
+          "gridBuildTimeMs": 0.05760000000009313,
+          "columnBoundsTimeMs": 14.66150000000016,
+          "totalTimeMs": 24.800700000001598,
+          "floorPolygonCount": 35,
+          "gridCellCount": 32
+        },
+        {
+          "floorRenderTimeMs": 21.521300000000338,
+          "gridBuildTimeMs": 0.06189999999878637,
+          "columnBoundsTimeMs": 17.81760000000031,
+          "totalTimeMs": 39.400799999999435,
+          "floorPolygonCount": 39,
+          "gridCellCount": 33
+        },
+        {
+          "floorRenderTimeMs": 1.6597000000001572,
+          "gridBuildTimeMs": 0.12520000000040454,
+          "columnBoundsTimeMs": 20.336100000000442,
+          "totalTimeMs": 22.121000000001004,
+          "floorPolygonCount": 48,
+          "gridCellCount": 45
+        },
+        {
+          "floorRenderTimeMs": 14.879500000000917,
+          "gridBuildTimeMs": 0.140400000000227,
+          "columnBoundsTimeMs": 25.99250000000029,
+          "totalTimeMs": 41.012400000001435,
+          "floorPolygonCount": 55,
+          "gridCellCount": 50
+        },
+        {
+          "floorRenderTimeMs": 9.883899999998903,
+          "gridBuildTimeMs": 0.17410000000018044,
+          "columnBoundsTimeMs": 30.51879999999983,
+          "totalTimeMs": 40.57679999999891,
+          "floorPolygonCount": 66,
+          "gridCellCount": 58
+        },
+        {
+          "floorRenderTimeMs": 12.832500000000437,
+          "gridBuildTimeMs": 0.1345999999994092,
+          "columnBoundsTimeMs": 34.87720000000081,
+          "totalTimeMs": 47.84430000000066,
+          "floorPolygonCount": 86,
+          "gridCellCount": 69
+        },
+        {
+          "floorRenderTimeMs": 0.08759999999892898,
+          "gridBuildTimeMs": 0.14279999999962456,
+          "columnBoundsTimeMs": 43.567300000000614,
+          "totalTimeMs": 43.79769999999917,
+          "floorPolygonCount": 98,
+          "gridCellCount": 76
+        },
+        {
+          "floorRenderTimeMs": 23.742299999999886,
+          "gridBuildTimeMs": 0.3418999999994412,
+          "columnBoundsTimeMs": 55.17460000000028,
+          "totalTimeMs": 79.25879999999961,
+          "floorPolygonCount": 114,
+          "gridCellCount": 91
+        },
+        {
+          "floorRenderTimeMs": 8.111399999999776,
+          "gridBuildTimeMs": 0.34469999999964784,
+          "columnBoundsTimeMs": 62.181800000000294,
+          "totalTimeMs": 70.63789999999972,
+          "floorPolygonCount": 131,
+          "gridCellCount": 102
+        },
+        {
+          "floorRenderTimeMs": 0.7865999999994528,
+          "gridBuildTimeMs": 0.23190000000067812,
+          "columnBoundsTimeMs": 70.61189999999988,
+          "totalTimeMs": 71.63040000000001,
+          "floorPolygonCount": 144,
+          "gridCellCount": 111
+        },
+        {
+          "floorRenderTimeMs": 7.207399999999325,
+          "gridBuildTimeMs": 0.2239000000008673,
+          "columnBoundsTimeMs": 63.73239999999896,
+          "totalTimeMs": 71.16369999999915,
+          "floorPolygonCount": 158,
+          "gridCellCount": 125
+        },
+        {
+          "floorRenderTimeMs": 17.790499999999156,
+          "gridBuildTimeMs": 0.2638999999999214,
+          "columnBoundsTimeMs": 77.4416999999994,
+          "totalTimeMs": 95.49609999999848,
+          "floorPolygonCount": 180,
+          "gridCellCount": 135
+        },
+        {
+          "floorRenderTimeMs": 14.757399999998597,
+          "gridBuildTimeMs": 0.2926000000006752,
+          "columnBoundsTimeMs": 88.22010000000046,
+          "totalTimeMs": 103.27009999999973,
+          "floorPolygonCount": 199,
+          "gridCellCount": 140
+        },
+        {
+          "floorRenderTimeMs": 18.58770000000004,
+          "gridBuildTimeMs": 0.3011999999998807,
+          "columnBoundsTimeMs": 95.65290000000095,
+          "totalTimeMs": 114.54180000000088,
+          "floorPolygonCount": 183,
+          "gridCellCount": 134
+        },
+        {
+          "floorRenderTimeMs": 15.580799999999726,
+          "gridBuildTimeMs": 0.24099999999998545,
+          "columnBoundsTimeMs": 76.02340000000004,
+          "totalTimeMs": 91.84519999999975,
+          "floorPolygonCount": 153,
+          "gridCellCount": 110
+        },
+        {
+          "floorRenderTimeMs": 3.5416999999997643,
+          "gridBuildTimeMs": 0.23229999999966822,
+          "columnBoundsTimeMs": 70.29470000000038,
+          "totalTimeMs": 74.06869999999981,
+          "floorPolygonCount": 141,
+          "gridCellCount": 100
+        },
+        {
+          "floorRenderTimeMs": 0.8262000000013359,
+          "gridBuildTimeMs": 0.17799999999988358,
+          "columnBoundsTimeMs": 50.79240000000027,
+          "totalTimeMs": 51.79660000000149,
+          "floorPolygonCount": 122,
+          "gridCellCount": 84
+        },
+        {
+          "floorRenderTimeMs": 16.24989999999889,
+          "gridBuildTimeMs": 0.15470000000095752,
+          "columnBoundsTimeMs": 48.342500000000655,
+          "totalTimeMs": 64.7471000000005,
+          "floorPolygonCount": 112,
+          "gridCellCount": 76
+        },
+        {
+          "floorRenderTimeMs": 22.745200000001205,
+          "gridBuildTimeMs": 0.14170000000012806,
+          "columnBoundsTimeMs": 46.82389999999941,
+          "totalTimeMs": 69.71080000000075,
+          "floorPolygonCount": 102,
+          "gridCellCount": 71
+        },
+        {
+          "floorRenderTimeMs": 14.185499999999593,
+          "gridBuildTimeMs": 0.1265000000003056,
+          "columnBoundsTimeMs": 36.29280000000108,
+          "totalTimeMs": 50.60480000000098,
+          "floorPolygonCount": 93,
+          "gridCellCount": 62
+        },
+        {
+          "floorRenderTimeMs": 12.019000000000233,
+          "gridBuildTimeMs": 0.17079999999987194,
+          "columnBoundsTimeMs": 28.050500000001193,
+          "totalTimeMs": 40.2403000000013,
+          "floorPolygonCount": 72,
+          "gridCellCount": 54
+        },
+        {
+          "floorRenderTimeMs": 19.090299999999843,
+          "gridBuildTimeMs": 0.08579999999892607,
+          "columnBoundsTimeMs": 23.916700000001583,
+          "totalTimeMs": 43.09280000000035,
+          "floorPolygonCount": 39,
+          "gridCellCount": 34
+        },
+        {
+          "floorRenderTimeMs": 3.026799999999639,
+          "gridBuildTimeMs": 0.04310000000077707,
+          "columnBoundsTimeMs": 13.252399999999398,
+          "totalTimeMs": 16.322299999999814,
+          "floorPolygonCount": 30,
+          "gridCellCount": 28
+        },
+        {
+          "floorRenderTimeMs": 7.602399999999761,
+          "gridBuildTimeMs": 0.047200000000884756,
+          "columnBoundsTimeMs": 12.365099999999074,
+          "totalTimeMs": 20.01469999999972,
+          "floorPolygonCount": 32,
+          "gridCellCount": 30
+        },
+        {
+          "floorRenderTimeMs": 7.0341000000007625,
+          "gridBuildTimeMs": 0.07619999999951688,
+          "columnBoundsTimeMs": 18.345900000000256,
+          "totalTimeMs": 25.456200000000536,
+          "floorPolygonCount": 46,
+          "gridCellCount": 39
+        },
+        {
+          "floorRenderTimeMs": 8.61410000000069,
+          "gridBuildTimeMs": 0.10359999999855063,
+          "columnBoundsTimeMs": 28.375700000000506,
+          "totalTimeMs": 37.09339999999975,
+          "floorPolygonCount": 68,
+          "gridCellCount": 60
+        },
+        {
+          "floorRenderTimeMs": 9.842599999999948,
+          "gridBuildTimeMs": 0.12420000000020082,
+          "columnBoundsTimeMs": 36.4359000000004,
+          "totalTimeMs": 46.40270000000055,
+          "floorPolygonCount": 83,
+          "gridCellCount": 72
+        },
+        {
+          "floorRenderTimeMs": 10.83430000000044,
+          "gridBuildTimeMs": 0.2695000000003347,
+          "columnBoundsTimeMs": 49.83729999999923,
+          "totalTimeMs": 60.941100000000006,
+          "floorPolygonCount": 103,
+          "gridCellCount": 85
+        },
+        {
+          "floorRenderTimeMs": 11.163099999999758,
+          "gridBuildTimeMs": 0.25569999999970605,
+          "columnBoundsTimeMs": 68.84900000000016,
+          "totalTimeMs": 80.26779999999962,
+          "floorPolygonCount": 96,
+          "gridCellCount": 79
+        },
+        {
+          "floorRenderTimeMs": 1.5856999999996333,
+          "gridBuildTimeMs": 0.26310000000012224,
+          "columnBoundsTimeMs": 60.1224000000002,
+          "totalTimeMs": 61.97119999999995,
+          "floorPolygonCount": 92,
+          "gridCellCount": 77
+        },
+        {
+          "floorRenderTimeMs": 15.312599999999293,
+          "gridBuildTimeMs": 0.15890000000035798,
+          "columnBoundsTimeMs": 47.23630000000048,
+          "totalTimeMs": 62.707800000000134,
+          "floorPolygonCount": 81,
+          "gridCellCount": 64
+        },
+        {
+          "floorRenderTimeMs": 20.285100000000966,
+          "gridBuildTimeMs": 0.11819999999897846,
+          "columnBoundsTimeMs": 37.728000000000975,
+          "totalTimeMs": 58.13130000000092,
+          "floorPolygonCount": 70,
+          "gridCellCount": 53
+        },
+        {
+          "floorRenderTimeMs": 0.17770000000018626,
+          "gridBuildTimeMs": 0.1687999999994645,
+          "columnBoundsTimeMs": 25.330200000000332,
+          "totalTimeMs": 25.676699999999983,
+          "floorPolygonCount": 59,
+          "gridCellCount": 46
+        },
+        {
+          "floorRenderTimeMs": 0.08879999999953725,
+          "gridBuildTimeMs": 0.09490000000005239,
+          "columnBoundsTimeMs": 27.52429999999913,
+          "totalTimeMs": 27.70799999999872,
+          "floorPolygonCount": 52,
+          "gridCellCount": 40
+        },
+        {
+          "floorRenderTimeMs": 10.881900000000314,
+          "gridBuildTimeMs": 0.07430000000022119,
+          "columnBoundsTimeMs": 18.037599999999657,
+          "totalTimeMs": 28.993800000000192,
+          "floorPolygonCount": 44,
+          "gridCellCount": 37
+        },
+        {
+          "floorRenderTimeMs": 0.08940000000075088,
+          "gridBuildTimeMs": 0.08070000000043365,
+          "columnBoundsTimeMs": 13.8729000000003,
+          "totalTimeMs": 14.043000000001484,
+          "floorPolygonCount": 39,
+          "gridCellCount": 34
+        },
+        {
+          "floorRenderTimeMs": 8.782100000000355,
+          "gridBuildTimeMs": 0.04919999999947322,
+          "columnBoundsTimeMs": 11.34939999999915,
+          "totalTimeMs": 20.18069999999898,
+          "floorPolygonCount": 35,
+          "gridCellCount": 33
+        }
+      ]
+    }
+  ],
+  "gitCommit": "57f8808"
+}

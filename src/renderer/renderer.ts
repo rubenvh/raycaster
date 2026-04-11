@@ -18,8 +18,16 @@ import StatsElement from './components/statsComponent';
 import { TestCanvasRenderer } from './testCanvas';
 import TextureLibraryElement from './components/textureLibraryComponent';
 import { View3dSelector } from '../common/actions/view3dSelector';
+import { setResolution } from '../common/config/resolution';
 
 loadComponents();
+
+// Apply resolution from URL query parameter (set by main process from --resolution CLI arg)
+const _resParam = new URLSearchParams(window.location.search).get('resolution');
+if (_resParam) {
+    const val = parseInt(_resParam, 10);
+    if (!isNaN(val) && val > 0) setResolution(val);
+}
 
 
 window.addEventListener('load', (event) => {

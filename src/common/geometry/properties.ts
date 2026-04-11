@@ -18,6 +18,9 @@ const cloneSingleMaterial = (m: IMaterial): IMaterial => m == null ? null : ({
     texture: m.texture != null ? {id: m.texture.id, index: m.texture.index} : null,
     luminosity: m.luminosity});
 
+/** Clone a single (non-directed) material. Returns null for null/undefined input. */
+export const cloneSimpleMaterial = cloneSingleMaterial;
+
 export const isTranslucent = (face: Face, m: IDirectedMaterial): boolean => 
     (getMaterial(face, m)?.color[3] || 0) < 1;
 export const getMaterial = (face: Face, m: IDirectedMaterial): IMaterial =>  

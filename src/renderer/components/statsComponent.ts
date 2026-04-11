@@ -67,6 +67,9 @@ template.innerHTML =  /*html*/`
     .bar-casting { background: #42a5f5; }
     .bar-zbuffer { background: #ab47bc; }
     .bar-drawing { background: #66bb6a; }
+    .bar-background { background: #78909c; }
+    .bar-floorceiling { background: #ffa726; }
+    .bar-wallrender { background: #66bb6a; }
 </style>
 <h3>Statistics</h3>
 <div id="content"></div>
@@ -139,23 +142,51 @@ export default class StatsElement extends HTMLElement {
 
     private renderPerformance(fps: number, timing: IPerformanceStatistics): string {
         const total = timing.total || 1;
-        const castPct = (timing.casting / total * 100);
-        const zbufPct = (timing.zbuffering / total * 100);
-        const drawPct = (timing.drawing / total * 100);
         const fpsClass = fps >= 50 ? 'green' : fps >= 30 ? 'yellow' : 'red';
+        const hasDetail = timing.wallRendering != null;
+
+        let barHtml: string;
+        let rowsHtml: string;
+
+        if (hasDetail) {
+            // Detailed breakdown (zbuffer renderer)
+            const zbufPct = (timing.zbuffering / total * 100);
+            const bgPct = (timing.background / total * 100);
+            const fcPct = (timing.floorCeiling / total * 100);
+            const wrPct = (timing.wallRendering / total * 100);
+
+            barHtml = `<div class="bar">
+                <div class="bar-segment bar-zbuffer" style="width:${zbufPct}%"></div>
+                <div class="bar-segment bar-background" style="width:${bgPct}%"></div>
+                <div class="bar-segment bar-floorceiling" style="width:${fcPct}%"></div>
+                <div class="bar-segment bar-wallrender" style="width:${wrPct}%"></div>
+            </div>`;
+            rowsHtml = `${this.row('ZBuffer', this.msAndPct(timing.zbuffering, total))}
+            ${this.row('Background', this.msAndPct(timing.background, total))}
+            ${this.row('Floor/Ceil', this.msAndPct(timing.floorCeiling, total))}
+            ${this.row('Walls', this.msAndPct(timing.wallRendering, total))}`;
+        } else {
+            // Legacy display (raycaster renderer)
+            const castPct = (timing.casting / total * 100);
+            const zbufPct = (timing.zbuffering / total * 100);
+            const drawPct = (timing.drawing / total * 100);
+
+            barHtml = `<div class="bar">
+                <div class="bar-segment bar-casting" style="width:${castPct}%"></div>
+                <div class="bar-segment bar-zbuffer" style="width:${zbufPct}%"></div>
+                <div class="bar-segment bar-drawing" style="width:${drawPct}%"></div>
+            </div>`;
+            rowsHtml = `${this.row('Casting', this.msAndPct(timing.casting, total))}
+            ${this.row('ZBuffer', this.msAndPct(timing.zbuffering, total))}
+            ${this.row('Drawing', this.msAndPct(timing.drawing, total))}`;
+        }
 
         return `<div class="section">
             <div class="section-label">Performance</div>
             ${this.row('FPS', `<span class="${fpsClass}">${fps}</span>`)}
             ${this.row('Total', `${total.toFixed(1)}ms`)}
-            <div class="bar">
-                <div class="bar-segment bar-casting" style="width:${castPct}%"></div>
-                <div class="bar-segment bar-zbuffer" style="width:${zbufPct}%"></div>
-                <div class="bar-segment bar-drawing" style="width:${drawPct}%"></div>
-            </div>
-            ${this.row('Casting', this.msAndPct(timing.casting, total))}
-            ${this.row('ZBuffer', this.msAndPct(timing.zbuffering, total))}
-            ${this.row('Drawing', this.msAndPct(timing.drawing, total))}
+            ${barHtml}
+            ${rowsHtml}
         </div>`;
     }
 
