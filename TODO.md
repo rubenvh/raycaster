@@ -6,15 +6,13 @@
 
 ## brainstorming list of features
 - GENERAL: interactive animation system based on documented plan
-- RENDERING: implement floor rendering of polygons (with textures)
-- RENDERING: implement ceiling rendering of polygons (with textures)
 - RENDERING: implement polygon heights -> 
     - base height: 
         - zero means sea level
         - negative number means polygon is rendered lower with respect to horizon
         - positive number means polygon is rendered higher than horizon
     - wall height
-- RENDERING: implement sprites: represent as directed (short) line segments
+- RENDERING: implement sprites: represent as directed (short) line segments or cones
 - RENDERING: implement doors
 
 - RENDERING: luminosity on edge as a function of time to implement flickering 
