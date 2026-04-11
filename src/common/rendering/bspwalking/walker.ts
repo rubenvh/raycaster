@@ -16,6 +16,7 @@ import { Texture } from '../../textures/texture';
 import { IRenderer } from '../renderer';
 import { IBSPNode } from '../../geometry/bsp/model';
 import { SkyboxRenderer } from '../../skybox/skybox-renderer';
+import { getResolution } from '../../config/resolution';
 
 const dispatch = useAppDispatch();
 
@@ -23,7 +24,7 @@ export class BspWalker implements IRenderer {
     private context: CanvasRenderingContext2D;
     private width: number;
     private height: number;
-    private resolution = 640;
+    private resolution = getResolution();
     private horizonDistance = 300;
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;

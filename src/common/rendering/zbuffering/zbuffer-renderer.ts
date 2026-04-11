@@ -24,6 +24,8 @@ import { SkyboxRenderer } from '../../skybox/skybox-renderer';
 import { IPolygon } from '../../geometry/polygon';
 import { buildPolygonGrid, IPolygonGrid } from '../../geometry/polygon-grid';
 import { renderFloors, buildColumnBounds, IFloorRendererConfig } from './floor-renderer';
+import { textureLib } from '../../textures/textureLibrary';
+import { getResolution } from '../../config/resolution';
 // T3.8: Removed PriorityDeque import — replaced with sorted array for small collections
 
 const dispatch = useAppDispatch();
@@ -33,7 +35,7 @@ export class ZBufferRenderer implements IRenderer {
     private context: CanvasRenderingContext2D;    
     private width: number;
     private height: number;
-    private resolution = 640;
+    private resolution = getResolution();
     private camera = DEFAULT_CAMERA;
     private wallGeometry = EMPTY_GEOMETRY;
     private bspContext: IBspContext | null = null;
@@ -140,6 +142,7 @@ export class ZBufferRenderer implements IRenderer {
         // this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
         this.drawSky();
         this.drawFloor();
+        const afterBackground = performance.now();
 
         // Per-polygon floor/ceiling rendering
         if (this.visiblePolygons.length > 0) {
@@ -162,8 +165,10 @@ export class ZBufferRenderer implements IRenderer {
                 grid,
                 floorConfig,
                 this.worldConfig,
+                textureLib,
             );
         }
+        const afterFloorCeiling = performance.now();
 
         this.buffer.render();
         const endDrawing = performance.now();
@@ -176,7 +181,10 @@ export class ZBufferRenderer implements IRenderer {
                         drawing: endDrawing - startDrawing,
                         casting: 0,
                         zbuffering: startDrawing - startZBuffering,
-                        total: endDrawing - startZBuffering
+                        total: endDrawing - startZBuffering,
+                        background: afterBackground - startDrawing,
+                        floorCeiling: afterFloorCeiling - afterBackground,
+                        wallRendering: endDrawing - afterFloorCeiling,
                     },
                     fps
                 },
@@ -415,14 +423,19 @@ export class ZBufferColumn {
     }
 
     /**
-     * Get the nearest wall's row range [top, bottom], or null if the column is empty.
-     * Does NOT consume the wall — used by floor/ceiling renderer before wall rendering.
+     * Get the nearest OPAQUE wall's row range [top, bottom], or null if none exists.
+     * Used by the floor/ceiling renderer to determine where to stop rendering.
+     * Translucent walls are skipped because floors/ceilings are visible through them —
+     * the rendering order (floor/ceiling first, then walls back-to-front) ensures
+     * translucent walls composite correctly over the floor/ceiling underneath.
      */
     public getNearestWallBounds(): [number, number] | null {
-        if (this.count === 0) return null;
-        // walls[0] is the nearest (sorted ascending by distance)
-        const w = this.walls[0];
-        return w.rowRange;
+        for (let i = 0; i < this.count; i++) {
+            if ((this.walls[i].material?.color[3] || 0) === 1) {
+                return this.walls[i].rowRange;
+            }
+        }
+        return null;
     }
 
     public shift(): WallProps {

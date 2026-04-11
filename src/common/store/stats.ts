@@ -2,7 +2,16 @@ import { CastingStats, EMPTY_STATS } from '../rendering/raycasting/raycaster';
 import { createSlice } from '@reduxjs/toolkit'
 import { ILineSegment } from '../math/lineSegment';
 // Slice
-export type IPerformanceStatistics = { drawing: number, casting: number, zbuffering: number, total: number }
+export type IPerformanceStatistics = {
+    drawing: number,
+    casting: number,
+    zbuffering: number,
+    total: number,
+    /** Optional detailed breakdown of 'drawing' (zbuffer renderer only) */
+    background?: number,
+    floorCeiling?: number,
+    wallRendering?: number,
+}
 export type IIntersectionStatistics = { stats: CastingStats }
 export type IDetectedEdge = { segment: ILineSegment; depth: number }
 /** Edge counts from BSP dirty-edge tracking during rendering. */

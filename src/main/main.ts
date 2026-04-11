@@ -9,6 +9,17 @@ import __basedir from '../basepath';
 import { importSkybox, saveFile } from './dialogs';
 // import installExtension, { REDUX_DEVTOOLS } from 'electron-devtools-installer';
 
+// Parse --resolution <N> from command-line arguments (default 640)
+function parseResolution(): number {
+  const idx = process.argv.indexOf('--resolution');
+  if (idx !== -1 && idx + 1 < process.argv.length) {
+    const val = parseInt(process.argv[idx + 1], 10);
+    if (!isNaN(val) && val > 0) return val;
+  }
+  return 640;
+}
+const resolution = parseResolution();
+
 // Keep a global reference of the window object, if you don't, the window will
 // be closed automatically when the JavaScript object is garbage collected.
 let mainWindow: Electron.BrowserWindow;
@@ -31,6 +42,7 @@ function createWindow () {
     pathname: path.join(__dirname, "../../renderer/index.html"),
     protocol: "file:",
     slashes: true,
+    search: resolution !== 640 ? `?resolution=${resolution}` : undefined,
   }));
 
   // Open the DevTools.

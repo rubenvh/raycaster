@@ -1,12 +1,12 @@
 import { useAppDispatch } from '../../common/store';
 import { connect } from '../../common/store/store-connector';
 import { 
-    IWorldConfigState, RGBColor, DEFAULT_SKY_COLOR, DEFAULT_FLOOR_COLOR, DEFAULT_FLOOR_MATERIAL, DEFAULT_SUN_ANGLE,
-    setSkyColor, setFloorColor, setFloorMaterial, setFadeOn, setHorizonDistance, toggleSkyboxEnabled, setSkybox, setSkyboxRegion,
+    IWorldConfigState, RGBColor, DEFAULT_SKY_COLOR, DEFAULT_FLOOR_COLOR, DEFAULT_SUN_ANGLE,
+    setSkyColor, setFloorColor, setFadeOn, setHorizonDistance, toggleSkyboxEnabled, setSkybox, setSkyboxRegion,
     setSkyboxVerticalTiling, setSkyGradient, ISkyGradient, setSunAngle
 } from '../../common/store/world-config';
 import { ISkyboxRegion } from '../../common/skybox/model';
-import MaterialEditorComponent from './materialEditorComponent';
+import ColorEditorComponent from './colorEditorComponent';
 
 const dispatch = useAppDispatch();
 
@@ -286,8 +286,8 @@ button:hover { background: #555; }
             <span class="value-label" id="gradient-width-value">100%</span>
         </div>
     </div>
-    <h4>Floor Material</h4>
-    <material-editor id="floor_material"></material-editor>
+    <h4>Floor Color</h4>
+    <color-editor id="floor_color"></color-editor>
 </section>
 
 <section id="lighting-section">
@@ -372,7 +372,7 @@ export default class WorldEditorComponent extends HTMLElement {
     private gradientPositionValue: HTMLElement;
     private gradientWidth: HTMLInputElement;
     private gradientWidthValue: HTMLElement;
-    private floorMaterialElement: MaterialEditorComponent;
+    private floorColorElement: ColorEditorComponent;
 
     // Fading elements
     private fadeEnabled: HTMLInputElement;
@@ -427,7 +427,7 @@ export default class WorldEditorComponent extends HTMLElement {
         this.gradientPositionValue = shadowRoot.getElementById('gradient-position-value') as HTMLElement;
         this.gradientWidth = shadowRoot.getElementById('gradient-width') as HTMLInputElement;
         this.gradientWidthValue = shadowRoot.getElementById('gradient-width-value') as HTMLElement;
-        this.floorMaterialElement = <MaterialEditorComponent>shadowRoot.querySelector('#floor_material');
+        this.floorColorElement = <ColorEditorComponent>shadowRoot.querySelector('#floor_color');
 
         // Query fading elements
         this.fadeEnabled = shadowRoot.getElementById('fade-enabled') as HTMLInputElement;
@@ -573,9 +573,10 @@ export default class WorldEditorComponent extends HTMLElement {
             dispatch(setSkyGradient({ ...this._config.skyGradient, crossoverWidth: value / 100 }));
         });
 
-        // Floor material editor
-        this.floorMaterialElement.addEventListener('change', () => {
-            dispatch(setFloorMaterial(this.floorMaterialElement.material));
+        // Floor color editor
+        this.floorColorElement.addEventListener('change', () => {
+            const [r, g, b] = this.floorColorElement.color;
+            dispatch(setFloorColor([r, g, b]));
         });
 
         // Fade toggle
@@ -608,7 +609,6 @@ export default class WorldEditorComponent extends HTMLElement {
 
         // Subscribe to store
         connect(state => {
-            this.floorMaterialElement.selectableTextures = state.textures?.sources ?? [];
             if (this._config !== state.worldConfig) {
                 this._config = state.worldConfig;
                 this.render();
@@ -669,7 +669,7 @@ export default class WorldEditorComponent extends HTMLElement {
         // Colors section -- visible when skybox is off
         // (even when skybox is on, sky color is still relevant as fallback, but floor always matters)
         const skyColor = config.skyColor ?? DEFAULT_SKY_COLOR;
-        const floorMaterial = config.floorMaterial ?? DEFAULT_FLOOR_MATERIAL;
+        const floorColor = config.floorColor ?? DEFAULT_FLOOR_COLOR;
         this.skyR.value = skyColor[0].toString();
         this.skyG.value = skyColor[1].toString();
         this.skyB.value = skyColor[2].toString();
@@ -695,7 +695,7 @@ export default class WorldEditorComponent extends HTMLElement {
             this.gradientWidthValue.textContent = `${wid}%`;
         }
 
-        this.floorMaterialElement.material = floorMaterial;
+        this.floorColorElement.color = [...floorColor, 1];
 
         // Fading section
         const fadeOn = config.fadeOn != null;

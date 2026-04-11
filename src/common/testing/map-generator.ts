@@ -14,7 +14,7 @@ import { IStoredGeometry } from '../geometry/geometry';
 import { IStoredPolygon } from '../geometry/polygon';
 import { IStoredEdge } from '../geometry/edge';
 import { ITextureReference } from '../textures/model';
-import { Color } from '../geometry/properties';
+import { Color, IMaterial } from '../geometry/properties';
 import { getValidTextureReferences } from './texture-loader';
 import { SeededRandom } from './seeded-random';
 
@@ -45,6 +45,14 @@ export interface MapGeneratorConfig {
   translucentWallRatio: number;
   /** Alpha value for translucent walls (0.0 - 1.0) */
   translucentAlpha: number;
+
+  // Floor/ceiling material settings
+  /** Fraction of polygons that have floor materials (0.0 - 1.0) */
+  floorMaterialRatio: number;
+  /** Fraction of polygons that have ceiling materials (0.0 - 1.0) */
+  ceilingMaterialRatio: number;
+  /** Fraction of floor/ceiling materials that have textures (0.0 - 1.0) */
+  floorTextureRatio: number;
 }
 
 /**
@@ -64,6 +72,11 @@ export const DEFAULT_MAP_CONFIG: MapGeneratorConfig = {
   texturedWallRatio: 0.7,
   translucentWallRatio: 0.15,
   translucentAlpha: 0.5,
+
+  // Floor/ceiling
+  floorMaterialRatio: 0,
+  ceilingMaterialRatio: 0,
+  floorTextureRatio: 0,
 };
 
 /**
@@ -105,6 +118,14 @@ export const MATERIAL_PRESETS = {
 
 export type MaterialPreset = keyof typeof MATERIAL_PRESETS;
 
+/** A room rectangle tracked during subdivision for floor polygon generation. */
+interface RoomRect {
+  x1: number;
+  y1: number;
+  x2: number;
+  y2: number;
+}
+
 /**
  * Generate a complex map with the specified number of polygons.
  * 
@@ -123,12 +144,15 @@ export function generateComplexMap(
   // Add outer boundary walls
   addOuterBoundary(polygons, cfg, rng);
   
+  // Track rooms during subdivision for floor polygon generation
+  const rooms: RoomRect[] = [];
+
   // Add internal walls through recursive subdivision
   const margin = cfg.wallThickness * 2;
   subdivide(
     margin, margin,
     cfg.width - margin, cfg.height - margin,
-    polygons, cfg, rng, targetPolygons
+    polygons, cfg, rng, targetPolygons, rooms
   );
   
   // Add some additional scattered obstacles if we haven't hit target
@@ -136,6 +160,22 @@ export function generateComplexMap(
     addRandomObstacle(polygons, cfg, rng);
   }
   
+  // Add room floor/ceiling polygons after walls.
+  // Room polygons are large rectangles covering the floor area of each room.
+  // Their edges have no wall material (material: undefined) and immaterial: true,
+  // so they don't render as walls. The floor renderer uses polygon.floorMaterial
+  // and polygon.ceilingMaterial for per-pixel rendering.
+  if (cfg.floorMaterialRatio > 0 || cfg.ceilingMaterialRatio > 0) {
+    for (const room of rooms) {
+      const hasFloor = cfg.floorMaterialRatio > 0 && rng.nextBool(cfg.floorMaterialRatio);
+      const hasCeiling = cfg.ceilingMaterialRatio > 0 && rng.nextBool(cfg.ceilingMaterialRatio);
+      if (!hasFloor && !hasCeiling) continue;
+
+      const roomPoly = createRoomPolygon(room.x1, room.y1, room.x2, room.y2, cfg, rng, hasFloor, hasCeiling);
+      polygons.push(roomPoly);
+    }
+  }
+
   return { polygons };
 }
 
@@ -164,6 +204,7 @@ function addOuterBoundary(
 
 /**
  * Recursively subdivide the space to create rooms and corridors.
+ * Leaf rooms (those that can't be further subdivided) are collected in the rooms array.
  */
 function subdivide(
   x1: number, y1: number,
@@ -171,16 +212,23 @@ function subdivide(
   polygons: IStoredPolygon[],
   cfg: MapGeneratorConfig,
   rng: SeededRandom,
-  targetPolygons: number
+  targetPolygons: number,
+  rooms: RoomRect[]
 ): void {
   // Stop if we have enough polygons
-  if (polygons.length >= targetPolygons) return;
+  if (polygons.length >= targetPolygons) {
+    rooms.push({ x1, y1, x2, y2 });
+    return;
+  }
   
   const width = x2 - x1;
   const height = y2 - y1;
   
-  // Stop if room is too small to subdivide
-  if (width < cfg.minRoomSize * 2 && height < cfg.minRoomSize * 2) return;
+  // Stop if room is too small to subdivide — this is a leaf room
+  if (width < cfg.minRoomSize * 2 && height < cfg.minRoomSize * 2) {
+    rooms.push({ x1, y1, x2, y2 });
+    return;
+  }
   
   // Decide split direction based on room proportions
   const splitHorizontal = height > width || (height === width && rng.nextBool());
@@ -205,8 +253,8 @@ function subdivide(
     );
     
     // Recurse into sub-rooms
-    subdivide(x1, y1, x2, splitY, polygons, cfg, rng, targetPolygons);
-    subdivide(x1, splitY + cfg.wallThickness, x2, y2, polygons, cfg, rng, targetPolygons);
+    subdivide(x1, y1, x2, splitY, polygons, cfg, rng, targetPolygons, rooms);
+    subdivide(x1, splitY + cfg.wallThickness, x2, y2, polygons, cfg, rng, targetPolygons, rooms);
     
   } else if (width >= cfg.minRoomSize * 2) {
     // Vertical split (wall runs top-bottom)
@@ -228,8 +276,11 @@ function subdivide(
     );
     
     // Recurse into sub-rooms
-    subdivide(x1, y1, splitX, y2, polygons, cfg, rng, targetPolygons);
-    subdivide(splitX + cfg.wallThickness, y1, x2, y2, polygons, cfg, rng, targetPolygons);
+    subdivide(x1, y1, splitX, y2, polygons, cfg, rng, targetPolygons, rooms);
+    subdivide(splitX + cfg.wallThickness, y1, x2, y2, polygons, cfg, rng, targetPolygons, rooms);
+  } else {
+    // Can't split in preferred direction — this is a leaf room
+    rooms.push({ x1, y1, x2, y2 });
   }
 }
 
@@ -284,6 +335,7 @@ function addRandomObstacle(
 
 /**
  * Create a rectangular polygon with generated materials.
+ * Wall polygons — used for actual walls with visible edges.
  */
 function createRectPolygon(
   x1: number, y1: number, x2: number, y2: number,
@@ -299,6 +351,52 @@ function createRectPolygon(
   ];
   
   return { edges };
+}
+
+/**
+ * Create a room polygon with floor/ceiling materials.
+ * Room polygons represent the floor/ceiling area of a room.
+ * Their edges have no wall material (invisible) and are immaterial (no collision),
+ * so they only contribute floor/ceiling surfaces to the renderer.
+ */
+function createRoomPolygon(
+  x1: number, y1: number, x2: number, y2: number,
+  cfg: MapGeneratorConfig,
+  rng: SeededRandom,
+  hasFloor: boolean,
+  hasCeiling: boolean,
+): IStoredPolygon {
+  // Create 4 edges with no wall material and immaterial flag
+  const edges: IStoredEdge[] = [
+    createInvisibleEdge([x1, y1], [x2, y1]), // Top
+    createInvisibleEdge([x2, y1], [x2, y2]), // Right
+    createInvisibleEdge([x2, y2], [x1, y2]), // Bottom
+    createInvisibleEdge([x1, y2], [x1, y1]), // Left
+  ];
+  
+  const polygon: IStoredPolygon = { edges };
+
+  if (hasFloor) {
+    polygon.floorMaterial = createFloorCeilingMaterial(cfg, rng);
+  }
+  if (hasCeiling) {
+    polygon.ceilingMaterial = createFloorCeilingMaterial(cfg, rng);
+  }
+
+  return polygon;
+}
+
+/**
+ * Create an invisible, immaterial edge (no wall rendering, no collision).
+ * Used for room floor/ceiling polygons whose edges shouldn't be visible.
+ */
+function createInvisibleEdge(start: Vector, end: Vector): IStoredEdge {
+  return {
+    start: { vector: start },
+    end: { vector: end },
+    immaterial: true,
+    // No material — edge won't render as a wall (material == null check in renderer)
+  };
 }
 
 /**
@@ -340,6 +438,29 @@ function createMaterial(
   };
   
   if (hasTexture) {
+    const textureIndex = rng.nextInt(0, cfg.textures.length - 1);
+    material.texture = { ...cfg.textures[textureIndex] };
+  }
+  
+  return material;
+}
+
+/**
+ * Create a floor or ceiling material with optional texture.
+ */
+function createFloorCeilingMaterial(
+  cfg: MapGeneratorConfig,
+  rng: SeededRandom
+): IMaterial {
+  const r = rng.nextInt(40, 180);
+  const g = rng.nextInt(40, 180);
+  const b = rng.nextInt(40, 180);
+  
+  const material: IMaterial = {
+    color: [r, g, b, 1],
+  };
+  
+  if (cfg.textures.length > 0 && cfg.floorTextureRatio > 0 && rng.nextBool(cfg.floorTextureRatio)) {
     const textureIndex = rng.nextInt(0, cfg.textures.length - 1);
     material.texture = { ...cfg.textures[textureIndex] };
   }
