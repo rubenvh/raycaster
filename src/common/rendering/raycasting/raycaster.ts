@@ -183,7 +183,9 @@ const filterAndSortHits = (hits: RayHit[]): RayHit[] => {
 };
 
 export const castRaysOnEdge = (rays: IRay[], edge: IEdge): RayHit[] => {
-    return castRaysOnEdgeRange(rays, 0, rays.length, edge);
+    // Return a copy since castRaysOnEdgeRange reuses a module-level buffer
+    const result = castRaysOnEdgeRange(rays, 0, rays.length, edge);
+    return result.slice(0, rays.length);
 };
 
 /**

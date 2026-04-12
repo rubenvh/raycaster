@@ -22,6 +22,7 @@ const makeWallProps = (distance: number, alpha: number = 1, edgeId?: string): Wa
     rowRange: [100, 200],
     colRange: [0, 10],
     distance,
+    textureDistance: 0,
 });
 
 describe('ZBufferColumn', () => {

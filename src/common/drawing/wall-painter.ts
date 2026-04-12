@@ -3,6 +3,7 @@ import { lookupMaterialFor, RayHit } from "../geometry/collision";
 import { cloneKey, IEntityKey } from "../geometry/entity";
 import { computeEdgeLuminosity } from "../geometry/edge";
 import { IMaterial, isTranslucent } from "../geometry/properties";
+import { distance as vertexDistance } from "../geometry/vertex";
 import { Vector } from "../math/vector";
 import { connect } from "../store/store-connector";
 import { getSunDirection, IWorldConfigState } from "../store/world-config";
@@ -21,6 +22,9 @@ export type WallProps = {
     rowRange: [number, number],
     colRange: [number, number],
     distance: number,
+    /** Pre-computed distance from edge origin to intersection point along the edge.
+     *  Used for texture X coordinate lookup, avoiding redundant sqrt during drawing. */
+    textureDistance: number,
 };
 
 // Pre-computed fade alpha CSS strings: 101 entries for alpha 0.00 to 1.00.
@@ -73,16 +77,19 @@ export class WallPainter {
         const startRow = Math.floor((this.height - height) / 2);
         const endRow = Math.floor((this.height + height) / 2);
         const edgeId = hit.edge && hit.edge.id || Guid.EMPTY;
+        const wallOrigin = origin ?? hit.edge?.start.vector;
+        const intersectionPoint = hit.intersection?.point;
         return ({
-            edgeId: cloneKey(edgeId), height,
+            edgeId, height,
             edgeLuminosity: hit.edge ? computeEdgeLuminosity(hit.edge.segment, this.sunDirection) : 0,
             material: lookupMaterialFor(hit.intersection, hit.edge),
             rowRange: [startRow, endRow],
             colRange: [this.mapToColumn(rayIndex), this.mapToColumn(rayIndex +1)],
-            intersection: hit.intersection?.point,
-            origin: origin ?? hit.edge?.start.vector,
+            intersection: intersectionPoint,
+            origin: wallOrigin,
             distance: hit.distance,
             length: hit.edge?.length,
+            textureDistance: (wallOrigin && intersectionPoint) ? vertexDistance(wallOrigin, intersectionPoint) : 0,
         });
     };    
 

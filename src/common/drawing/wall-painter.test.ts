@@ -38,6 +38,7 @@ const createWallProps = (overrides: Partial<WallProps> = {}): WallProps => ({
     rowRange: [200, 400],
     colRange: [100, 110],
     distance: 50,
+    textureDistance: 70.71,
     ...overrides,
 });
 
