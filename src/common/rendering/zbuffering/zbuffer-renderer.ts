@@ -24,6 +24,7 @@ import { SkyboxRenderer } from '../../skybox/skybox-renderer';
 import { IPolygon } from '../../geometry/polygon';
 import { buildPolygonGrid, IPolygonGrid } from '../../geometry/polygon-grid';
 import { renderFloors, buildColumnBounds, IFloorRendererConfig } from './floor-renderer';
+import { renderWalls } from './wall-renderer';
 import { textureLib } from '../../textures/textureLibrary';
 import { getResolution } from '../../config/resolution';
 // T3.8: Removed PriorityDeque import — replaced with sorted array for small collections
@@ -170,7 +171,15 @@ export class ZBufferRenderer implements IRenderer {
         }
         const afterFloorCeiling = performance.now();
 
-        this.buffer.render();
+        // Pixel-based wall rendering: pass column data directly to the new renderer
+        renderWalls(
+            this.context,
+            this.buffer.getColumns(),
+            this.width,
+            this.height,
+            this.worldConfig,
+            textureLib,
+        );
         const endDrawing = performance.now();
         
         if (!this.lastUpdated || endDrawing - this.lastUpdated > 1000) {
@@ -372,6 +381,13 @@ export class ZBuffer {
         return this.rays;
     }
 
+    /**
+     * Get the column data for the pixel-based wall renderer.
+     */
+    public getColumns(): ZBufferColumn[] {
+        return this.cols;
+    }
+
     public updateCamera(camera: ICamera): void {
         this.camera = camera;
         this.rays = makeRays(this.resolution, this.camera);
@@ -381,14 +397,20 @@ export class ZBuffer {
 export class ZBufferColumn {
     // T3.8: Sorted array replaces PriorityDeque — columns typically have 1-3 walls,
     // so linear insertion sort beats heap overhead. Array is sorted ascending by distance.
-    private walls: WallProps[] = [];
-    private count: number = 0;
+    private _walls: WallProps[] = [];
+    private _count: number = 0;
     private hasOpaqueWall: boolean = false;  // Track if any wall has alpha === 1
     
     constructor() {}
 
+    /** Number of walls currently stored in this column */
+    public get count(): number { return this._count; }
+
+    /** The walls array (sorted ascending by distance). Only indices 0.._count-1 are valid. */
+    public get walls(): WallProps[] { return this._walls; }
+
     public clear(): void {
-        this.count = 0;
+        this._count = 0;
         this.hasOpaqueWall = false;
     }
 
@@ -400,20 +422,20 @@ export class ZBufferColumn {
         // Insert into sorted position (ascending by distance).
         // For typical 1-3 walls, linear scan from end is optimal.
         const d = el.distance;
-        let i = this.count;
+        let i = this._count;
         // Ensure array has room (reuse slots from previous frame)
-        if (i >= this.walls.length) {
-            this.walls.push(el);
+        if (i >= this._walls.length) {
+            this._walls.push(el);
         } else {
-            this.walls[i] = el;
+            this._walls[i] = el;
         }
         // Insertion sort: shift elements right to maintain ascending order
-        while (i > 0 && this.walls[i - 1].distance > d) {
-            this.walls[i] = this.walls[i - 1];
+        while (i > 0 && this._walls[i - 1].distance > d) {
+            this._walls[i] = this._walls[i - 1];
             i--;
         }
-        this.walls[i] = el;
-        this.count++;
+        this._walls[i] = el;
+        this._count++;
         
         // Track if we have any opaque wall (alpha === 1)
         if (!this.hasOpaqueWall && (el.material?.color[3] || 0) === 1) {
@@ -430,9 +452,9 @@ export class ZBufferColumn {
      * translucent walls composite correctly over the floor/ceiling underneath.
      */
     public getNearestWallBounds(): [number, number] | null {
-        for (let i = 0; i < this.count; i++) {
-            if ((this.walls[i].material?.color[3] || 0) === 1) {
-                return this.walls[i].rowRange;
+        for (let i = 0; i < this._count; i++) {
+            if ((this._walls[i].material?.color[3] || 0) === 1) {
+                return this._walls[i].rowRange;
             }
         }
         return null;
@@ -440,14 +462,14 @@ export class ZBufferColumn {
 
     public shift(): WallProps {
         // Pop from end = largest distance = farthest wall (back-to-front rendering)
-        if (this.count === 0) return undefined;
-        return this.walls[--this.count];
+        if (this._count === 0) return undefined;
+        return this._walls[--this._count];
     }
 
     public render(painter: WallPainter): void {
         // Render back-to-front (farthest first = pop from end)
-        while (this.count > 0) {
-            painter.drawWall([this.walls[--this.count]]);
+        while (this._count > 0) {
+            painter.drawWall([this._walls[--this._count]]);
         }
     }
 }

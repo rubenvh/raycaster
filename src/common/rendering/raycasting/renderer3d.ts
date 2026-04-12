@@ -34,6 +34,8 @@ export type WallProps = {
     rowRange: [number, number],
     colRange: [number, number],
     distance: number,
+    /** Pre-computed distance from edge origin to intersection point (optional, legacy path) */
+    textureDistance?: number,
 };
 type ZBuffer = Map<IEntityKey, WallProps[]>[];
 export class Renderer3d implements IRenderer {

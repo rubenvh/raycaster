@@ -64,7 +64,7 @@ export class Texture {
 
         for (let windex = wallProps.length - 1; windex >= 0; windex--) {
             const w = wallProps[windex];
-            const wx = distance(w.origin, w.intersection);
+            const wx = w.textureDistance != null ? w.textureDistance : distance(w.origin, w.intersection);
             const [x2, x1] = w.colRange;
             const [y1, y2] = w.rowRange;
             const targetWidth = x2 - x1;

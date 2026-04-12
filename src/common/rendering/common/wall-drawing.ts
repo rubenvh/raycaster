@@ -15,6 +15,8 @@ export type WallProps = {
     rowRange: [number, number],
     colRange: [number, number],
     distance: number,
+    /** Pre-computed distance from edge origin to intersection point (optional, legacy path) */
+    textureDistance?: number,
 };
 
 export const convertDistanceToWallHeight = (d: number, height: number) => Math.round(10 * height / d);
